@@ -324,7 +324,7 @@ function SubmitPageContent() {
                 disabled={loading || (!submissionsOpen && !isEditing)}
               />
               <p className="mt-1 text-sm text-gray-500">
-                Optional: Add a description of what you're submitting
+                Optional: Add a description of what you&apos;re submitting
               </p>
             </div>
 
@@ -380,7 +380,7 @@ function SubmitPageContent() {
                   disabled={loading || !submissionsOpen}
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  Optional: Receive confirmation email. If not provided, we'll use your Twitch email.
+                  Optional: Receive confirmation email. If not provided, we&apos;ll use your Twitch email.
                 </p>
               </div>
             )}

@@ -13,25 +13,25 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
-      <div className="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-2xl p-8 max-w-md w-full transform transition-all duration-300 hover:scale-[1.02] border border-purple-100">
-        <div className="text-center mb-6 animate-fade-in">
-          <h1 className="text-3xl font-bold mb-2 text-gray-800">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 animate-page-transition">
+      <div className="bg-background-light rounded-2xl p-8 md:p-10 max-w-md w-full border border-gray-800/50 shadow-2xl">
+        <div className="text-center mb-8 animate-fade-in">
+          <h1 className="text-3xl md:text-4xl font-bold mb-3 text-text-primary">
             Demo Feedback System
           </h1>
-          <p className="text-gray-600 text-sm">
+          <p className="text-text-secondary text-sm md:text-base">
             Submit your music demos and get feedback from MikeGTC
           </p>
         </div>
         <button
           onClick={handleTwitchLogin}
           disabled={loading}
-          className="relative w-full bg-[#9146FF] hover:bg-[#7c3aed] text-white font-semibold py-3.5 px-4 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group shadow-lg hover:shadow-xl"
+          className="relative w-full bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-medium py-3.5 px-4 rounded-button transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group shadow-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] button-press"
         >
-          {/* Shine effect */}
-          <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent"></span>
+          {/* Subtle shine effect */}
+          <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent"></span>
           
-          <span className="relative flex items-center justify-center gap-2">
+          <span className="relative flex items-center justify-center gap-2.5">
             {/* Twitch Logo SVG */}
             <svg 
               className="w-5 h-5" 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 function SubmitPageContent() {
@@ -126,11 +126,17 @@ function SubmitPageContent() {
     return /^https?:\/\/(www\.)?soundcloud\.com\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+/.test(trimmed)
   }
 
-  // Fetch embed HTML when URL changes
+  // Fetch embed HTML when URL changes - use a debounced approach to prevent rapid re-fetching
   useEffect(() => {
-    if (isValidSoundCloudUrl(soundcloudUrl)) {
-      setEmbedLoading(true)
+    if (!isValidSoundCloudUrl(soundcloudUrl)) {
       setEmbedHtml(null)
+      setEmbedLoading(false)
+      return
+    }
+
+    // Debounce the fetch to prevent rapid re-fetching while typing
+    const timeoutId = setTimeout(() => {
+      setEmbedLoading(true)
       fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(soundcloudUrl)}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
@@ -142,9 +148,17 @@ function SubmitPageContent() {
         })
         .catch(() => setEmbedHtml(null))
         .finally(() => setEmbedLoading(false))
-    } else {
-      setEmbedHtml(null)
-    }
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timeoutId)
+  }, [soundcloudUrl])
+  
+  // Memoize the embed URL to prevent iframe recreation on every render
+  // Note: getEmbedUrl is a pure function, so it's safe to call it in useMemo
+  const embedUrl = useMemo(() => {
+    if (!isValidSoundCloudUrl(soundcloudUrl)) return ''
+    return getEmbedUrl(soundcloudUrl)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [soundcloudUrl])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -222,28 +236,28 @@ function SubmitPageContent() {
 
   if (!user || checkingStatus) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-xl text-text-primary">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-3 md:p-4">
+    <div className="min-h-screen bg-background p-3 md:p-4 animate-page-transition">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-gradient-to-br from-white to-indigo-50 rounded-xl shadow-lg p-4 md:p-6 animate-fade-in border border-indigo-100">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">
+        <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-6 animate-fade-in border border-gray-800/50">
+          <h1 className="text-xl md:text-2xl font-bold text-text-primary mb-4 md:mb-6">
             {isEditing ? 'Edit Submission' : 'Submit Demo'}
           </h1>
           
           {!submissionsOpen && (
-            <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded">
+            <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-lg">
               <strong>⚠️ Submissions are currently closed.</strong> Please check back later or contact MikeGTC for more information.
             </div>
           )}
 
           {success && (
-            <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg animate-scale-in text-sm">
+            <div className="mb-4 p-3 bg-primary/10 border border-primary/30 text-primary rounded-lg animate-scale-in text-sm">
               {isEditing ? 'Submission updated successfully!' : 'Demo submitted successfully!'} Redirecting to dashboard...
             </div>
           )}
@@ -251,8 +265,8 @@ function SubmitPageContent() {
           {error && (
             <div className={`mb-4 p-3 border rounded-lg animate-scale-in text-sm ${
               error.includes('already been submitted') || error.includes('has already been submitted')
-                ? 'bg-yellow-100 border-yellow-400 text-yellow-800'
-                : 'bg-red-100 border-red-400 text-red-700'
+                ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
+                : 'bg-red-500/10 border-red-500/30 text-red-400'
             }`}>
               {(error.includes('already been submitted') || error.includes('has already been submitted')) && '⚠️ '}
               {error}
@@ -261,7 +275,7 @@ function SubmitPageContent() {
 
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
             <div className="mb-4">
-              <label htmlFor="soundcloud_url" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="soundcloud_url" className="block text-sm font-medium text-text-primary mb-2">
                 SoundCloud URL *
               </label>
               <input
@@ -271,23 +285,24 @@ function SubmitPageContent() {
                 onChange={(e) => setSoundcloudUrl(e.target.value)}
                 placeholder="https://soundcloud.com/username/track-name"
                 required
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent break-words transition-all duration-200"
+                className="w-full px-4 py-2.5 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200"
                 disabled={loading || (!submissionsOpen && !isEditing)}
               />
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-text-secondary">
                 Only SoundCloud track URLs are accepted
               </p>
               
               {/* SoundCloud Embed Preview */}
               {isValidSoundCloudUrl(soundcloudUrl) && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
+                <div className="mt-4 p-4 bg-background-lighter rounded-lg border border-gray-800/50">
+                  <p className="text-sm font-medium text-text-primary mb-2">Preview:</p>
                   {embedLoading ? (
                     <div className="w-full h-32 flex items-center justify-center">
-                      <p className="text-sm text-gray-500">Loading preview...</p>
+                      <p className="text-sm text-text-secondary">Loading preview...</p>
                     </div>
                   ) : embedHtml ? (
                     <div 
+                      key={`embed-html-${soundcloudUrl}`}
                       className="soundcloud-embed w-full"
                       style={{ maxWidth: '100%', overflow: 'hidden' }}
                       dangerouslySetInnerHTML={{ __html: embedHtml }}
@@ -295,12 +310,13 @@ function SubmitPageContent() {
                   ) : (
                     <div className="w-full">
                       <iframe
+                        key={`embed-iframe-${soundcloudUrl}`}
                         width="100%"
                         height="166"
                         scrolling="no"
                         frameBorder="no"
                         allow="autoplay"
-                        src={getEmbedUrl(soundcloudUrl)}
+                        src={embedUrl}
                         className="rounded"
                         title="SoundCloud Player"
                       ></iframe>
@@ -311,7 +327,7 @@ function SubmitPageContent() {
             </div>
 
             <div className="mb-4">
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="description" className="block text-sm font-medium text-text-primary mb-2">
                 Description
               </label>
               <textarea
@@ -320,17 +336,17 @@ function SubmitPageContent() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Tell us about your track..."
                 rows={4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none break-words"
+                className="w-full px-4 py-2 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary resize-none break-words transition-all duration-200"
                 disabled={loading || (!submissionsOpen && !isEditing)}
               />
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-text-secondary">
                 Optional: Add a description of what you&apos;re submitting
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label htmlFor="artist_name" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="artist_name" className="block text-sm font-medium text-text-primary mb-2">
                   Artist Name
                 </label>
                 <input
@@ -339,15 +355,15 @@ function SubmitPageContent() {
                   value={artistName}
                   onChange={(e) => setArtistName(e.target.value)}
                   placeholder="Artist name"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent break-words"
+                  className="w-full px-4 py-2 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200"
                   disabled={loading || (!submissionsOpen && !isEditing)}
                 />
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-text-secondary">
                   Optional: Override artist name
                 </p>
               </div>
               <div>
-                <label htmlFor="song_title" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="song_title" className="block text-sm font-medium text-text-primary mb-2">
                   Song Title
                 </label>
                 <input
@@ -356,10 +372,10 @@ function SubmitPageContent() {
                   value={songTitle}
                   onChange={(e) => setSongTitle(e.target.value)}
                   placeholder="Song title"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent break-words"
+                  className="w-full px-4 py-2 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200"
                   disabled={loading || (!submissionsOpen && !isEditing)}
                 />
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-text-secondary">
                   Optional: Override song title
                 </p>
               </div>
@@ -367,7 +383,7 @@ function SubmitPageContent() {
 
             {!isEditing && (
               <div className="mb-6">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-2">
                   Email (optional)
                 </label>
                 <input
@@ -376,10 +392,10 @@ function SubmitPageContent() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent break-words"
+                  className="w-full px-4 py-2 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200"
                   disabled={loading || !submissionsOpen}
                 />
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-text-secondary">
                   Optional: Receive confirmation email. If not provided, we&apos;ll use your Twitch email.
                 </p>
               </div>
@@ -389,14 +405,14 @@ function SubmitPageContent() {
               <button
                 type="submit"
                 disabled={loading || !soundcloudUrl.trim() || (!submissionsOpen && !isEditing)}
-                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                className="flex-1 bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-medium py-2.5 px-4 rounded-button transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press"
               >
                 {loading ? (isEditing ? 'Updating...' : 'Submitting...') : (isEditing ? 'Update Submission' : 'Submit Demo')}
               </button>
               <button
                 type="button"
                 onClick={() => router.push('/dashboard')}
-                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                className="px-4 py-2.5 border border-gray-700 text-text-primary rounded-button hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press"
               >
                 Cancel
               </button>
@@ -411,8 +427,8 @@ function SubmitPageContent() {
 export default function SubmitPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-xl text-text-primary">Loading...</div>
       </div>
     }>
       <SubmitPageContent />

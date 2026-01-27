@@ -184,8 +184,8 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-xl text-text-primary">Loading...</div>
       </div>
     )
   }
@@ -215,7 +215,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-background animate-page-transition">
       {/* Floating Status Banner */}
       <div
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${getBannerClasses()} ${getBannerAnimation()}`}
@@ -224,8 +224,8 @@ export default function Dashboard() {
           <div
             className={`rounded-lg px-4 py-2 shadow-md backdrop-blur-sm border ${
               submissionsOpen
-                ? 'bg-gradient-to-r from-green-500/90 to-emerald-500/90 text-white border-green-400/50'
-                : 'bg-gradient-to-r from-red-500/90 to-rose-500/90 text-white border-red-400/50'
+                ? 'bg-primary/20 backdrop-blur-md text-primary border-primary/30'
+                : 'bg-red-500/20 backdrop-blur-md text-red-400 border-red-500/30'
             }`}
           >
             <div className="flex items-center justify-center">
@@ -240,14 +240,14 @@ export default function Dashboard() {
       {/* Main Content with consistent spacing */}
       <div className="pt-12 md:pt-14 p-3 md:p-4">
         <div className="max-w-6xl mx-auto space-y-4">
-          <div className="bg-gradient-to-r from-white to-blue-50 rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-blue-100">
+          <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-gray-800/50">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
               <div>
-                <h1 className="text-lg md:text-xl font-bold text-gray-800">
+                <h1 className="text-lg md:text-xl font-bold text-text-primary">
                   Welcome, {user.display_name}!
                 </h1>
                 {user.role === 'curator' && (
-                  <p className="text-gray-600 text-xs md:text-sm mt-0.5">
+                  <p className="text-text-secondary text-xs md:text-sm mt-0.5">
                     MikeGTC Dashboard
                   </p>
                 )}
@@ -256,20 +256,20 @@ export default function Dashboard() {
                 {user.role === 'curator' && (
                   <Link
                     href="/curator"
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-3 py-1.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs md:text-sm font-semibold"
+                    className="bg-primary hover:bg-primary-hover active:bg-primary-active text-background px-3 py-1.5 rounded-button transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press text-xs md:text-sm font-medium"
                   >
                     MikeGTC Panel
                   </Link>
                 )}
                 <Link
                   href="/submit"
-                  className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white px-3 py-1.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs md:text-sm font-semibold"
+                  className="bg-primary hover:bg-primary-hover active:bg-primary-active text-background px-3 py-1.5 rounded-button transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press text-xs md:text-sm font-medium"
                 >
                   Submit Demo
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-3 py-1.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs md:text-sm font-semibold"
+                  className="bg-background-lighter hover:bg-gray-800 text-text-primary px-3 py-1.5 rounded-button transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98] button-press text-xs md:text-sm font-medium border border-gray-700"
                 >
                   Logout
                 </button>
@@ -277,10 +277,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-white to-indigo-50 rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-indigo-100">
-            <h2 className="text-base md:text-lg font-bold text-gray-800 mb-3">Your Submissions</h2>
+          <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-gray-800/50">
+            <h2 className="text-base md:text-lg font-bold text-text-primary mb-3">Your Submissions</h2>
           {submissions.length === 0 ? (
-            <p className="text-gray-600">No submissions yet. Submit your first demo!</p>
+            <p className="text-text-secondary">No submissions yet. Submit your first demo!</p>
           ) : (
             <div className="space-y-3">
               {submissions.map((submission, index) => (
@@ -288,8 +288,8 @@ export default function Dashboard() {
                   key={submission.id}
                   className={`border rounded-xl p-3 md:p-4 hover:shadow-lg transition-all duration-200 animate-slide-in ${
                     submission.status === 'reviewed'
-                      ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200'
-                      : 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200'
+                      ? 'bg-background-lighter border-primary/30'
+                      : 'bg-background-lighter border-yellow-500/30'
                   }`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
@@ -297,27 +297,27 @@ export default function Dashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="mb-1.5 md:mb-2">
                         {submission.song_title && (
-                          <h3 className="text-sm md:text-base font-semibold text-gray-800 break-words">
+                          <h3 className="text-sm md:text-base font-semibold text-text-primary break-words">
                             {submission.song_title}
                           </h3>
                         )}
                         {submission.artist_name && (
-                          <p className="text-xs md:text-sm text-gray-600 break-words mt-0.5">
+                          <p className="text-xs md:text-sm text-text-secondary break-words mt-0.5">
                             by {submission.artist_name}
                           </p>
                         )}
                       </div>
                       {submission.description && (
-                        <p className="text-xs md:text-sm text-gray-700 mb-1.5 md:mb-2 break-words whitespace-pre-wrap line-clamp-2">
+                        <p className="text-xs md:text-sm text-text-secondary mb-1.5 md:mb-2 break-words whitespace-pre-wrap line-clamp-2">
                           {submission.description}
                         </p>
                       )}
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-text-muted">
                           {new Date(submission.created_at).toLocaleDateString()}
                         </p>
                         {submission.session_number && (
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-text-muted">
                             • Session #{submission.session_number}
                           </span>
                         )}
@@ -325,10 +325,10 @@ export default function Dashboard() {
                     </div>
                     <div className="flex flex-col items-end gap-1.5 md:gap-2 flex-shrink-0">
                       <span
-                        className={`px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold whitespace-nowrap transition-all duration-200 shadow-md ${
+                        className={`px-3 py-1.5 rounded-button text-xs md:text-sm font-bold whitespace-nowrap transition-all duration-200 shadow-md ${
                           submission.status === 'reviewed'
-                            ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                            : 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900'
+                            ? 'bg-primary text-background'
+                            : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
                         }`}
                       >
                         {submission.status === 'reviewed' ? '✓ Reviewed' : '⏳ Pending'}
@@ -336,7 +336,7 @@ export default function Dashboard() {
                       {submission.status === 'pending' && (
                         <Link
                           href={`/submit?edit=${submission.id}`}
-                          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap transition-colors duration-200"
+                          className="text-xs text-primary hover:text-primary-hover font-medium whitespace-nowrap transition-colors duration-200 underline underline-offset-2"
                         >
                           Edit
                         </Link>
@@ -353,14 +353,14 @@ export default function Dashboard() {
                         dangerouslySetInnerHTML={{ __html: embedData[submission.id].html || '' }}
                       />
                     ) : embedData[submission.id]?.error ? (
-                      <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
-                        <p className="text-sm text-gray-600 mb-2">
+                      <div className="p-4 bg-background-lighter rounded-lg border border-gray-800/50">
+                        <p className="text-sm text-text-secondary mb-2">
                           Unable to embed this track. 
                           <a 
                             href={submission.soundcloud_url} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-indigo-600 hover:underline ml-1"
+                            className="text-primary hover:text-primary-hover underline underline-offset-2 ml-1 transition-colors duration-200"
                           >
                             Open in SoundCloud
                           </a>
@@ -390,18 +390,18 @@ export default function Dashboard() {
                     )}
                   </div>
                   {submission.reviews && submission.reviews.length > 0 && (
-                    <div className="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-gray-200">
-                      <h3 className="text-xs md:text-sm font-semibold text-gray-800 mb-1.5 md:mb-2">Review Scores:</h3>
+                    <div className="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-gray-800/50">
+                      <h3 className="text-xs md:text-sm font-semibold text-text-primary mb-1.5 md:mb-2">Review Scores:</h3>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                         {[
-                          { label: 'Sound', score: submission.reviews[0].sound_score, color: 'from-blue-500 to-blue-600' },
-                          { label: 'Structure', score: submission.reviews[0].structure_score, color: 'from-purple-500 to-purple-600' },
-                          { label: 'Mix', score: submission.reviews[0].mix_score, color: 'from-pink-500 to-pink-600' },
-                          { label: 'Vibe', score: submission.reviews[0].vibe_score, color: 'from-orange-500 to-orange-600' },
-                        ].map(({ label, score, color }) => (
-                          <div key={label} className={`bg-gradient-to-br ${color} rounded-lg p-2 md:p-2.5 shadow-md`}>
-                            <p className="text-xs text-white/90 mb-0.5 md:mb-1 font-medium">{label}</p>
-                            <p className="text-sm md:text-base font-bold text-white">
+                          { label: 'Sound', score: submission.reviews[0].sound_score, bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-400' },
+                          { label: 'Structure', score: submission.reviews[0].structure_score, bg: 'bg-purple-500/20', border: 'border-purple-500/30', text: 'text-purple-400' },
+                          { label: 'Mix', score: submission.reviews[0].mix_score, bg: 'bg-pink-500/20', border: 'border-pink-500/30', text: 'text-pink-400' },
+                          { label: 'Vibe', score: submission.reviews[0].vibe_score, bg: 'bg-orange-500/20', border: 'border-orange-500/30', text: 'text-orange-400' },
+                        ].map(({ label, score, bg, border, text }) => (
+                          <div key={label} className={`${bg} border ${border} rounded-lg p-2 md:p-2.5 shadow-md`}>
+                            <p className={`text-xs ${text} mb-0.5 md:mb-1 font-medium`}>{label}</p>
+                            <p className={`text-sm md:text-base font-bold ${text}`}>
                               {score}/10
                             </p>
                           </div>

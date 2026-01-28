@@ -5,16 +5,17 @@ import { z } from 'zod'
 // - https://soundcloud.com/username/track-name
 // - https://soundcloud.com/username/track-name/s-SHAREID
 // - https://soundcloud.com/username/track-name/s-SHAREID?query-params
+// - https://on.soundcloud.com/SHAREID (secondary option - share links)
 // - URLs without https:// prefix (will be normalized)
-const SOUNDCLOUD_URL_REGEX = /^https:\/\/(www\.)?soundcloud\.com\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+(\/s-[a-zA-Z0-9_-]+)?(\?.*)?$/
+const SOUNDCLOUD_URL_REGEX = /^https:\/\/((www\.)?soundcloud\.com\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+(\/s-[a-zA-Z0-9_-]+)?(\?.*)?|on\.soundcloud\.com\/[a-zA-Z0-9]+(\?.*)?)$/
 
 // Normalize URL - add https:// if missing
 export function normalizeSoundCloudUrl(url: string): string {
   const trimmed = url.trim()
   // If it doesn't start with http:// or https://, add https://
   if (!trimmed.match(/^https?:\/\//i)) {
-    // If it starts with soundcloud.com, add https://
-    if (trimmed.match(/^(www\.)?soundcloud\.com\//i)) {
+    // If it starts with soundcloud.com or on.soundcloud.com, add https://
+    if (trimmed.match(/^(www\.)?soundcloud\.com\//i) || trimmed.match(/^on\.soundcloud\.com\//i)) {
       return `https://${trimmed}`
     }
   }
@@ -25,7 +26,7 @@ export const soundcloudUrlSchema = z.string().transform(normalizeSoundCloudUrl).
   z.string().url().refine(
     (url) => SOUNDCLOUD_URL_REGEX.test(url),
     {
-      message: "URL must be a valid SoundCloud track URL (https://soundcloud.com/username/track-name)"
+      message: "URL must be a valid SoundCloud track URL (https://soundcloud.com/username/track-name or https://on.soundcloud.com/SHAREID)"
     }
   )
 )
@@ -41,7 +42,7 @@ export function validateSoundCloudUrl(url: string): boolean {
 
 // Extract SoundCloud track URL for embedding (removes query params, fragments, but keeps share IDs for private tracks)
 export function getSoundCloudEmbedUrl(trackUrl: string): string {
-  if (!trackUrl || !trackUrl.includes('soundcloud.com')) return ''
+  if (!trackUrl || (!trackUrl.includes('soundcloud.com') && !trackUrl.includes('on.soundcloud.com'))) return ''
   
   try {
     // Parse URL and keep the path with share ID (for private tracks)

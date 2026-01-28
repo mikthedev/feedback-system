@@ -372,7 +372,7 @@ export default function CuratorPage() {
 
   // Convert SoundCloud URL to embed URL - simplified approach
   const getEmbedUrl = (url: string) => {
-    if (!url || !url.includes('soundcloud.com')) return ''
+    if (!url || (!url.includes('soundcloud.com') && !url.includes('on.soundcloud.com'))) return ''
     
     try {
       // Clean URL - remove UTM parameters but keep everything else

@@ -84,7 +84,7 @@ function SubmitPageContent() {
 
   // Convert SoundCloud URL to embed URL - simplified approach
   const getEmbedUrl = (url: string) => {
-    if (!url || !url.includes('soundcloud.com')) return ''
+    if (!url || (!url.includes('soundcloud.com') && !url.includes('on.soundcloud.com'))) return ''
     
     try {
       // Clean URL - remove UTM parameters but keep everything else
@@ -123,7 +123,8 @@ function SubmitPageContent() {
   const isValidSoundCloudUrl = (url: string): boolean => {
     if (!url) return false
     const trimmed = url.trim()
-    return /^https?:\/\/(www\.)?soundcloud\.com\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+/.test(trimmed)
+    // Accept both regular SoundCloud URLs and on.soundcloud.com share links
+    return /^https?:\/\/((www\.)?soundcloud\.com\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+|on\.soundcloud\.com\/[a-zA-Z0-9]+)/.test(trimmed)
   }
 
   // Fetch embed HTML when URL changes - use a debounced approach to prevent rapid re-fetching
@@ -283,7 +284,7 @@ function SubmitPageContent() {
                 id="soundcloud_url"
                 value={soundcloudUrl}
                 onChange={(e) => setSoundcloudUrl(e.target.value)}
-                placeholder="https://soundcloud.com/username/track-name"
+                placeholder="https://soundcloud.com/username/track-name or https://on.soundcloud.com/SHAREID"
                 required
                 className="w-full px-4 py-2.5 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200"
                 disabled={loading || (!submissionsOpen && !isEditing)}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Queue from '../components/Queue'
 
 interface User {
   id: string
@@ -147,7 +148,7 @@ export default function Dashboard() {
 
   // Convert SoundCloud URL to embed URL - simplified approach
   const getEmbedUrl = (url: string) => {
-    if (!url || !url.includes('soundcloud.com')) return ''
+    if (!url || (!url.includes('soundcloud.com') && !url.includes('on.soundcloud.com'))) return ''
     
     try {
       // Clean URL - remove UTM parameters but keep everything else
@@ -414,6 +415,9 @@ export default function Dashboard() {
             </div>
           )}
           </div>
+
+          {/* Queue Section - Collapsible Small Window */}
+          <Queue />
         </div>
       </div>
     </div>

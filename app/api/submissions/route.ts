@@ -4,7 +4,7 @@ import { validateSoundCloudUrl, normalizeSoundCloudUrl } from '@/lib/validators'
 import { sendConfirmationEmail } from '@/lib/resend'
 import { cookies } from 'next/headers'
 
-// GET - Fetch user's active submissions (excludes carryover - pending from closed sessions)
+// GET - Fetch user's active submissions (only pending from current session - excludes reviewed and carryover)
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies()
@@ -27,59 +27,31 @@ export async function GET(request: NextRequest) {
 
     const currentSessionNumber = currentSession?.session_number ?? undefined
 
-    // Fetch reviewed (any session) + pending from current open session only. Exclude carryover.
-    const queries: ReturnType<typeof supabase.from>[] = []
-
-    queries.push(
-      supabase
-        .from('submissions')
-        .select(`
-          *,
-          reviews (
-            sound_score,
-            structure_score,
-            mix_score,
-            vibe_score,
-            created_at
-          )
-        `)
-        .eq('user_id', userId)
-        .eq('status', 'reviewed')
-    )
-
-    if (currentSessionNumber != null) {
-      queries.push(
-        supabase
-          .from('submissions')
-          .select(`
-            *,
-            reviews (
-              sound_score,
-              structure_score,
-              mix_score,
-              vibe_score,
-              created_at
-            )
-          `)
-          .eq('user_id', userId)
-          .eq('status', 'pending')
-          .eq('session_number', currentSessionNumber)
-      )
+    // Only fetch pending submissions from current open session (hide reviewed submissions when new session begins)
+    if (currentSessionNumber == null) {
+      return NextResponse.json({ submissions: [] })
     }
 
-    const exec = queries.map((q) => q.order('created_at', { ascending: false }))
-    const results = await Promise.all(exec)
-    const allSubmissions: any[] = []
-    for (const result of results) {
-      if (result.error) throw result.error
-      if (result.data) allSubmissions.push(...result.data)
-    }
+    const { data: submissions, error } = await supabase
+      .from('submissions')
+      .select(`
+        *,
+        reviews (
+          sound_score,
+          structure_score,
+          mix_score,
+          vibe_score,
+          created_at
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .eq('session_number', currentSessionNumber)
+      .order('created_at', { ascending: false })
 
-    const uniqueSubmissions = Array.from(
-      new Map(allSubmissions.map((s) => [s.id, s])).values()
-    ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    if (error) throw error
 
-    return NextResponse.json({ submissions: uniqueSubmissions })
+    return NextResponse.json({ submissions: submissions || [] })
   } catch (error) {
     console.error('Error fetching submissions:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

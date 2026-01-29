@@ -195,12 +195,7 @@ function SubmitPageContent() {
       const data = await response.json()
 
       if (!response.ok) {
-        // Check if it's a duplicate link warning
-        if (data.warning && data.error) {
-          setError(data.error)
-        } else {
-          setError(data.error || `Failed to ${isEditing ? 'update' : 'submit'} demo`)
-        }
+        setError(data.error || `Failed to ${isEditing ? 'update' : 'submit'} demo`)
         setLoading(false)
         return
       }
@@ -278,11 +273,14 @@ function SubmitPageContent() {
 
           {error && (
             <div className={`mb-4 p-3 border rounded-lg animate-scale-in text-sm ${
-              error.includes('already been submitted') || error.includes('has already been submitted')
-                ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
-                : 'bg-red-500/10 border-red-500/30 text-red-400'
+              error.includes('strictly prohibited') || error.includes('may result in a ban')
+                ? 'bg-red-500/15 border-red-500/50 text-red-400'
+                : error.includes('already been submitted') || error.includes('has already been submitted')
+                  ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
+                  : 'bg-red-500/10 border-red-500/30 text-red-400'
             }`}>
-              {(error.includes('already been submitted') || error.includes('has already been submitted')) && '⚠️ '}
+              {(error.includes('strictly prohibited') || error.includes('may result in a ban')) && '⛔ '}
+              {(error.includes('already been submitted') || error.includes('has already been submitted')) && !(error.includes('strictly prohibited') || error.includes('may result in a ban')) && '⚠️ '}
               {error}
             </div>
           )}

@@ -226,6 +226,26 @@ export async function POST(request: NextRequest) {
       previousSessionWarning = true
     }
 
+    // Cross-account duplicate: same link must not be submitted by a different user
+    const { data: otherAccountSubmission } = await supabase
+      .from('submissions')
+      .select('id')
+      .eq('soundcloud_url', normalizedUrl)
+      .neq('user_id', userId)
+      .limit(1)
+      .maybeSingle()
+
+    if (otherAccountSubmission) {
+      return NextResponse.json(
+        {
+          error:
+            'This track has already been submitted by another account. Sharing the same link from multiple accounts is strictly prohibited and may result in a ban by the curator (MikeGTC on Twitch).',
+          code: 'DUPLICATE_LINK_OTHER_ACCOUNT',
+        },
+        { status: 400 }
+      )
+    }
+
     // Create submission
     const { data: submission, error: insertError } = await supabase
       .from('submissions')

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 
 function SubmitPageContent() {
   const router = useRouter()
@@ -22,6 +23,7 @@ function SubmitPageContent() {
   const [isEditing, setIsEditing] = useState(false)
   const [embedHtml, setEmbedHtml] = useState<string | null>(null)
   const [embedLoading, setEmbedLoading] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   useEffect(() => {
     fetchUser()
@@ -247,9 +249,19 @@ function SubmitPageContent() {
     <div className="min-h-screen bg-background p-3 md:p-4 animate-page-transition">
       <div className="max-w-2xl mx-auto">
         <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-6 animate-fade-in border border-gray-800/50">
-          <h1 className="text-xl md:text-2xl font-bold text-text-primary mb-4 md:mb-6">
-            {isEditing ? 'Edit Submission' : 'Submit Demo'}
-          </h1>
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <h1 className="text-xl md:text-2xl font-bold text-text-primary">
+              {isEditing ? 'Edit Submission' : 'Submit Demo'}
+            </h1>
+            {isEditing && (
+              <Link
+                href="/dashboard"
+                className="text-xs text-primary hover:text-primary-hover underline underline-offset-2 transition-colors duration-200"
+              >
+                ← Back to Dashboard
+              </Link>
+            )}
+          </div>
           
           {!submissionsOpen && (
             <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-lg">
@@ -274,32 +286,33 @@ function SubmitPageContent() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
-            <div className="mb-4">
-              <label htmlFor="soundcloud_url" className="block text-sm font-medium text-text-primary mb-2">
-                SoundCloud URL *
+          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-4">
+            {/* Primary Field: SoundCloud URL */}
+            <div>
+              <label htmlFor="soundcloud_url" className="block text-sm font-semibold text-text-primary mb-2">
+                SoundCloud URL <span className="text-primary">*</span>
               </label>
               <input
                 type="text"
                 id="soundcloud_url"
                 value={soundcloudUrl}
                 onChange={(e) => setSoundcloudUrl(e.target.value)}
-                placeholder="https://soundcloud.com/username/track-name or https://on.soundcloud.com/SHAREID"
+                placeholder="https://soundcloud.com/username/track-name"
                 required
-                className="w-full px-4 py-2.5 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200"
+                className="w-full px-4 py-3 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200 text-base"
                 disabled={loading || (!submissionsOpen && !isEditing)}
               />
-              <p className="mt-1 text-sm text-text-secondary">
+              <p className="mt-1.5 text-xs text-text-secondary">
                 Only SoundCloud track URLs are accepted
               </p>
               
               {/* SoundCloud Embed Preview */}
               {isValidSoundCloudUrl(soundcloudUrl) && (
-                <div className="mt-4 p-4 bg-background-lighter rounded-lg border border-gray-800/50">
-                  <p className="text-sm font-medium text-text-primary mb-2">Preview:</p>
+                <div className="mt-3 p-3 bg-background-lighter rounded-lg border border-gray-800/50">
+                  <p className="text-xs font-medium text-text-secondary mb-2">Preview:</p>
                   {embedLoading ? (
                     <div className="w-full h-32 flex items-center justify-center">
-                      <p className="text-sm text-text-secondary">Loading preview...</p>
+                      <p className="text-xs text-text-secondary">Loading preview...</p>
                     </div>
                   ) : embedHtml ? (
                     <div 
@@ -327,8 +340,9 @@ function SubmitPageContent() {
               )}
             </div>
 
-            <div className="mb-4">
-              <label htmlFor="description" className="block text-sm font-medium text-text-primary mb-2">
+            {/* Primary Field: Description */}
+            <div>
+              <label htmlFor="description" className="block text-sm font-semibold text-text-primary mb-2">
                 Description
               </label>
               <textarea
@@ -336,84 +350,107 @@ function SubmitPageContent() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Tell us about your track..."
-                rows={4}
-                className="w-full px-4 py-2 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary resize-none break-words transition-all duration-200"
+                rows={3}
+                className="w-full px-4 py-2.5 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary resize-none break-words transition-all duration-200"
                 disabled={loading || (!submissionsOpen && !isEditing)}
               />
-              <p className="mt-1 text-sm text-text-secondary">
-                Optional: Add a description of what you&apos;re submitting
+              <p className="mt-1.5 text-xs text-text-secondary">
+                Optional: Add context about your submission
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label htmlFor="artist_name" className="block text-sm font-medium text-text-primary mb-2">
-                  Artist Name
-                </label>
-                <input
-                  type="text"
-                  id="artist_name"
-                  value={artistName}
-                  onChange={(e) => setArtistName(e.target.value)}
-                  placeholder="Artist name"
-                  className="w-full px-4 py-2 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200"
-                  disabled={loading || (!submissionsOpen && !isEditing)}
-                />
-                <p className="mt-1 text-sm text-text-secondary">
-                  Optional: Override artist name
-                </p>
-              </div>
-              <div>
-                <label htmlFor="song_title" className="block text-sm font-medium text-text-primary mb-2">
-                  Song Title
-                </label>
-                <input
-                  type="text"
-                  id="song_title"
-                  value={songTitle}
-                  onChange={(e) => setSongTitle(e.target.value)}
-                  placeholder="Song title"
-                  className="w-full px-4 py-2 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200"
-                  disabled={loading || (!submissionsOpen && !isEditing)}
-                />
-                <p className="mt-1 text-sm text-text-secondary">
-                  Optional: Override song title
-                </p>
-              </div>
+            {/* Advanced Options Toggle */}
+            <div className="pt-2 border-t border-gray-800/50">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors duration-200 mb-3"
+              >
+                <svg
+                  className={`w-4 h-4 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+                <span>Advanced Options</span>
+              </button>
+
+              {/* Advanced Options Content */}
+              {showAdvanced && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="artist_name" className="block text-xs font-medium text-text-secondary mb-1.5">
+                        Artist Name
+                      </label>
+                      <input
+                        type="text"
+                        id="artist_name"
+                        value={artistName}
+                        onChange={(e) => setArtistName(e.target.value)}
+                        placeholder="Override artist name"
+                        className="w-full px-3 py-2 text-sm bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200"
+                        disabled={loading || (!submissionsOpen && !isEditing)}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="song_title" className="block text-xs font-medium text-text-secondary mb-1.5">
+                        Song Title
+                      </label>
+                      <input
+                        type="text"
+                        id="song_title"
+                        value={songTitle}
+                        onChange={(e) => setSongTitle(e.target.value)}
+                        placeholder="Override song title"
+                        className="w-full px-3 py-2 text-sm bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200"
+                        disabled={loading || (!submissionsOpen && !isEditing)}
+                      />
+                    </div>
+                  </div>
+
+                  {!isEditing && (
+                    <div>
+                      <label htmlFor="email" className="block text-xs font-medium text-text-secondary mb-1.5">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className="w-full px-3 py-2 text-sm bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200"
+                        disabled={loading || !submissionsOpen}
+                      />
+                      <p className="mt-1 text-xs text-text-muted">
+                        Optional: Receive confirmation email
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {!isEditing && (
-              <div className="mb-6">
-                <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-2">
-                  Email (optional)
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  className="w-full px-4 py-2 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200"
-                  disabled={loading || !submissionsOpen}
-                />
-                <p className="mt-1 text-sm text-text-secondary">
-                  Optional: Receive confirmation email. If not provided, we&apos;ll use your Twitch email.
-                </p>
-              </div>
-            )}
-
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-2">
               <button
                 type="submit"
                 disabled={loading || !soundcloudUrl.trim() || (!submissionsOpen && !isEditing)}
-                className="flex-1 bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-medium py-2.5 px-4 rounded-button transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press"
+                className="flex-1 bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-medium py-3 px-4 rounded-button transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press"
               >
                 {loading ? (isEditing ? 'Updating...' : 'Submitting...') : (isEditing ? 'Update Submission' : 'Submit Demo')}
               </button>
               <button
                 type="button"
                 onClick={() => router.push('/dashboard')}
-                className="px-4 py-2.5 border border-gray-700 text-text-primary rounded-button hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press"
+                className="px-4 py-3 border border-gray-700 text-text-primary rounded-button hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press"
               >
                 Cancel
               </button>

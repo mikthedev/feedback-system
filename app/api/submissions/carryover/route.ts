@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { cookies } from 'next/headers'
 
-// GET - Fetch queue (pending submissions in current open session only, ordered by creation time)
+// GET - Fetch carryover (all pending submissions from closed sessions, same scope as Queue)
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies()
@@ -14,17 +14,16 @@ export async function GET(request: NextRequest) {
 
     const supabase = createAdminClient()
 
-    const { data: currentSession, error: sessionError } = await supabase
+    const { data: closedSessions, error: sessionsError } = await supabase
       .from('submission_sessions')
       .select('session_number')
-      .is('ended_at', null)
-      .order('session_number', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .not('ended_at', 'is', null)
 
-    if (sessionError) throw sessionError
-    if (!currentSession) {
-      return NextResponse.json({ queue: [] })
+    if (sessionsError) throw sessionsError
+
+    const closedNumbers = (closedSessions || []).map((s) => s.session_number)
+    if (closedNumbers.length === 0) {
+      return NextResponse.json({ carryover: [] })
     }
 
     const { data: submissions, error } = await supabase
@@ -34,20 +33,21 @@ export async function GET(request: NextRequest) {
         soundcloud_url,
         song_title,
         artist_name,
+        session_number,
         created_at,
         users (
           display_name
         )
       `)
       .eq('status', 'pending')
-      .eq('session_number', currentSession.session_number)
+      .in('session_number', closedNumbers)
       .order('created_at', { ascending: true })
 
     if (error) throw error
 
-    return NextResponse.json({ queue: submissions || [] })
+    return NextResponse.json({ carryover: submissions || [] })
   } catch (error) {
-    console.error('Error fetching queue:', error)
+    console.error('Error fetching carryover:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

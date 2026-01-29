@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Queue from '../components/Queue'
+import Carryover from '../components/Carryover'
 
 interface User {
   id: string
@@ -44,12 +45,7 @@ export default function Dashboard() {
   const [bannerState, setBannerState] = useState<'visible' | 'hidden' | 'below'>('visible')
   const [lastScrollY, setLastScrollY] = useState(0)
   const [isScrollingUp, setIsScrollingUp] = useState(false)
-
-  useEffect(() => {
-    fetchUser()
-    fetchSubmissions()
-    fetchSubmissionsStatus()
-  }, [])
+  const prevSubmissionsOpenRef = useRef<boolean | null>(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -83,7 +79,13 @@ export default function Dashboard() {
       const response = await fetch('/api/settings/submissions')
       if (response.ok) {
         const data = await response.json()
-        setSubmissionsOpen(data.submissions_open)
+        const open = data.submissions_open ?? true
+        const prev = prevSubmissionsOpenRef.current
+        prevSubmissionsOpenRef.current = open
+        setSubmissionsOpen(open)
+        if (prev !== null && prev !== open) {
+          fetchSubmissions()
+        }
       }
     } catch (error) {
       console.error('Error fetching submissions status:', error)
@@ -114,7 +116,6 @@ export default function Dashboard() {
         const data = await response.json()
         setSubmissions(data.submissions || [])
         
-        // Try to fetch embed data for each submission
         const embedPromises = (data.submissions || []).map(async (submission: Submission) => {
           try {
             const embedResponse = await fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(submission.soundcloud_url)}`)
@@ -140,6 +141,32 @@ export default function Dashboard() {
       console.error('Error fetching submissions:', error)
     }
   }
+
+  useEffect(() => {
+    fetchUser()
+    fetchSubmissions()
+    fetchSubmissionsStatus()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only fetch
+  }, [])
+
+  // Poll submission status; refetch submissions when open/closed changes (e.g. curator toggles)
+  useEffect(() => {
+    const interval = setInterval(fetchSubmissionsStatus, 5000)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [])
+
+  // Refetch submissions when page becomes visible (e.g. return from submit)
+  useEffect(() => {
+    const onFocus = () => {
+      fetchSubmissions()
+      fetchSubmissionsStatus()
+    }
+    const handler = () => document.visibilityState === 'visible' && onFocus()
+    window.addEventListener('visibilitychange', handler)
+    return () => window.removeEventListener('visibilitychange', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [])
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -416,8 +443,11 @@ export default function Dashboard() {
           )}
           </div>
 
-          {/* Queue Section - Collapsible Small Window */}
-          <Queue />
+          {/* Queue and Carryover - side by side, symmetrically centered under Your Submissions */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch max-w-2xl mx-auto">
+            <Queue />
+            <Carryover />
+          </div>
         </div>
       </div>
     </div>

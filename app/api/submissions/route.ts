@@ -100,10 +100,76 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if this is the first session (session_number = 1)
-    const isFirstSession = currentSessionNumber === 1
+    // HARD SUBMISSION LIMIT: Check user's submissions in current session
+    const { data: userSubmissionsInSession, error: submissionsError } = await supabase
+      .from('submissions')
+      .select('id, created_at')
+      .eq('user_id', userId)
+      .eq('session_number', currentSessionNumber)
+      .order('created_at', { ascending: false })
 
-    // Check if this URL was already submitted in the current session
+    if (submissionsError) {
+      console.error('Error checking user submissions:', submissionsError)
+      return NextResponse.json(
+        { error: 'Error checking submission limit. Please try again.' },
+        { status: 500 }
+      )
+    }
+
+    const submissionCount = userSubmissionsInSession?.length || 0
+
+    // If user has already submitted 1 or more tracks in this session
+    if (submissionCount >= 1) {
+      // Get the current session info to check if it's still open
+      const { data: currentSession, error: sessionInfoError } = await supabase
+        .from('submission_sessions')
+        .select('ended_at')
+        .eq('session_number', currentSessionNumber)
+        .single()
+
+      if (sessionInfoError) {
+        console.error('Error checking session status:', sessionInfoError)
+        return NextResponse.json(
+          { error: 'Error checking session status. Please try again.' },
+          { status: 500 }
+        )
+      }
+
+      // Check if session is still open
+      const isSessionOpen = currentSession?.ended_at === null
+
+      if (!isSessionOpen) {
+        // Session is closed - block second submission
+        return NextResponse.json(
+          { 
+            error: 'You have already submitted 1 track in this session. A second submission is only allowed while the session is still open. This session has been closed.',
+            warning: false
+          },
+          { status: 400 }
+        )
+      }
+
+      // Session is open - check if 60 minutes have passed since last submission
+      const lastSubmission = userSubmissionsInSession[0]
+      const lastSubmissionTime = new Date(lastSubmission.created_at).getTime()
+      const now = Date.now()
+      const minutesSinceLastSubmission = (now - lastSubmissionTime) / (1000 * 60)
+
+      if (minutesSinceLastSubmission < 60) {
+        // Less than 60 minutes have passed - block second submission
+        const minutesRemaining = Math.ceil(60 - minutesSinceLastSubmission)
+        return NextResponse.json(
+          { 
+            error: `You have already submitted 1 track in this session. A second submission is allowed only after 60 minutes have passed since your last submission. Please wait ${minutesRemaining} more minute${minutesRemaining !== 1 ? 's' : ''}.`,
+            warning: false
+          },
+          { status: 400 }
+        )
+      }
+      // If 60+ minutes have passed and session is open, allow the second submission
+    }
+
+    // Check if this URL was already submitted in the current session (for duplicate URL check)
     const { data: currentSessionSubmission } = await supabase
       .from('submissions')
       .select('id, created_at')
@@ -115,51 +181,30 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (currentSessionSubmission) {
-      // Special handling for first session: allow resubmission after 1 hour
-      if (isFirstSession) {
-        const submissionTime = new Date(currentSessionSubmission.created_at).getTime()
-        const now = Date.now()
-        const hoursSinceSubmission = (now - submissionTime) / (1000 * 60 * 60)
-
-        if (hoursSinceSubmission < 1) {
-          const minutesRemaining = Math.ceil((1 - hoursSinceSubmission) * 60)
-          return NextResponse.json(
-            { 
-              error: `This track was already submitted in this session. During the first session, you can only resubmit a track after 1 hour. Please wait ${minutesRemaining} more minute${minutesRemaining !== 1 ? 's' : ''}.`,
-              warning: false
-            },
-            { status: 400 }
-          )
-        }
-        // If 1 hour has passed, allow the resubmission in session 1
-      } else {
-        // For non-first sessions, block duplicate submissions in the same session
-        return NextResponse.json(
-          { 
-            error: 'This track has already been submitted in this session. Each track can only be submitted once per session.',
-            warning: false
-          },
-          { status: 400 }
-        )
-      }
+      // Block duplicate URL submissions in the same session
+      return NextResponse.json(
+        { 
+          error: 'This track has already been submitted in this session. Each track can only be submitted once per session.',
+          warning: false
+        },
+        { status: 400 }
+      )
     }
 
     // Check if this URL was submitted in a previous session (for warning)
     let previousSessionWarning = false
-    if (!isFirstSession) {
-      const { data: previousSessionSubmission } = await supabase
-        .from('submissions')
-        .select('id, created_at, session_number')
-        .eq('user_id', userId)
-        .eq('soundcloud_url', normalizedUrl)
-        .neq('session_number', currentSessionNumber)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
+    const { data: previousSessionSubmission } = await supabase
+      .from('submissions')
+      .select('id, created_at, session_number')
+      .eq('user_id', userId)
+      .eq('soundcloud_url', normalizedUrl)
+      .neq('session_number', currentSessionNumber)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
 
-      if (previousSessionSubmission) {
-        previousSessionWarning = true
-      }
+    if (previousSessionSubmission) {
+      previousSessionWarning = true
     }
 
     // Create submission

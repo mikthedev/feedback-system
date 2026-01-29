@@ -25,14 +25,6 @@ function SubmitPageContent() {
   const [embedLoading, setEmbedLoading] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
 
-  useEffect(() => {
-    fetchUser()
-    fetchSubmissionsStatus()
-    if (submissionId) {
-      fetchSubmissionForEdit(submissionId)
-    }
-  }, [submissionId])
-
   const fetchSubmissionsStatus = async () => {
     try {
       const response = await fetch('/api/settings/submissions', { credentials: 'include' })
@@ -83,6 +75,15 @@ function SubmitPageContent() {
       router.push('/dashboard')
     }
   }
+
+  useEffect(() => {
+    fetchUser()
+    fetchSubmissionsStatus()
+    if (submissionId) {
+      fetchSubmissionForEdit(submissionId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + submissionId
+  }, [submissionId])
 
   // Convert SoundCloud URL to embed URL - simplified approach
   const getEmbedUrl = (url: string) => {

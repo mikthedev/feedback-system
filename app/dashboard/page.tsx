@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Queue from '../components/Queue'
+import Carryover from '../components/Carryover'
 
 interface User {
   id: string
@@ -38,18 +39,17 @@ export default function Dashboard() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [reviewedSubmissions, setReviewedSubmissions] = useState<Submission[]>([])
+  const [showReviewed, setShowReviewed] = useState(false)
+  const [loadingReviewed, setLoadingReviewed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [embedData, setEmbedData] = useState<Record<string, EmbedData>>({})
+  const [reviewedEmbedData, setReviewedEmbedData] = useState<Record<string, EmbedData>>({})
   const [submissionsOpen, setSubmissionsOpen] = useState(true)
   const [bannerState, setBannerState] = useState<'visible' | 'hidden' | 'below'>('visible')
   const [lastScrollY, setLastScrollY] = useState(0)
   const [isScrollingUp, setIsScrollingUp] = useState(false)
-
-  useEffect(() => {
-    fetchUser()
-    fetchSubmissions()
-    fetchSubmissionsStatus()
-  }, [])
+  const prevSubmissionsOpenRef = useRef<boolean | null>(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -83,7 +83,13 @@ export default function Dashboard() {
       const response = await fetch('/api/settings/submissions')
       if (response.ok) {
         const data = await response.json()
-        setSubmissionsOpen(data.submissions_open)
+        const open = data.submissions_open ?? true
+        const prev = prevSubmissionsOpenRef.current
+        prevSubmissionsOpenRef.current = open
+        setSubmissionsOpen(open)
+        if (prev !== null && prev !== open) {
+          fetchSubmissions()
+        }
       }
     } catch (error) {
       console.error('Error fetching submissions status:', error)
@@ -114,7 +120,6 @@ export default function Dashboard() {
         const data = await response.json()
         setSubmissions(data.submissions || [])
         
-        // Try to fetch embed data for each submission
         const embedPromises = (data.submissions || []).map(async (submission: Submission) => {
           try {
             const embedResponse = await fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(submission.soundcloud_url)}`)
@@ -140,6 +145,75 @@ export default function Dashboard() {
       console.error('Error fetching submissions:', error)
     }
   }
+
+  const fetchReviewedSubmissions = async () => {
+    if (reviewedSubmissions.length > 0 && Object.keys(reviewedEmbedData).length > 0) {
+      // Already loaded, just toggle visibility
+      setShowReviewed(!showReviewed)
+      return
+    }
+
+    setLoadingReviewed(true)
+    try {
+      const response = await fetch('/api/submissions/reviewed')
+      if (response.ok) {
+        const data = await response.json()
+        setReviewedSubmissions(data.submissions || [])
+        
+        const embedPromises = (data.submissions || []).map(async (submission: Submission) => {
+          try {
+            const embedResponse = await fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(submission.soundcloud_url)}`)
+            if (embedResponse.ok) {
+              const embedResult = await embedResponse.json()
+              return { id: submission.id, data: { html: embedResult.html } }
+            } else {
+              return { id: submission.id, data: { error: 'Failed to load embed' } }
+            }
+          } catch (error) {
+            return { id: submission.id, data: { error: 'Failed to load embed' } }
+          }
+        })
+        
+        const embedResults = await Promise.all(embedPromises)
+        const embedMap: Record<string, EmbedData> = {}
+        embedResults.forEach(({ id, data }) => {
+          embedMap[id] = data
+        })
+        setReviewedEmbedData(embedMap)
+        setShowReviewed(true)
+      }
+    } catch (error) {
+      console.error('Error fetching reviewed submissions:', error)
+    } finally {
+      setLoadingReviewed(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchUser()
+    fetchSubmissions()
+    fetchSubmissionsStatus()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only fetch
+  }, [])
+
+  // Poll submission status; refetch submissions when open/closed changes (e.g. curator toggles)
+  useEffect(() => {
+    const interval = setInterval(fetchSubmissionsStatus, 5000)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [])
+
+  // Refetch submissions when page becomes visible (e.g. return from submit)
+  useEffect(() => {
+    const onFocus = () => {
+      fetchSubmissions()
+      fetchSubmissionsStatus()
+    }
+    const handler = () => document.visibilityState === 'visible' && onFocus()
+    window.addEventListener('visibilitychange', handler)
+    return () => window.removeEventListener('visibilitychange', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [])
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -279,7 +353,16 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-gray-800/50">
-            <h2 className="text-base md:text-lg font-bold text-text-primary mb-3">Your Submissions</h2>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-base md:text-lg font-bold text-text-primary">Your Submissions</h2>
+              <button
+                onClick={fetchReviewedSubmissions}
+                disabled={loadingReviewed}
+                className="text-xs md:text-sm text-primary hover:text-primary-hover font-medium transition-colors duration-200 underline underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingReviewed ? 'Loading...' : showReviewed ? 'Hide Previous Results' : 'View Previous Results'}
+              </button>
+            </div>
           {submissions.length === 0 ? (
             <p className="text-text-secondary">No submissions yet. Submit your first demo!</p>
           ) : (
@@ -287,11 +370,7 @@ export default function Dashboard() {
               {submissions.map((submission, index) => (
                 <div
                   key={submission.id}
-                  className={`border rounded-xl p-3 md:p-4 hover:shadow-lg transition-all duration-200 animate-slide-in ${
-                    submission.status === 'reviewed'
-                      ? 'bg-background-lighter border-primary/30'
-                      : 'bg-background-lighter border-yellow-500/30'
-                  }`}
+                  className="border rounded-xl p-3 md:p-4 hover:shadow-lg transition-all duration-200 animate-slide-in bg-background-lighter border-yellow-500/30"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex justify-between items-start mb-2 md:mb-3 gap-3">
@@ -325,23 +404,15 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 md:gap-2 flex-shrink-0">
-                      <span
-                        className={`px-3 py-1.5 rounded-button text-xs md:text-sm font-bold whitespace-nowrap transition-all duration-200 shadow-md ${
-                          submission.status === 'reviewed'
-                            ? 'bg-primary text-background'
-                            : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                        }`}
-                      >
-                        {submission.status === 'reviewed' ? '✓ Reviewed' : '⏳ Pending'}
+                      <span className="px-3 py-1.5 rounded-button text-xs md:text-sm font-bold whitespace-nowrap transition-all duration-200 shadow-md bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                        ⏳ Pending
                       </span>
-                      {submission.status === 'pending' && (
-                        <Link
-                          href={`/submit?edit=${submission.id}`}
-                          className="text-xs text-primary hover:text-primary-hover font-medium whitespace-nowrap transition-colors duration-200 underline underline-offset-2"
-                        >
-                          Edit
-                        </Link>
-                      )}
+                      <Link
+                        href={`/submit?edit=${submission.id}`}
+                        className="text-xs text-primary hover:text-primary-hover font-medium whitespace-nowrap transition-colors duration-200 underline underline-offset-2"
+                      >
+                        Edit
+                      </Link>
                     </div>
                   </div>
                   
@@ -390,34 +461,142 @@ export default function Dashboard() {
                       ></iframe>
                     )}
                   </div>
-                  {submission.reviews && submission.reviews.length > 0 && (
-                    <div className="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-gray-800/50">
-                      <h3 className="text-xs md:text-sm font-semibold text-text-primary mb-1.5 md:mb-2">Review Scores:</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-                        {[
-                          { label: 'Sound', score: submission.reviews[0].sound_score, bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-400' },
-                          { label: 'Structure', score: submission.reviews[0].structure_score, bg: 'bg-purple-500/20', border: 'border-purple-500/30', text: 'text-purple-400' },
-                          { label: 'Mix', score: submission.reviews[0].mix_score, bg: 'bg-pink-500/20', border: 'border-pink-500/30', text: 'text-pink-400' },
-                          { label: 'Vibe', score: submission.reviews[0].vibe_score, bg: 'bg-orange-500/20', border: 'border-orange-500/30', text: 'text-orange-400' },
-                        ].map(({ label, score, bg, border, text }) => (
-                          <div key={label} className={`${bg} border ${border} rounded-lg p-2 md:p-2.5 shadow-md`}>
-                            <p className={`text-xs ${text} mb-0.5 md:mb-1 font-medium`}>{label}</p>
-                            <p className={`text-sm md:text-base font-bold ${text}`}>
-                              {score}/10
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
           )}
           </div>
 
-          {/* Queue Section - Collapsible Small Window */}
-          <Queue />
+          {/* Previous Reviewed Submissions Section */}
+          {showReviewed && reviewedSubmissions.length > 0 && (
+            <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-gray-800/50 mt-4">
+              <h2 className="text-base md:text-lg font-bold text-text-primary mb-3">Previous Submission Results</h2>
+              <div className="space-y-3">
+                {reviewedSubmissions.map((submission, index) => (
+                  <div
+                    key={submission.id}
+                    className="border rounded-xl p-3 md:p-4 hover:shadow-lg transition-all duration-200 animate-slide-in bg-background-lighter border-primary/30"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="flex justify-between items-start mb-2 md:mb-3 gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="mb-1.5 md:mb-2">
+                          {submission.song_title && (
+                            <h3 className="text-sm md:text-base font-semibold text-text-primary break-words">
+                              {submission.song_title}
+                            </h3>
+                          )}
+                          {submission.artist_name && (
+                            <p className="text-xs md:text-sm text-text-secondary break-words mt-0.5">
+                              by {submission.artist_name}
+                            </p>
+                          )}
+                        </div>
+                        {submission.description && (
+                          <p className="text-xs md:text-sm text-text-secondary mb-1.5 md:mb-2 break-words whitespace-pre-wrap line-clamp-2">
+                            {submission.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <p className="text-xs text-text-muted">
+                            {new Date(submission.created_at).toLocaleDateString()}
+                          </p>
+                          {submission.session_number && (
+                            <span className="text-xs text-text-muted">
+                              • Session #{submission.session_number}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5 md:gap-2 flex-shrink-0">
+                        <span className="px-3 py-1.5 rounded-button text-xs md:text-sm font-bold whitespace-nowrap transition-all duration-200 shadow-md bg-primary text-background">
+                          ✓ Reviewed
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* SoundCloud Embed */}
+                    <div className="mt-4">
+                      {reviewedEmbedData[submission.id]?.html ? (
+                        <div 
+                          className="soundcloud-embed w-full"
+                          style={{ maxWidth: '100%', overflow: 'hidden' }}
+                          dangerouslySetInnerHTML={{ __html: reviewedEmbedData[submission.id].html || '' }}
+                        />
+                      ) : reviewedEmbedData[submission.id]?.error ? (
+                        <div className="p-4 bg-background-lighter rounded-lg border border-gray-800/50">
+                          <p className="text-sm text-text-secondary mb-2">
+                            Unable to embed this track. 
+                            <a 
+                              href={submission.soundcloud_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-primary hover:text-primary-hover underline underline-offset-2 ml-1 transition-colors duration-200"
+                            >
+                              Open in SoundCloud
+                            </a>
+                          </p>
+                          <iframe
+                            width="100%"
+                            height="166"
+                            scrolling="no"
+                            frameBorder="no"
+                            allow="autoplay"
+                            src={getEmbedUrl(submission.soundcloud_url)}
+                            className="rounded"
+                            title="SoundCloud Player"
+                          ></iframe>
+                        </div>
+                      ) : (
+                        <iframe
+                          width="100%"
+                          height="166"
+                          scrolling="no"
+                          frameBorder="no"
+                          allow="autoplay"
+                          src={getEmbedUrl(submission.soundcloud_url)}
+                          className="rounded"
+                          title="SoundCloud Player"
+                        ></iframe>
+                      )}
+                    </div>
+                    {submission.reviews && submission.reviews.length > 0 && (
+                      <div className="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-gray-800/50">
+                        <h3 className="text-xs md:text-sm font-semibold text-text-primary mb-1.5 md:mb-2">Review Scores:</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+                          {[
+                            { label: 'Sound', score: submission.reviews[0].sound_score, bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-400' },
+                            { label: 'Structure', score: submission.reviews[0].structure_score, bg: 'bg-purple-500/20', border: 'border-purple-500/30', text: 'text-purple-400' },
+                            { label: 'Mix', score: submission.reviews[0].mix_score, bg: 'bg-pink-500/20', border: 'border-pink-500/30', text: 'text-pink-400' },
+                            { label: 'Vibe', score: submission.reviews[0].vibe_score, bg: 'bg-orange-500/20', border: 'border-orange-500/30', text: 'text-orange-400' },
+                          ].map(({ label, score, bg, border, text }) => (
+                            <div key={label} className={`${bg} border ${border} rounded-lg p-2 md:p-2.5 shadow-md`}>
+                              <p className={`text-xs ${text} mb-0.5 md:mb-1 font-medium`}>{label}</p>
+                              <p className={`text-sm md:text-base font-bold ${text}`}>
+                                {score}/10
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {showReviewed && reviewedSubmissions.length === 0 && !loadingReviewed && (
+            <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-gray-800/50 mt-4">
+              <h2 className="text-base md:text-lg font-bold text-text-primary mb-3">Previous Submission Results</h2>
+              <p className="text-text-secondary">No reviewed submissions found.</p>
+            </div>
+          )}
+
+          {/* Queue and Carryover - side by side, symmetrically centered under Your Submissions */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch max-w-2xl mx-auto">
+            <Queue />
+            <Carryover />
+          </div>
         </div>
       </div>
     </div>

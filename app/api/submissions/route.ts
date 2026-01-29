@@ -4,7 +4,7 @@ import { validateSoundCloudUrl, normalizeSoundCloudUrl } from '@/lib/validators'
 import { sendConfirmationEmail } from '@/lib/resend'
 import { cookies } from 'next/headers'
 
-// GET - Fetch user's submissions
+// GET - Fetch user's active submissions (only pending from current session - excludes reviewed and carryover)
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies()
@@ -15,6 +15,23 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = createAdminClient()
+
+    // Get current open session number (if any)
+    const { data: currentSession } = await supabase
+      .from('submission_sessions')
+      .select('session_number')
+      .is('ended_at', null)
+      .order('session_number', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const currentSessionNumber = currentSession?.session_number ?? undefined
+
+    // Only fetch pending submissions from current open session (hide reviewed submissions when new session begins)
+    if (currentSessionNumber == null) {
+      return NextResponse.json({ submissions: [] })
+    }
+
     const { data: submissions, error } = await supabase
       .from('submissions')
       .select(`
@@ -28,11 +45,13 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('user_id', userId)
+      .eq('status', 'pending')
+      .eq('session_number', currentSessionNumber)
       .order('created_at', { ascending: false })
 
     if (error) throw error
 
-    return NextResponse.json({ submissions })
+    return NextResponse.json({ submissions: submissions || [] })
   } catch (error) {
     console.error('Error fetching submissions:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

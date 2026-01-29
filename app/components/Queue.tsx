@@ -34,24 +34,14 @@ export default function Queue() {
       if (response.ok) {
         const data = await response.json()
         const newQueue = data.queue || []
-        
-        // Detect new items for animation
         const currentIds = new Set(newQueue.map((item: QueueItem) => item.id))
-        const previousIds = previousQueueIdsRef.current
-        const newIds = Array.from(currentIds).filter(id => !previousIds.has(id))
-        
-        setQueue(newQueue)
         previousQueueIdsRef.current = currentIds
-        
-        if (!silent) {
-          setLoading(false)
-        }
+        setQueue(newQueue)
       }
     } catch (error) {
       console.error('Error fetching queue:', error)
-      if (!silent) {
-        setLoading(false)
-      }
+    } finally {
+      if (!silent) setLoading(false)
     }
   }
 
@@ -141,7 +131,7 @@ export default function Queue() {
   }
 
   return (
-    <div className="bg-background-light rounded-lg shadow-md p-3 animate-fade-in border border-gray-800/50 max-w-md">
+    <div className="bg-background-light rounded-lg shadow-md p-3 animate-fade-in border border-gray-800/50 max-w-md w-full">
       {/* Header with Toggle */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
@@ -199,6 +189,7 @@ export default function Queue() {
 
                   {/* Artwork */}
                   {item.artwork ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={item.artwork}
                       alt={item.displayTitle}

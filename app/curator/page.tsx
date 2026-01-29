@@ -126,13 +126,6 @@ export default function CuratorPage() {
   const [sessionsToDelete, setSessionsToDelete] = useState<number[]>([])
   const [showSettings, setShowSettings] = useState(false)
 
-  useEffect(() => {
-    fetchUser()
-    fetchPendingSubmissions()
-    fetchSubmissionsStatus()
-    fetchSessions()
-  }, [])
-
   const fetchSubmissionsStatus = async () => {
     try {
       const response = await fetch('/api/settings/submissions', { credentials: 'include' })
@@ -241,7 +234,6 @@ export default function CuratorPage() {
         const data = await response.json()
         setSubmissions(data.submissions || [])
         
-        // Fetch artwork for each submission
         const artworkPromises = (data.submissions || []).map(async (submission: Submission) => {
           try {
             const embedResponse = await fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(submission.soundcloud_url)}`)
@@ -266,6 +258,14 @@ export default function CuratorPage() {
       console.error('Error fetching submissions:', error)
     }
   }
+
+  useEffect(() => {
+    fetchUser()
+    fetchPendingSubmissions()
+    fetchSubmissionsStatus()
+    fetchSessions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only fetch
+  }, [])
 
   const handleScoreChange = (field: string, value: string) => {
     const numValue = parseFloat(value)
@@ -565,6 +565,7 @@ export default function CuratorPage() {
                   >
                     <div className="flex gap-2 w-full min-w-0">
                       {submissionArtworks[submission.id] && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img
                           src={submissionArtworks[submission.id] || ''}
                           alt={submission.song_title || 'Track artwork'}

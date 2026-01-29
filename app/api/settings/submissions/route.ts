@@ -76,11 +76,54 @@ export async function POST(request: NextRequest) {
     }
 
     if (submissions_open && !currentlyOpen) {
-      const { error: sessionError } = await supabase.rpc('get_or_create_current_session')
-      if (sessionError) console.error('Error creating session:', sessionError)
+      const { data: newSessionNumber, error: sessionError } = await supabase.rpc('get_or_create_current_session')
+      if (sessionError) {
+        console.error('Error creating session:', sessionError)
+      } else if (newSessionNumber != null) {
+        const { data: closedSessions } = await supabase
+          .from('submission_sessions')
+          .select('session_number')
+          .not('ended_at', 'is', null)
+        const closedNumbers = (closedSessions || []).map((s: { session_number: number }) => s.session_number)
+        if (closedNumbers.length > 0) {
+          const { data: carryoverRows } = await supabase
+            .from('submissions')
+            .select('id, user_id, soundcloud_url, created_at')
+            .eq('status', 'pending')
+            .in('session_number', closedNumbers)
+            .order('created_at', { ascending: true })
+          const seen = new Map<string, string>()
+          for (const row of carryoverRows || []) {
+            const key = `${row.user_id}:${row.soundcloud_url}`
+            if (!seen.has(key)) seen.set(key, row.id)
+          }
+          const idsToMove = Array.from(seen.values())
+          if (idsToMove.length > 0) {
+            await supabase
+              .from('submissions')
+              .update({ session_number: newSessionNumber })
+              .in('id', idsToMove)
+          }
+        }
+      }
     } else if (!submissions_open && currentlyOpen) {
-      const { error: closeError } = await supabase.rpc('close_current_session')
-      if (closeError) console.error('Error closing session:', closeError)
+      const { data: openRow } = await supabase
+        .from('submission_sessions')
+        .select('id')
+        .is('ended_at', null)
+        .order('session_number', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (openRow) {
+        const { error: updateErr } = await supabase
+          .from('submission_sessions')
+          .update({ ended_at: new Date().toISOString() })
+          .eq('id', openRow.id)
+        if (updateErr) {
+          const { error: rpcErr } = await supabase.rpc('close_current_session')
+          if (rpcErr) console.error('Close session failed (direct update and RPC):', updateErr, rpcErr)
+        }
+      }
     }
 
     return NextResponse.json({

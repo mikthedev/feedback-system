@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { addXp } from '@/lib/xp'
+import { addXp, logXp } from '@/lib/xp'
 import { FOLLOW_XP } from '@/lib/xp'
 import { isMikegtcoffLive, userFollowsMikegtcoff } from '@/lib/twitch'
 import { cookies } from 'next/headers'
@@ -60,6 +60,7 @@ export async function GET(_request: NextRequest) {
             following_mikegtcoff = await userFollowsMikegtcoff(twitchId, t.access_token)
             if (following_mikegtcoff && !u?.follow_bonus_granted) {
               await addXp(supabase, userId, FOLLOW_XP)
+              await logXp(supabase, userId, FOLLOW_XP, 'follow', 'Follow MikeGTC +10 XP')
               await supabase
                 .from('users')
                 .update({ follow_bonus_granted: true })

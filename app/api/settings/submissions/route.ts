@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { addXp } from '@/lib/xp'
+import { addXp, logXp } from '@/lib/xp'
 import { CARRYOVER_XP } from '@/lib/xp'
 import { cookies } from 'next/headers'
 
@@ -128,6 +128,7 @@ export async function POST(request: NextRequest) {
           if (!r.carryover_bonus_granted) {
             try {
               await addXp(supabase, r.user_id, CARRYOVER_XP)
+              await logXp(supabase, r.user_id, CARRYOVER_XP, 'carryover', 'Track moved to carryover +25 XP')
             } catch (e) {
               console.error('Carryover XP grant error:', e)
             }

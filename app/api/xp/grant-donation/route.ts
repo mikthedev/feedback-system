@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { addXp } from '@/lib/xp'
+import { addXp, logXp } from '@/lib/xp'
 import { SUB_OR_DONATION_XP } from '@/lib/xp'
 import { cookies } from 'next/headers'
 
@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     await addXp(supabase, userId, SUB_OR_DONATION_XP)
+    await logXp(supabase, userId, SUB_OR_DONATION_XP, 'donation', 'Donation +20 XP (this session)')
     const prevExternal = Math.max(0, Math.floor(Number(u?.external_xp_this_session ?? 0)))
     await supabase.from('user_session_xp').upsert(
       {

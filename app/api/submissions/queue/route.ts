@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { addXp } from '@/lib/xp'
+import { addXp, logXp } from '@/lib/xp'
 import {
   TIME_XP_PER_TICK,
   TIME_TICK_MINUTES,
@@ -96,6 +96,7 @@ export async function GET(_request: NextRequest) {
           const xp = ticks * TIME_XP_PER_TICK
           try {
             await addXp(supabase, r.user_id, xp)
+            await logXp(supabase, r.user_id, xp, 'time', `Time XP +${xp} (${ticks}×${TIME_XP_PER_TICK} per ${TIME_TICK_MINUTES} min)`)
           } catch (e) {
             console.error('Time-based XP grant error:', e)
           }
@@ -142,6 +143,7 @@ export async function GET(_request: NextRequest) {
               const subbed = await userSubscribedToMikegtcoff(twitchId, t.access_token)
               if (subbed) {
                 await addXp(supabase, userId, SUB_OR_DONATION_XP)
+                await logXp(supabase, userId, SUB_OR_DONATION_XP, 'sub', 'Sub +20 XP (this session)')
                 const prevExternal = Math.max(0, Math.floor(Number(usxRow?.external_xp_this_session ?? 0)))
                 await supabase.from('user_session_xp').upsert(
                   {

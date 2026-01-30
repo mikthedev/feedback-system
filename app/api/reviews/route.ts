@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { reviewSchema } from '@/lib/validators'
-import { addXp, curatorAverage, curatorXpFromAverage } from '@/lib/xp'
+import { addXp, logXp, curatorAverage, curatorXpFromAverage } from '@/lib/xp'
 import { cookies } from 'next/headers'
 
 // POST - Create review (curator only)
@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
       if (xpAmount > 0) {
         try {
           await addXp(supabase, submission.user_id, xpAmount)
+          await logXp(supabase, submission.user_id, xpAmount, 'curator_review', `Review avg ${avg.toFixed(1)} → +${xpAmount} XP`)
         } catch (e) {
           console.error('Curator XP grant error:', e)
         }

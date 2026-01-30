@@ -2,6 +2,8 @@
 
 import { useState, useEffect, memo } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import XpHelpModal from '../components/XpHelpModal'
 
 // Memoized embed component to prevent re-renders when scores change
 const SoundCloudEmbed = memo(({ 
@@ -134,6 +136,7 @@ export default function CuratorPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [sessionsToDelete, setSessionsToDelete] = useState<number[]>([])
   const [showSettings, setShowSettings] = useState(false)
+  const [showXpHelpModal, setShowXpHelpModal] = useState(false)
 
   const fetchSubmissionsStatus = async () => {
     try {
@@ -273,6 +276,20 @@ export default function CuratorPage() {
     fetchPendingSubmissions()
     fetchSubmissionsStatus()
     fetchSessions()
+  }, [])
+
+  useEffect(() => {
+    const check = () => {
+      if (typeof window === 'undefined') return
+      if (window.location.hash === '#show-xp-help') {
+        setShowXpHelpModal(true)
+        const base = window.location.pathname + window.location.search
+        window.history.replaceState(null, '', base)
+      }
+    }
+    check()
+    window.addEventListener('hashchange', check)
+    return () => window.removeEventListener('hashchange', check)
   }, [])
 
   useEffect(() => {
@@ -784,7 +801,28 @@ export default function CuratorPage() {
             )}
           </div>
         </div>
+
+        {/* Curator footer strip — aligned with dashboard footer style */}
+        <div className="max-w-2xl mx-auto mt-6 pt-4 border-t border-gray-800/50">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted">
+            <button
+              type="button"
+              onClick={() => setShowXpHelpModal(true)}
+              className="text-primary hover:text-primary-hover underline underline-offset-2 font-medium"
+            >
+              How XP works
+            </button>
+            <Link
+              href="/dashboard"
+              className="text-text-secondary hover:text-primary underline underline-offset-2 font-medium"
+            >
+              Dashboard
+            </Link>
+          </div>
+        </div>
       </div>
+
+      <XpHelpModal isOpen={showXpHelpModal} onClose={() => setShowXpHelpModal(false)} />
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

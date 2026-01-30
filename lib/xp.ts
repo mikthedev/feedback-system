@@ -60,6 +60,23 @@ export async function addXp(
   return next
 }
 
+/** Log an XP event for the user's history (does not grant XP). */
+export async function logXp(
+  supabase: SupabaseClient,
+  userId: string,
+  amount: number,
+  source: string,
+  description?: string
+): Promise<void> {
+  if (amount === 0) return
+  await supabase.from('xp_log').insert({
+    user_id: userId,
+    amount,
+    source,
+    description: description ?? null,
+  })
+}
+
 /** Get current user XP (or 0). */
 export async function getXp(supabase: SupabaseClient, userId: string): Promise<number> {
   const { data, error } = await supabase.from('users').select('xp').eq('id', userId).single()

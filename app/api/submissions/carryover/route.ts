@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
       .from('submissions')
       .select(`
         id,
+        user_id,
         soundcloud_url,
         song_title,
         artist_name,
@@ -45,7 +46,10 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error
 
-    return NextResponse.json({ carryover: submissions || [] })
+    const list = submissions || []
+    const myCarryoverCount = userId ? list.filter((s: { user_id?: string }) => s.user_id === userId).length : 0
+
+    return NextResponse.json({ carryover: list, my_carryover_count: myCarryoverCount })
   } catch (error) {
     console.error('Error fetching carryover:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

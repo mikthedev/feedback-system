@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logXp } from '@/lib/xp'
 import { cookies } from 'next/headers'
 
 /**
@@ -56,6 +57,10 @@ export async function POST(request: NextRequest) {
       .eq('id', userId)
 
     if (updateError) throw updateError
+
+    if (delta !== 0) {
+      await logXp(supabase, userId, delta, 'adjust', delta > 0 ? `Tester +${delta} XP` : `Tester ${delta} XP`)
+    }
 
     return NextResponse.json({ xp: next, delta })
   } catch (error) {

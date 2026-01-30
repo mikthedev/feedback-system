@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Queue from '../components/Queue'
 import Carryover from '../components/Carryover'
+import XpHelpModal, { getXpHelpDismissed } from '../components/XpHelpModal'
 
 interface User {
   id: string
   display_name: string
   role: string
+  xp?: number
 }
 
 interface Submission {
@@ -50,6 +52,16 @@ export default function Dashboard() {
   const [lastScrollY, setLastScrollY] = useState(0)
   const [isScrollingUp, setIsScrollingUp] = useState(false)
   const prevSubmissionsOpenRef = useRef<boolean | null>(null)
+  const [showXpHelpModal, setShowXpHelpModal] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const hasAutoShownXpHelpRef = useRef(false)
+  const [xpAdjustValue, setXpAdjustValue] = useState('')
+  const [xpAdjusting, setXpAdjusting] = useState(false)
+  const [xp, setXp] = useState<number>(0)
+  const [xpStatus, setXpStatus] = useState<{
+    time_xp_active: boolean
+    following_mikegtcoff: boolean | null
+  } | null>(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -105,11 +117,47 @@ export default function Dashboard() {
       }
       const data = await response.json()
       setUser(data.user)
+      const u = data.user as { xp?: unknown }
+      if (typeof u?.xp === 'number') setXp(u.xp)
+      else if (typeof u?.xp === 'string') {
+        const n = parseInt(u.xp, 10)
+        if (!Number.isNaN(n)) setXp(Math.max(0, n))
+      }
     } catch (error) {
       console.error('Error fetching user:', error)
       router.push('/')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchXp = async () => {
+    try {
+      const res = await fetch('/api/xp')
+      if (!res.ok) return
+      const data = await res.json()
+      const v = data.xp
+      if (typeof v === 'number' && !Number.isNaN(v)) setXp(Math.max(0, Math.floor(v)))
+      else if (typeof v === 'string') {
+        const n = parseInt(v, 10)
+        if (!Number.isNaN(n)) setXp(Math.max(0, n))
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const fetchXpStatus = async () => {
+    try {
+      const res = await fetch('/api/xp/status')
+      if (!res.ok) return
+      const data = await res.json()
+      setXpStatus({
+        time_xp_active: !!data.time_xp_active,
+        following_mikegtcoff: typeof data.following_mikegtcoff === 'boolean' ? data.following_mikegtcoff : null,
+      })
+    } catch {
+      /* ignore */
     }
   }
 
@@ -241,6 +289,8 @@ export default function Dashboard() {
     fetchSubmissions()
     fetchSubmissionsStatus()
     fetchReviewedList()
+    fetchXp()
+    fetchXpStatus()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only fetch
   }, [])
 
@@ -251,12 +301,21 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
   }, [])
 
-  // Refetch submissions and reviewed list when page becomes visible (e.g. return from submit)
+  // Poll XP status (follow, time XP) every 30s
+  useEffect(() => {
+    const interval = setInterval(fetchXpStatus, 30_000)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [])
+
+  // Refetch submissions, reviewed list, and XP when page becomes visible (e.g. return from submit)
   useEffect(() => {
     const onFocus = () => {
       fetchSubmissions()
       fetchSubmissionsStatus()
       fetchReviewedList()
+      fetchXp()
+      fetchXpStatus()
     }
     const handler = () => document.visibilityState === 'visible' && onFocus()
     window.addEventListener('visibilitychange', handler)
@@ -264,10 +323,71 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
   }, [])
 
-  const handleLogout = async () => {
+  // Auto-show XP help modal on first dashboard visit after login (unless already dismissed)
+  useEffect(() => {
+    if (loading || !user || hasAutoShownXpHelpRef.current || getXpHelpDismissed()) return
+    hasAutoShownXpHelpRef.current = true
+    setShowXpHelpModal(true)
+  }, [loading, user])
+
+  // Open XP help when navigating to #show-xp-help (e.g. from footer "How XP works" link)
+  useEffect(() => {
+    const check = () => {
+      if (typeof window === 'undefined') return
+      if (window.location.hash === '#show-xp-help') {
+        setShowXpHelpModal(true)
+        const base = window.location.pathname + window.location.search
+        window.history.replaceState(null, '', base)
+      }
+    }
+    check()
+    window.addEventListener('hashchange', check)
+    return () => window.removeEventListener('hashchange', check)
+  }, [])
+
+  const performLogout = async () => {
+    setShowLogoutConfirm(false)
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/')
   }
+
+  const openLogoutConfirm = () => setShowLogoutConfirm(true)
+
+  const handleXpAdjust = async (delta: number) => {
+    if (user?.role !== 'tester') return
+    setXpAdjusting(true)
+    try {
+      const res = await fetch('/api/xp/adjust', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.error || 'Failed to adjust XP')
+      }
+      const data = await res.json()
+      const next = typeof data.xp === 'number' ? data.xp : parseInt(String(data.xp || 0), 10) || 0
+      setXp(Math.max(0, next))
+      setUser((u) => (u ? { ...u, xp: next } : null))
+      setXpAdjustValue('')
+      fetchXp()
+    } catch (e) {
+      console.error('XP adjust error:', e)
+      alert(e instanceof Error ? e.message : 'Failed to adjust XP')
+    } finally {
+      setXpAdjusting(false)
+    }
+  }
+
+  const handleXpAdjustSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const n = parseInt(xpAdjustValue, 10)
+    if (!Number.isNaN(n) && n !== 0) handleXpAdjust(n)
+  }
+
+  const xpToNext = 100 - (xp % 100)
+  const xpInBlock = xp % 100
 
   // Convert SoundCloud URL to embed URL - simplified approach
   const getEmbedUrl = (url: string) => {
@@ -366,15 +486,66 @@ export default function Dashboard() {
         <div className="max-w-6xl mx-auto space-y-4">
           <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-gray-800/50">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-              <div>
-                <h1 className="text-lg md:text-xl font-bold text-text-primary">
-                  Welcome, {user.display_name}!
-                </h1>
-                {user.role === 'curator' && (
-                  <p className="text-text-secondary text-xs md:text-sm mt-0.5">
-                    MikeGTC Dashboard
-                  </p>
-                )}
+              <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                <div>
+                  <h1 className="text-lg md:text-xl font-bold text-text-primary">
+                    Welcome, {user.display_name}!
+                  </h1>
+                  {user.role === 'curator' && (
+                    <p className="text-text-secondary text-xs md:text-sm mt-0.5">
+                      MikeGTC Dashboard
+                    </p>
+                  )}
+                </div>
+                <div
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-button bg-primary/10 border border-primary/30 animate-xp-pulse"
+                  title="Your XP — use it to move up the queue"
+                >
+                  <span className="text-xs font-medium text-text-muted uppercase tracking-wider">XP</span>
+                  <span className="text-base font-bold text-primary tabular-nums">{xp}</span>
+                  {xpInBlock > 0 && (
+                    <div className="hidden sm:flex items-center gap-1.5 ml-1">
+                      <div className="w-12 h-1.5 bg-background-lighter rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all duration-500"
+                          style={{ width: `${xpInBlock}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-text-muted tabular-nums">{xpToNext} to +1</span>
+                    </div>
+                  )}
+                </div>
+                {/* Live XP indicators */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium border ${
+                      xpStatus?.time_xp_active
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                        : 'bg-gray-500/10 text-text-muted border-gray-600/40'
+                    }`}
+                    title={xpStatus?.time_xp_active ? 'Stream live + submissions open: +5 XP per 5 min' : 'Time XP paused (offline or submissions closed)'}
+                  >
+                    {xpStatus?.time_xp_active ? '✓' : '○'} Time XP {xpStatus?.time_xp_active ? 'on' : 'off'}
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium border ${
+                      xpStatus?.following_mikegtcoff === true
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                        : xpStatus?.following_mikegtcoff === false
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                          : 'bg-gray-500/10 text-text-muted border-gray-600/40'
+                    }`}
+                    title={
+                      xpStatus?.following_mikegtcoff === true
+                        ? 'Following MikeGTC — eligible for +10 XP (if not already claimed)'
+                        : xpStatus?.following_mikegtcoff === false
+                          ? 'Not following MikeGTC — follow to earn +10 XP'
+                          : 'Follow status unknown (log in again to refresh)'
+                    }
+                  >
+                    {xpStatus?.following_mikegtcoff === true ? '✓' : xpStatus?.following_mikegtcoff === false ? '✗' : '—'} Follow MikeGTC
+                  </span>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
                 {/* Average ratings – only when user has at least one reviewed submission */}
@@ -402,6 +573,13 @@ export default function Dashboard() {
                     MikeGTC Panel
                   </Link>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setShowXpHelpModal(true)}
+                  className="text-text-secondary hover:text-primary text-xs md:text-sm font-medium transition-colors underline underline-offset-2"
+                >
+                  How XP works
+                </button>
                 <Link
                   href="/submit"
                   className="bg-primary hover:bg-primary-hover active:bg-primary-active text-background px-3 py-1.5 rounded-button transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press text-xs md:text-sm font-medium"
@@ -409,7 +587,7 @@ export default function Dashboard() {
                   Submit Demo
                 </Link>
                 <button
-                  onClick={handleLogout}
+                  onClick={openLogoutConfirm}
                   className="bg-background-lighter hover:bg-gray-800 text-text-primary px-3 py-1.5 rounded-button transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98] button-press text-xs md:text-sm font-medium border border-gray-700"
                 >
                   Logout
@@ -417,6 +595,49 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* Tester panel: add/remove XP */}
+          {user.role === 'tester' && (
+            <div className="bg-amber-500/5 rounded-xl shadow-lg p-4 md:p-5 border border-amber-500/30 animate-fade-in">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="px-2 py-0.5 text-xs font-bold bg-amber-500/20 text-amber-400 rounded border border-amber-500/30 uppercase tracking-wider">Tester</span>
+                <h2 className="text-base font-bold text-text-primary">Adjust XP</h2>
+              </div>
+              <p className="text-xs text-text-secondary mb-3">Manually add or remove XP to test queue movement and UI.</p>
+              <form onSubmit={handleXpAdjustSubmit} className="flex flex-wrap items-center gap-2">
+                <input
+                  type="number"
+                  value={xpAdjustValue}
+                  onChange={(e) => setXpAdjustValue(e.target.value)}
+                  placeholder="e.g. 50 or -25"
+                  className="w-28 px-3 py-2 rounded-button bg-background-lighter border border-gray-700 text-text-primary text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={xpAdjusting || !xpAdjustValue.trim()}
+                  className="px-3 py-2 rounded-button bg-primary hover:bg-primary-hover text-background text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {xpAdjusting ? '…' : 'Apply'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleXpAdjust(50)}
+                  disabled={xpAdjusting}
+                  className="px-3 py-2 rounded-button bg-background-lighter hover:bg-gray-700 border border-gray-600 text-text-primary text-sm font-medium disabled:opacity-50"
+                >
+                  +50
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleXpAdjust(-50)}
+                  disabled={xpAdjusting}
+                  className="px-3 py-2 rounded-button bg-background-lighter hover:bg-gray-700 border border-gray-600 text-text-primary text-sm font-medium disabled:opacity-50"
+                >
+                  −50
+                </button>
+              </form>
+            </div>
+          )}
 
           <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-gray-800/50">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
@@ -765,6 +986,36 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      <XpHelpModal isOpen={showXpHelpModal} onClose={() => setShowXpHelpModal(false)} />
+
+      {/* Logout confirmation: ensure user can re-login with Twitch, offer to save account (stay logged in) */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" aria-modal="true" role="dialog">
+          <div className="bg-background-lighter border border-gray-700 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-text-primary mb-2">Log out?</h3>
+            <p className="text-text-secondary text-sm mb-4">
+              You can sign in again with Twitch anytime. Do you want to save your current account before logging out?
+            </p>
+            <div className="flex flex-wrap gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="px-4 py-2 rounded-button bg-background border border-gray-600 text-text-primary text-sm font-medium hover:bg-gray-700 transition-colors"
+              >
+                Stay logged in
+              </button>
+              <button
+                type="button"
+                onClick={performLogout}
+                className="px-4 py-2 rounded-button bg-primary hover:bg-primary-hover text-background text-sm font-medium transition-colors"
+              >
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

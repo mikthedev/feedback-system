@@ -50,6 +50,7 @@ export async function POST(_request: NextRequest) {
       .select('id, user_id, created_at')
       .eq('status', 'pending')
       .eq('session_number', sn)
+      .order('queue_position', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true })
 
     const submissions = rows ?? []
@@ -118,10 +119,21 @@ export async function POST(_request: NextRequest) {
           message: 'You have already used the max 300 XP this session.',
         })
       }
+      const maxMovesForCurrentXp = potential * XP_PER_POSITION
+      if (used >= maxMovesForCurrentXp) {
+        return NextResponse.json({
+          success: true,
+          movesApplied: 0,
+          message: `No moves left for your current XP (${used} used). Add more XP to get another move.`,
+        })
+      }
+      const isFirstInQueue = items.length > 0 && items[0].user_id === userId
       return NextResponse.json({
         success: true,
         movesApplied: 0,
-        message: 'No position change possible (queue or XP gap).',
+        message: isFirstInQueue
+          ? "You're already first in the queue. No position change needed."
+          : 'No position change possible (queue or XP gap).',
       })
     }
 

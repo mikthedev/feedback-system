@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 interface QueueItem {
   id: string
+  user_id?: string
   soundcloud_url: string
   song_title?: string
   artist_name?: string
@@ -21,29 +22,58 @@ interface QueueItemWithMetadata extends QueueItem {
   _isNew?: boolean
 }
 
-export default function Queue() {
+export interface QueueLoadedItem {
+  id: string
+  user_id: string
+  position: number
+}
+
+interface QueueProps {
+  currentUserId?: string | null
+  refetchTrigger?: number
+  onQueueLoaded?: (items: QueueLoadedItem[]) => void
+}
+
+export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded }: QueueProps) {
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [loading, setLoading] = useState(true)
   const [metadataCache, setMetadataCache] = useState<Record<string, { title: string; artwork?: string }>>({})
   const [isExpanded, setIsExpanded] = useState(false)
   const previousQueueIdsRef = useRef<Set<string>>(new Set())
 
-  const fetchQueue = async (silent = false) => {
-    try {
-      const response = await fetch('/api/submissions/queue')
-      if (response.ok) {
-        const data = await response.json()
-        const newQueue = data.queue || []
-        const currentIds = new Set(newQueue.map((item: QueueItem) => item.id))
-        previousQueueIdsRef.current = currentIds
-        setQueue(newQueue)
+  const fetchQueue = useCallback(
+    async (opts: { silent?: boolean; notifyParent?: boolean } = {}) => {
+      const { silent = false, notifyParent = true } = opts
+      try {
+        const response = await fetch('/api/submissions/queue', { credentials: 'include' })
+        if (response.ok) {
+          const data = await response.json()
+          const newQueue = data.queue || []
+          const currentIds = new Set(newQueue.map((item: QueueItem) => item.id))
+          previousQueueIdsRef.current = currentIds
+          setQueue(newQueue)
+          if (notifyParent && onQueueLoaded) {
+            const items: QueueLoadedItem[] = newQueue.map((item: QueueItem, index: number) => ({
+              id: item.id,
+              user_id: item.user_id ?? '',
+              position: index + 1,
+            }))
+            onQueueLoaded(items)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching queue:', error)
+      } finally {
+        if (!silent) setLoading(false)
       }
-    } catch (error) {
-      console.error('Error fetching queue:', error)
-    } finally {
-      if (!silent) setLoading(false)
-    }
-  }
+    },
+    [onQueueLoaded]
+  )
+
+  // Refetch when parent triggers (e.g. after tester XP adjust); always notify parent
+  useEffect(() => {
+    if (refetchTrigger != null && refetchTrigger > 0) fetchQueue({ silent: true, notifyParent: true })
+  }, [refetchTrigger, fetchQueue])
 
   // Fetch SoundCloud metadata for items without song titles
   useEffect(() => {
@@ -98,8 +128,8 @@ export default function Queue() {
 
   // Real-time polling
   useEffect(() => {
-    fetchQueue()
-    const interval = setInterval(() => fetchQueue(true), 5000) // Poll every 5 seconds
+    fetchQueue({ silent: false, notifyParent: true })
+    const interval = setInterval(() => fetchQueue({ silent: true, notifyParent: false }), 5000)
     return () => clearInterval(interval)
   }, [])
 
@@ -177,7 +207,7 @@ export default function Queue() {
                   key={item.id}
                   className={`flex items-center gap-2 p-2 rounded-lg border border-gray-800/50 hover:border-primary/30 hover:bg-background-lighter transition-all duration-200 ${
                     item._isNew ? 'animate-slide-in bg-primary/5 border-primary/30' : ''
-                  }`}
+                  } ${currentUserId && item.user_id === currentUserId ? 'ring-1 ring-primary/40 bg-primary/5' : ''}`}
                   style={{
                     animationDelay: item._isNew ? `${Math.min(index * 30, 200)}ms` : '0ms'
                   }}
@@ -186,6 +216,9 @@ export default function Queue() {
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
                     <span className="text-[10px] font-bold text-primary">{item.queueNumber}</span>
                   </div>
+                  {currentUserId && item.user_id === currentUserId && (
+                    <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-bold bg-primary/20 text-primary rounded border border-primary/30">You</span>
+                  )}
 
                   {/* Artwork */}
                   {item.artwork ? (

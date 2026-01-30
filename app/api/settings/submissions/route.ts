@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
           if (idsToMove.length > 0) {
             await supabase
               .from('submissions')
-              .update({ session_number: newSessionNumber })
+              .update({ session_number: newSessionNumber, queue_position: null })
               .in('id', idsToMove)
           }
         }

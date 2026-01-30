@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Queue from '../components/Queue'
+import Queue, { type QueueLoadedItem } from '../components/Queue'
 import Carryover from '../components/Carryover'
 import XpHelpModal, { getXpHelpDismissed } from '../components/XpHelpModal'
 
@@ -58,10 +58,17 @@ export default function Dashboard() {
   const [xpAdjustValue, setXpAdjustValue] = useState('')
   const [xpAdjusting, setXpAdjusting] = useState(false)
   const [xp, setXp] = useState<number>(0)
+  const [xpUsedThisSession, setXpUsedThisSession] = useState<number>(0)
+  const [unusedExternal, setUnusedExternal] = useState<number>(0)
   const [xpStatus, setXpStatus] = useState<{
     time_xp_active: boolean
     following_mikegtcoff: boolean | null
   } | null>(null)
+  const [queueRefetchTrigger, setQueueRefetchTrigger] = useState(0)
+  const [xpAdjustMessage, setXpAdjustMessage] = useState<string | null>(null)
+  const [useXpMessage, setUseXpMessage] = useState<string | null>(null)
+  const [useXpLoading, setUseXpLoading] = useState(false)
+  const lastMyPositionsRef = useRef<Record<string, number>>({})
 
   useEffect(() => {
     const handleScroll = () => {
@@ -133,7 +140,7 @@ export default function Dashboard() {
 
   const fetchXp = async () => {
     try {
-      const res = await fetch('/api/xp')
+      const res = await fetch('/api/xp', { credentials: 'include' })
       if (!res.ok) return
       const data = await res.json()
       const v = data.xp
@@ -141,6 +148,18 @@ export default function Dashboard() {
       else if (typeof v === 'string') {
         const n = parseInt(v, 10)
         if (!Number.isNaN(n)) setXp(Math.max(0, n))
+      }
+      const u = data.xp_used_this_session
+      if (typeof u === 'number' && !Number.isNaN(u)) setXpUsedThisSession(Math.max(0, Math.floor(u)))
+      else if (typeof u === 'string') {
+        const n = parseInt(u, 10)
+        if (!Number.isNaN(n)) setXpUsedThisSession(Math.max(0, n))
+      }
+      const ue = data.unused_external
+      if (typeof ue === 'number' && !Number.isNaN(ue)) setUnusedExternal(Math.max(0, Math.floor(ue)))
+      else if (typeof ue === 'string') {
+        const n = parseInt(ue, 10)
+        if (!Number.isNaN(n)) setUnusedExternal(Math.max(0, n))
       }
     } catch {
       /* ignore */
@@ -353,14 +372,28 @@ export default function Dashboard() {
 
   const openLogoutConfirm = () => setShowLogoutConfirm(true)
 
+  const handleQueueLoaded = useCallback(
+    (items: QueueLoadedItem[]) => {
+      const uid = user?.id
+      if (!uid) return
+      const myItems = items.filter((i) => i.user_id === uid)
+      const myPositions: Record<string, number> = {}
+      for (const it of myItems) myPositions[it.id] = it.position
+      lastMyPositionsRef.current = myPositions
+    },
+    [user?.id]
+  )
+
   const handleXpAdjust = async (delta: number) => {
     if (user?.role !== 'tester') return
+    setXpAdjustMessage(null)
     setXpAdjusting(true)
     try {
       const res = await fetch('/api/xp/adjust', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ delta }),
+        credentials: 'include',
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -371,6 +404,7 @@ export default function Dashboard() {
       setXp(Math.max(0, next))
       setUser((u) => (u ? { ...u, xp: next } : null))
       setXpAdjustValue('')
+      setXpAdjustMessage('XP updated. Click "Use my XP" to apply and move up.')
       fetchXp()
     } catch (e) {
       console.error('XP adjust error:', e)
@@ -380,11 +414,43 @@ export default function Dashboard() {
     }
   }
 
+  const handleUseXp = async () => {
+    setUseXpMessage(null)
+    setUseXpLoading(true)
+    try {
+      const res = await fetch('/api/xp/use', { method: 'POST', credentials: 'include' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setUseXpMessage(data?.error || 'Failed to use XP')
+        return
+      }
+      setUseXpMessage(data.message ?? 'Done.')
+      fetchXp()
+      setQueueRefetchTrigger((t) => t + 1)
+    } catch (e) {
+      setUseXpMessage('Something went wrong.')
+    } finally {
+      setUseXpLoading(false)
+    }
+  }
+
   const handleXpAdjustSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const n = parseInt(xpAdjustValue, 10)
     if (!Number.isNaN(n) && n !== 0) handleXpAdjust(n)
   }
+
+  useEffect(() => {
+    if (!xpAdjustMessage) return
+    const t = setTimeout(() => setXpAdjustMessage(null), 6000)
+    return () => clearTimeout(t)
+  }, [xpAdjustMessage])
+
+  useEffect(() => {
+    if (!useXpMessage) return
+    const t = setTimeout(() => setUseXpMessage(null), 6000)
+    return () => clearTimeout(t)
+  }, [useXpMessage])
 
   const xpToNext = 100 - (xp % 100)
   const xpInBlock = xp % 100
@@ -497,24 +563,44 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-                <div
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-button bg-primary/10 border border-primary/30 animate-xp-pulse"
-                  title="Your XP — use it to move up the queue"
-                >
-                  <span className="text-xs font-medium text-text-muted uppercase tracking-wider">XP</span>
-                  <span className="text-base font-bold text-primary tabular-nums">{xp}</span>
-                  {xpInBlock > 0 && (
-                    <div className="hidden sm:flex items-center gap-1.5 ml-1">
-                      <div className="w-12 h-1.5 bg-background-lighter rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full transition-all duration-500"
-                          style={{ width: `${xpInBlock}%` }}
-                        />
+                <div className="flex flex-wrap items-center gap-2">
+                  <div
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-button bg-primary/10 border border-primary/30 animate-xp-pulse"
+                    title="Your XP — use it to move up the queue"
+                  >
+                    <span className="text-xs font-medium text-text-muted uppercase tracking-wider">XP</span>
+                    <span className="text-base font-bold text-primary tabular-nums">{xp}</span>
+                    {xpInBlock > 0 && (
+                      <div className="hidden sm:flex items-center gap-1.5 ml-1">
+                        <div className="w-12 h-1.5 bg-background-lighter rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full transition-all duration-500"
+                            style={{ width: `${xpInBlock}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-text-muted tabular-nums">{xpToNext} to +1</span>
                       </div>
-                      <span className="text-[10px] text-text-muted tabular-nums">{xpToNext} to +1</span>
-                    </div>
+                    )}
+                  </div>
+                  <span className="text-xs text-text-muted">
+                    Used this session: <span className="font-semibold text-text-primary">{xpUsedThisSession}</span> / 300
+                  </span>
+                  {xp >= 100 && xpUsedThisSession < 300 && (
+                    <button
+                      type="button"
+                      onClick={handleUseXp}
+                      disabled={useXpLoading}
+                      className="px-3 py-1.5 rounded-button bg-primary hover:bg-primary-hover text-background text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] button-press"
+                    >
+                      {useXpLoading ? '…' : 'Use my XP'}
+                    </button>
                   )}
                 </div>
+                {useXpMessage && (
+                  <p className="w-full text-sm font-medium text-primary bg-primary/10 border border-primary/30 rounded-lg px-3 py-2 mt-1 animate-scale-in">
+                    {useXpMessage}
+                  </p>
+                )}
                 {/* Live XP indicators */}
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span
@@ -603,7 +689,7 @@ export default function Dashboard() {
                 <span className="px-2 py-0.5 text-xs font-bold bg-amber-500/20 text-amber-400 rounded border border-amber-500/30 uppercase tracking-wider">Tester</span>
                 <h2 className="text-base font-bold text-text-primary">Adjust XP</h2>
               </div>
-              <p className="text-xs text-text-secondary mb-3">Manually add or remove XP to test queue movement and UI.</p>
+              <p className="text-xs text-text-secondary mb-3">Manually add or remove XP. Then click &quot;Use my XP&quot; to apply and move up the queue. No automatic usage.</p>
               <form onSubmit={handleXpAdjustSubmit} className="flex flex-wrap items-center gap-2">
                 <input
                   type="number"
@@ -636,6 +722,11 @@ export default function Dashboard() {
                   −50
                 </button>
               </form>
+              {xpAdjustMessage && (
+                <p className="mt-3 text-sm font-medium text-primary bg-primary/10 border border-primary/30 rounded-lg px-3 py-2 animate-scale-in">
+                  {xpAdjustMessage}
+                </p>
+              )}
             </div>
           )}
 
@@ -981,8 +1072,32 @@ export default function Dashboard() {
 
           {/* Queue and Carryover - side by side, symmetrically centered under Your Submissions */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch max-w-2xl mx-auto">
-            <Queue />
+            <Queue
+              currentUserId={user?.id}
+              refetchTrigger={queueRefetchTrigger}
+              onQueueLoaded={handleQueueLoaded}
+            />
             <Carryover />
+          </div>
+
+          {/* XP footer: Used this session, Stored, Unused external */}
+          <div className="max-w-2xl mx-auto mt-6 pt-4 border-t border-gray-800/50">
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <span className="text-text-muted">
+                Used this session: <span className="font-semibold text-text-primary">{xpUsedThisSession}</span> / 300 XP
+              </span>
+              <span className="text-text-muted">
+                Stored: <span className="font-semibold text-primary">{xp}</span> XP
+              </span>
+              {unusedExternal > 0 && (
+                <span className="text-text-muted">
+                  Unused external: <span className="font-semibold text-primary">{unusedExternal}</span> XP
+                </span>
+              )}
+              <span className="text-xs text-text-muted">
+                Up to 300 XP per session via &quot;Use my XP&quot;. Stored XP carries over.
+              </span>
+            </div>
           </div>
         </div>
       </div>

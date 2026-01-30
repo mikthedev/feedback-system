@@ -55,12 +55,13 @@ export async function POST(request: NextRequest) {
     const sn = currentSession.session_number
     const { data: usx } = await supabase
       .from('user_session_xp')
-      .select('donation_xp_granted')
+      .select('donation_xp_granted, external_xp_this_session')
       .eq('user_id', userId)
       .eq('session_number', sn)
       .maybeSingle()
 
-    const granted = (usx as { donation_xp_granted?: boolean } | null)?.donation_xp_granted ?? false
+    const u = usx as { donation_xp_granted?: boolean; external_xp_this_session?: number } | null
+    const granted = u?.donation_xp_granted ?? false
     if (granted) {
       return NextResponse.json(
         { error: 'Donation XP already granted for this user this session' },
@@ -69,11 +70,13 @@ export async function POST(request: NextRequest) {
     }
 
     await addXp(supabase, userId, SUB_OR_DONATION_XP)
+    const prevExternal = Math.max(0, Math.floor(Number(u?.external_xp_this_session ?? 0)))
     await supabase.from('user_session_xp').upsert(
       {
         user_id: userId,
         session_number: sn,
         donation_xp_granted: true,
+        external_xp_this_session: prevExternal + SUB_OR_DONATION_XP,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'user_id,session_number' }

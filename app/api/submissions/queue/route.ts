@@ -11,9 +11,10 @@ import { cookies } from 'next/headers'
 
 const TICK_MS = TIME_TICK_MINUTES * 60 * 1000
 
-// GET - Fetch queue (pending submissions in current open session only, ordered by creation time)
+// GET - Fetch queue (pending, current session). Order by stored queue_position only
+// (set when user clicks "Use my XP"); otherwise created_at. No automatic XP-based reordering.
 // Also: time-based XP tick when live + submissions open; sub XP for requesting user (once per session).
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const cookieStore = await cookies()
     const userId = cookieStore.get('session_user_id')?.value
@@ -64,12 +65,14 @@ export async function GET(request: NextRequest) {
         created_at,
         time_based_xp,
         last_time_xp_tick_at,
+        queue_position,
         users!submissions_user_id_fkey (
           display_name
         )
       `)
       .eq('status', 'pending')
       .eq('session_number', sn)
+      .order('queue_position', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true })
 
     if (error) throw error
@@ -111,12 +114,13 @@ export async function GET(request: NextRequest) {
 
     const { data: usx } = await supabase
       .from('user_session_xp')
-      .select('sub_xp_granted')
+      .select('sub_xp_granted, external_xp_this_session')
       .eq('user_id', userId)
       .eq('session_number', sn)
       .maybeSingle()
 
-    const subGranted = (usx as { sub_xp_granted?: boolean } | null)?.sub_xp_granted ?? false
+    const usxRow = usx as { sub_xp_granted?: boolean; external_xp_this_session?: number } | null
+    const subGranted = usxRow?.sub_xp_granted ?? false
     if (submissionsOpen && !subGranted) {
       const { data: user } = await supabase
         .from('users')
@@ -138,11 +142,13 @@ export async function GET(request: NextRequest) {
               const subbed = await userSubscribedToMikegtcoff(twitchId, t.access_token)
               if (subbed) {
                 await addXp(supabase, userId, SUB_OR_DONATION_XP)
+                const prevExternal = Math.max(0, Math.floor(Number(usxRow?.external_xp_this_session ?? 0)))
                 await supabase.from('user_session_xp').upsert(
                   {
                     user_id: userId,
                     session_number: sn,
                     sub_xp_granted: true,
+                    external_xp_this_session: prevExternal + SUB_OR_DONATION_XP,
                     updated_at: new Date().toISOString(),
                   },
                   { onConflict: 'user_id,session_number' }
@@ -156,17 +162,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const queue = submissions.map((s) => {
-      const x = s as Record<string, unknown>
-      return {
-        id: x.id,
-        soundcloud_url: x.soundcloud_url,
-        song_title: x.song_title,
-        artist_name: x.artist_name,
-        created_at: x.created_at,
-        users: x.users,
-      }
-    })
+    const queue = (submissions as { id: string; user_id: string; soundcloud_url: string; song_title?: string; artist_name?: string; created_at: string; users: { display_name: string } }[]).map((s) => ({
+      id: s.id,
+      user_id: s.user_id,
+      soundcloud_url: s.soundcloud_url,
+      song_title: s.song_title,
+      artist_name: s.artist_name,
+      created_at: s.created_at,
+      users: s.users,
+    }))
 
     return NextResponse.json({ queue })
   } catch (error) {

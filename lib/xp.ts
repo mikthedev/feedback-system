@@ -7,6 +7,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const XP_PER_POSITION = 100
 export const MAX_MOVE_PER_SESSION = 3
+/** Max XP usable for queue moves per session (3 moves × 100). */
+export const MAX_XP_USABLE_PER_SESSION = 300
 
 /** +5 XP per 5 minutes when mikegtcoff is live and submissions open */
 export const TIME_XP_PER_TICK = 5

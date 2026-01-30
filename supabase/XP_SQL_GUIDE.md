@@ -137,6 +137,28 @@ UPDATE users SET role = 'curator' WHERE twitch_id = 'YOUR_TWITCH_ID';
 
 ---
 
+### Block D – External XP (for “Unused external” in dashboard footer)
+
+Run this if you use donation/sub XP and want “Unused external” shown in the XP footer.
+
+```sql
+-- Block D: external XP per session (donation, sub)
+ALTER TABLE user_session_xp ADD COLUMN IF NOT EXISTS external_xp_this_session INTEGER NOT NULL DEFAULT 0;
+```
+
+---
+
+### Block E – Queue position (manual “Use my XP” only)
+
+Required so the queue order reflects only **user-initiated** “Use my XP” actions, not automatic XP-based reordering.
+
+```sql
+-- Block E: queue order stored only when user clicks "Use my XP"
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS queue_position INTEGER;
+```
+
+---
+
 ### Block C – Optional: manual “clear all XP” from SQL
 
 Run this **only if** you want to clear all XP from the SQL Editor with `SELECT clear_all_user_xp();`.  

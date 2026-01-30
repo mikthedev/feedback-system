@@ -20,12 +20,48 @@ interface XpHelpModalProps {
 }
 
 const XP_BLOCKS = [
-  { label: 'Time XP', value: '+5', sub: 'per 5 min (live + open)', color: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' },
-  { label: 'Carryover', value: '+25', sub: 'when track moves to carryover', color: 'bg-amber-500/20 border-amber-500/40 text-amber-400' },
-  { label: 'Follow', value: '+10', sub: 'one-time (MikeGTC)', color: 'bg-blue-500/20 border-blue-500/40 text-blue-400' },
-  { label: 'Sub / Donation', value: '+20', sub: 'each per session', color: 'bg-purple-500/20 border-purple-500/40 text-purple-400' },
-  { label: 'Review (curator)', value: '10–60', sub: 'by average score', color: 'bg-primary/20 border-primary/40 text-primary' },
-  { label: 'Use XP', value: '100 = 1 spot', sub: 'max 3 moves per session', color: 'bg-gray-600/30 border-gray-600/50 text-text-primary' },
+  {
+    label: 'Time XP',
+    value: '+5',
+    sub: 'per 5 min while mikegtcoff is live and submissions are open',
+    color: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400',
+    hover: 'hover:bg-emerald-500/30 hover:border-emerald-500/60 hover:ring-2 hover:ring-emerald-500/40',
+  },
+  {
+    label: 'Carryover',
+    value: '+25',
+    sub: 'when your track moves to carryover',
+    color: 'bg-amber-500/20 border-amber-500/40 text-amber-400',
+    hover: 'hover:bg-amber-500/30 hover:border-amber-500/60 hover:ring-2 hover:ring-amber-500/40',
+  },
+  {
+    label: 'Follow',
+    value: '+10',
+    sub: 'one-time bonus for following MikeGTC',
+    color: 'bg-blue-500/20 border-blue-500/40 text-blue-400',
+    hover: 'hover:bg-blue-500/30 hover:border-blue-500/60 hover:ring-2 hover:ring-blue-500/40',
+  },
+  {
+    label: 'Sub / Donation',
+    value: '+20',
+    sub: 'each once per session',
+    color: 'bg-purple-500/20 border-purple-500/40 text-purple-400',
+    hover: 'hover:bg-purple-500/30 hover:border-purple-500/60 hover:ring-2 hover:ring-purple-500/40',
+  },
+  {
+    label: 'Review (curator)',
+    value: '10–60',
+    sub: 'based on average score',
+    color: 'bg-primary/20 border-primary/40 text-primary',
+    hover: 'hover:bg-primary/30 hover:border-primary/60 hover:ring-2 hover:ring-primary/50',
+  },
+  {
+    label: 'Use XP',
+    value: '100 XP = 1 spot',
+    sub: 'max 3 moves per session',
+    color: 'bg-gray-600/30 border-gray-600/50 text-text-primary',
+    hover: 'hover:bg-gray-600/40 hover:border-gray-600/70 hover:ring-2 hover:ring-gray-500/30',
+  },
 ]
 
 export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
@@ -62,17 +98,17 @@ export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
       aria-labelledby="xp-help-title"
     >
       <div
-        className="relative w-full max-w-md max-h-[90vh] overflow-hidden rounded-lg bg-background-light border border-gray-800 shadow-xl animate-scale-in flex flex-col"
+        className="relative w-full max-w-md max-h-[90vh] overflow-hidden rounded-xl bg-background-light border border-gray-800 shadow-xl animate-scale-in flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-800/50 shrink-0">
-          <h2 id="xp-help-title" className="text-sm font-bold text-text-primary flex items-center gap-1.5">
-            <span className="text-primary">⚡</span> How XP works
+        <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-800/50 shrink-0">
+          <h2 id="xp-help-title" className="text-base font-bold text-text-primary flex items-center gap-2">
+            <span className="text-primary drop-shadow-[0_0_8px_rgba(255,85,0,0.4)]">⚡</span> How XP works
           </h2>
           <button
             type="button"
             onClick={handleDismiss}
-            className="p-1 rounded text-text-muted hover:text-text-primary hover:bg-background-lighter transition-colors"
+            className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-background-lighter transition-colors duration-200"
             aria-label="Close"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,42 +117,61 @@ export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-3 py-3 space-y-4 scrollbar-thin text-xs">
-          {/* Section 1: Visual blocks */}
+        <div className="overflow-y-auto flex-1 px-4 py-4 space-y-5 scrollbar-thin text-sm">
+          {/* Intro */}
+          <div className="space-y-2 text-text-secondary leading-snug">
+            <p>
+              XP is a fairness system that gently helps your track move forward in the queue.
+              The queue always starts by submit time and XP never breaks that rule.
+              It only gives your track the right to move up step by step, never instantly.
+            </p>
+            <p>
+              XP is tied to your Twitch account and carries over between sessions.
+            </p>
+          </div>
+
+          {/* XP types — visual blocks with hover animation */}
           <div>
-            <p className="text-text-muted font-medium mb-2 uppercase tracking-wider text-[10px]">XP types</p>
+            <p className="text-text-muted font-semibold mb-2.5 uppercase tracking-wider text-[10px]">XP types</p>
             <div className="grid grid-cols-2 gap-2">
               {XP_BLOCKS.map((b) => (
                 <div
                   key={b.label}
-                  className={`rounded-lg border p-2 ${b.color}`}
+                  className={`rounded-lg border p-2.5 transition-all duration-200 ease-out hover:scale-[1.03] hover:shadow-lg cursor-default ${b.color} ${b.hover}`}
                 >
-                  <p className="font-bold leading-tight">{b.value}</p>
-                  <p className="font-medium opacity-90">{b.label}</p>
-                  <p className="text-[10px] opacity-80 mt-0.5">{b.sub}</p>
+                  <p className="font-bold text-base leading-tight">{b.value}</p>
+                  <p className="font-medium opacity-95 text-xs mt-0.5">{b.label}</p>
+                  {b.sub && <p className="text-[10px] opacity-85 mt-1 leading-snug">{b.sub}</p>}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Section 2: Plain text instructions */}
-          <div className="border-t border-gray-800/50 pt-3">
-            <p className="text-text-muted font-medium mb-2 uppercase tracking-wider text-[10px]">How it works</p>
-            <ul className="space-y-1.5 text-text-secondary leading-snug list-none">
-              <li>· 100 XP = move up 1 spot in queue (max 3 per session). Queue order is by submit time; XP only moves you up.</li>
-              <li>· Time XP: only when <strong className="text-text-primary">mikegtcoff</strong> is live and submissions are open.</li>
-              <li>· Carryover: +25 once when your track moves to carryover. Follow: +10 one-time. Sub/donation: +20 each per session.</li>
-              <li>· After review: curator average 9–10 → +60, 8–8.9 → +40, 7–7.9 → +25, 6–6.9 → +10.</li>
-              <li>· Stored XP carries over; up to 300 XP can be used per session via &quot;Use my XP&quot;.</li>
+          {/* How it works — only nuances not covered above */}
+          <div className="border-t border-gray-800/50 pt-4">
+            <p className="text-text-muted font-semibold mb-2.5 uppercase tracking-wider text-[10px]">How it works</p>
+            <ul className="space-y-2 text-text-secondary leading-snug text-xs">
+              <li className="flex gap-2">
+                <span className="text-primary shrink-0">•</span>
+                <span>Follow bonus is once ever — unfollow/refollow doesn&apos;t repeat it</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-primary shrink-0">•</span>
+                <span>After review, curator scores grant XP for future submissions only</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-primary shrink-0">•</span>
+                <span>Up to 300 XP can be used per session via &quot;Use my XP&quot;</span>
+              </li>
             </ul>
           </div>
         </div>
 
-        <div className="px-3 py-2 border-t border-gray-800/50 shrink-0">
+        <div className="px-4 py-3 border-t border-gray-800/50 shrink-0">
           <button
             type="button"
             onClick={handleDismiss}
-            className="w-full py-2 rounded-button bg-primary hover:bg-primary-hover text-background font-medium text-xs transition-colors"
+            className="w-full py-2.5 rounded-lg bg-primary hover:bg-primary-hover text-background font-medium text-sm transition-colors duration-200"
           >
             Got it
           </button>

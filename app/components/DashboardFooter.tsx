@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 interface XpLogEntry {
   id: string
   amount: number
@@ -21,6 +23,8 @@ interface DashboardFooterProps {
   onShowXpHelp: () => void
   /** When true, render only the indicator row (for top of page). */
   compactTop?: boolean
+  /** Opens the live indicators help modal (? icon). Only used when compactTop. */
+  onShowIndicatorsHelp?: () => void
 }
 
 const INDICATOR_STYLE = 'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border'
@@ -31,12 +35,14 @@ function IndicatorRow({
   externalXpThisSession,
   hasReviewXp,
   carryoverCount,
+  onShowIndicatorsHelp,
 }: {
   timeXpActive: boolean | null
   followingMikegtcoff: boolean | null
   externalXpThisSession: number
   hasReviewXp: boolean
   carryoverCount: number
+  onShowIndicatorsHelp?: () => void
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -62,9 +68,24 @@ function IndicatorRow({
       <span className={`${INDICATOR_STYLE} ${hasReviewXp ? 'bg-primary/10 text-primary border-primary/30' : 'bg-gray-500/10 text-text-muted border-gray-600/40'}`} title="Review XP counted">
         {hasReviewXp ? '✓' : '○'} Ratings
       </span>
-      <span className={`${INDICATOR_STYLE} bg-gray-500/10 text-text-muted border-gray-600/40`} title="Your tracks in carryover">
+      <Link
+        href="/carryover"
+        className={`${INDICATOR_STYLE} bg-gray-500/10 text-text-muted border-gray-600/40 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/30 transition-colors`}
+        title="Your tracks in carryover — view details"
+      >
         Carry: <span className="font-semibold text-text-primary tabular-nums">{carryoverCount}</span>
-      </span>
+      </Link>
+      {onShowIndicatorsHelp && (
+        <button
+          type="button"
+          onClick={onShowIndicatorsHelp}
+          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-500/20 text-text-muted hover:bg-primary/20 hover:text-primary border border-gray-600/40 hover:border-primary/30 transition-colors"
+          title="What do these indicators mean?"
+          aria-label="Explain live indicators"
+        >
+          <span className="text-[10px] font-bold">?</span>
+        </button>
+      )}
     </div>
   )
 }
@@ -81,18 +102,23 @@ export default function DashboardFooter({
   loadingLog,
   onShowXpHelp,
   compactTop = false,
+  onShowIndicatorsHelp,
 }: DashboardFooterProps) {
   const hasReviewXp = xpLog.some((e) => e.source === 'curator_review' || e.source === 'audience_review')
 
   if (compactTop) {
     return (
       <div className="flex flex-wrap items-center gap-1.5 py-1.5 px-2 rounded-lg bg-background-lighter/60 border border-gray-800/40">
+        <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider mr-0.5">
+          Live indicators
+        </span>
         <IndicatorRow
           timeXpActive={timeXpActive}
           followingMikegtcoff={followingMikegtcoff}
           externalXpThisSession={externalXpThisSession}
           hasReviewXp={hasReviewXp}
           carryoverCount={carryoverCount}
+          onShowIndicatorsHelp={onShowIndicatorsHelp}
         />
       </div>
     )
@@ -101,7 +127,7 @@ export default function DashboardFooter({
   return (
     <footer className="max-w-2xl mx-auto mt-6 pt-4 border-t border-gray-800/50">
       <div className="space-y-3">
-        {/* Single compact line: XP summary + How XP works */}
+        {/* XP summary */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-text-muted">
           <span>Used <span className="font-semibold text-text-primary tabular-nums">{xpUsedThisSession}</span>/300</span>
           <span>·</span>
@@ -112,10 +138,6 @@ export default function DashboardFooter({
               <span>Unused ext. <span className="font-semibold text-primary tabular-nums">{unusedExternal}</span></span>
             </>
           )}
-          <span>·</span>
-          <button type="button" onClick={onShowXpHelp} className="text-primary hover:text-primary-hover underline underline-offset-1 font-medium">
-            How XP works
-          </button>
         </div>
 
         {/* XP Log: expandable, compact */}

@@ -87,6 +87,8 @@ export async function POST(request: NextRequest) {
           .select('session_number')
           .not('ended_at', 'is', null)
         const closedNumbers = (closedSessions || []).map((s: { session_number: number }) => s.session_number)
+        const seen = new Map<string, string>()
+        // 1. Pending from closed sessions
         if (closedNumbers.length > 0) {
           const { data: carryoverRows } = await supabase
             .from('submissions')
@@ -94,18 +96,27 @@ export async function POST(request: NextRequest) {
             .eq('status', 'pending')
             .in('session_number', closedNumbers)
             .order('created_at', { ascending: true })
-          const seen = new Map<string, string>()
           for (const row of carryoverRows || []) {
             const key = `${row.user_id}:${row.soundcloud_url}`
             if (!seen.has(key)) seen.set(key, row.id)
           }
-          const idsToMove = Array.from(seen.values())
-          if (idsToMove.length > 0) {
-            await supabase
-              .from('submissions')
-              .update({ session_number: newSessionNumber, queue_position: null })
-              .in('id', idsToMove)
-          }
+        }
+        // 2. Curator-skipped (status='carryover') from any session
+        const { data: skippedRows } = await supabase
+          .from('submissions')
+          .select('id, user_id, soundcloud_url, created_at')
+          .eq('status', 'carryover')
+          .order('created_at', { ascending: true })
+        for (const row of skippedRows || []) {
+          const key = `${row.user_id}:${row.soundcloud_url}`
+          if (!seen.has(key)) seen.set(key, row.id)
+        }
+        const idsToMove = Array.from(seen.values())
+        if (idsToMove.length > 0) {
+          await supabase
+            .from('submissions')
+            .update({ session_number: newSessionNumber, queue_position: null, status: 'pending' })
+            .in('id', idsToMove)
         }
       }
     } else if (!submissions_open && currentlyOpen) {

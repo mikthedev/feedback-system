@@ -38,7 +38,6 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded }: 
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [loading, setLoading] = useState(true)
   const [metadataCache, setMetadataCache] = useState<Record<string, { title: string; artwork?: string }>>({})
-  const [isExpanded, setIsExpanded] = useState(false)
   const previousQueueIdsRef = useRef<Set<string>>(new Set())
 
   const fetchQueue = useCallback(
@@ -156,13 +155,9 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded }: 
     })
   }, [queue, metadataCache])
 
-  if (loading && queue.length === 0 && !isExpanded) {
-    return null // Don't show anything while loading if collapsed
-  }
-
   return (
     <div className="bg-background-light rounded-lg shadow-md p-3 animate-fade-in border border-gray-800/50 max-w-md w-full">
-      {/* Header with Toggle */}
+      {/* Header - always visible */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-bold text-text-primary">Queue</h3>
@@ -172,35 +167,15 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded }: 
             </span>
           )}
         </div>
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="text-text-secondary hover:text-text-primary transition-colors duration-200 p-1 hover:bg-background-lighter rounded"
-          aria-label={isExpanded ? 'Collapse queue' : 'Expand queue'}
-        >
-          <svg
-            className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </button>
       </div>
 
-      {/* Collapsible Content */}
-      {isExpanded && (
-        <div className="mt-2">
-          {loading && processedQueue.length === 0 ? (
-            <p className="text-xs text-text-secondary py-2">Loading...</p>
-          ) : processedQueue.length === 0 ? (
-            <p className="text-xs text-text-secondary py-2">No tracks in queue</p>
-          ) : (
+      {/* Content - always visible */}
+      <div className="mt-2">
+        {loading && processedQueue.length === 0 ? (
+          <p className="text-xs text-text-secondary py-2">Loading...</p>
+        ) : processedQueue.length === 0 ? (
+          <p className="text-xs text-text-secondary py-2">There are currently no tracks in the queue.</p>
+        ) : (
             <div className="space-y-1.5 max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-hide">
               {processedQueue.map((item, index) => (
                 <div
@@ -261,9 +236,8 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded }: 
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

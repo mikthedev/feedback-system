@@ -4,8 +4,8 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Queue, { type QueueLoadedItem } from '../components/Queue'
-import Carryover from '../components/Carryover'
 import XpHelpModal, { getXpHelpDismissed } from '../components/XpHelpModal'
+import IndicatorsHelpModal from '../components/IndicatorsHelpModal'
 import DashboardFooter from '../components/DashboardFooter'
 
 interface User {
@@ -54,6 +54,7 @@ export default function Dashboard() {
   const [isScrollingUp, setIsScrollingUp] = useState(false)
   const prevSubmissionsOpenRef = useRef<boolean | null>(null)
   const [showXpHelpModal, setShowXpHelpModal] = useState(false)
+  const [showIndicatorsHelpModal, setShowIndicatorsHelpModal] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const hasAutoShownXpHelpRef = useRef(false)
   const [xpAdjustValue, setXpAdjustValue] = useState('')
@@ -605,6 +606,7 @@ export default function Dashboard() {
             xpLog={xpLog}
             loadingLog={loadingXpLog}
             onShowXpHelp={() => setShowXpHelpModal(true)}
+            onShowIndicatorsHelp={() => setShowIndicatorsHelpModal(true)}
             compactTop
           />
 
@@ -658,31 +660,13 @@ export default function Dashboard() {
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
-                {/* Average ratings — compact: collapse into details or single line */}
-                {getAverageScores() && (
-                  <details className="group/avg order-first md:order-none">
-                    <summary className="list-none cursor-pointer text-xs text-text-muted hover:text-text-primary font-medium inline-flex items-center gap-1">
-                      Avg <span className="text-primary font-bold">{((Number(getAverageScores()!.sound) + Number(getAverageScores()!.structure) + Number(getAverageScores()!.mix) + Number(getAverageScores()!.vibe)) / 4).toFixed(1)}</span>/10
-                      <svg className="w-3 h-3 opacity-70 group-open/avg:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </summary>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                      {[
-                        { label: 'S', score: getAverageScores()!.sound, color: 'text-blue-400' },
-                        { label: 'St', score: getAverageScores()!.structure, color: 'text-purple-400' },
-                        { label: 'M', score: getAverageScores()!.mix, color: 'text-pink-400' },
-                        { label: 'V', score: getAverageScores()!.vibe, color: 'text-orange-400' },
-                      ].map(({ label, score, color }) => (
-                        <span key={label} className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${color} bg-background-lighter border border-gray-700/50`} title={label === 'S' ? 'Sound' : label === 'St' ? 'Structure' : label === 'M' ? 'Mix' : 'Vibe'}>{label} {score}</span>
-                      ))}
-                    </div>
-                  </details>
-                )}
+                {/* Dashboard footer actions: MikeGTC (curator), Submit Demo, Carryover, How XP works, Log out */}
                 {user.role === 'curator' && (
                   <Link
                     href="/curator"
                     className="bg-primary hover:bg-primary-hover active:bg-primary-active text-background px-3 py-1.5 rounded-button transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press text-xs md:text-sm font-medium"
                   >
-                    MikeGTC Panel
+                    MikeGTC
                   </Link>
                 )}
                 <Link
@@ -691,11 +675,32 @@ export default function Dashboard() {
                 >
                   Submit Demo
                 </Link>
-                <button
-                  onClick={openLogoutConfirm}
-                  className="bg-background-lighter hover:bg-gray-800 text-text-primary px-3 py-1.5 rounded-button transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98] button-press text-xs md:text-sm font-medium border border-gray-700"
+                <Link
+                  href="/carryover"
+                  className="bg-background-lighter hover:bg-amber-500/10 text-text-primary hover:text-amber-400 px-3 py-1.5 rounded-button transition-all duration-200 border border-gray-700 hover:border-amber-500/30 text-xs md:text-sm font-medium"
                 >
-                  Logout
+                  Carryover {carryoverCount > 0 && `(${carryoverCount})`}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setShowXpHelpModal(true)}
+                  className="inline-flex items-center gap-2 bg-background-lighter hover:bg-primary/10 text-text-primary hover:text-primary px-3 py-1.5 rounded-button transition-all duration-200 border border-gray-700 hover:border-primary/30 text-xs md:text-sm font-medium"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  How XP works
+                </button>
+                <button
+                  type="button"
+                  onClick={openLogoutConfirm}
+                  className="p-1.5 rounded-button bg-background-lighter hover:bg-gray-800 text-text-primary border border-gray-700 transition-all duration-200 active:scale-[0.98] button-press"
+                  title="Log out"
+                  aria-label="Log out"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -766,6 +771,24 @@ export default function Dashboard() {
                     }
                   </p>
                 </div>
+                {getAverageScores() && (
+                  <details className="group/avg">
+                    <summary className="list-none cursor-pointer text-xs text-text-muted hover:text-text-primary font-medium inline-flex items-center gap-1 px-2 py-1 rounded border border-gray-700/50 hover:border-primary/30 bg-background-lighter/50">
+                      Avg <span className="text-primary font-bold">{((Number(getAverageScores()!.sound) + Number(getAverageScores()!.structure) + Number(getAverageScores()!.mix) + Number(getAverageScores()!.vibe)) / 4).toFixed(1)}</span>/10
+                      <svg className="w-3 h-3 opacity-70 group-open/avg:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </summary>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5 py-2">
+                      {[
+                        { label: 'S', score: getAverageScores()!.sound, color: 'text-blue-400' },
+                        { label: 'St', score: getAverageScores()!.structure, color: 'text-purple-400' },
+                        { label: 'M', score: getAverageScores()!.mix, color: 'text-pink-400' },
+                        { label: 'V', score: getAverageScores()!.vibe, color: 'text-orange-400' },
+                      ].map(({ label, score, color }) => (
+                        <span key={label} className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${color} bg-background-lighter border border-gray-700/50`} title={label === 'S' ? 'Sound' : label === 'St' ? 'Structure' : label === 'M' ? 'Mix' : 'Vibe'}>{label} {score}</span>
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
               <button
                 onClick={fetchReviewedSubmissions}
@@ -1089,14 +1112,13 @@ export default function Dashboard() {
               </div>
           )}
 
-          {/* Queue and Carryover - side by side, symmetrically centered under Your Submissions */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch max-w-2xl mx-auto">
+          {/* Queue - always visible under Your Submissions */}
+          <div className="flex justify-center max-w-2xl mx-auto">
             <Queue
               currentUserId={user?.id}
               refetchTrigger={queueRefetchTrigger}
               onQueueLoaded={handleQueueLoaded}
             />
-            <Carryover />
           </div>
 
           {/* Dashboard footer: XP summary + How XP works + expandable XP log */}
@@ -1116,6 +1138,13 @@ export default function Dashboard() {
       </div>
 
       <XpHelpModal isOpen={showXpHelpModal} onClose={() => setShowXpHelpModal(false)} />
+      <IndicatorsHelpModal
+        isOpen={showIndicatorsHelpModal}
+        onClose={() => setShowIndicatorsHelpModal(false)}
+        followingMikegtcoff={xpStatus?.following_mikegtcoff ?? null}
+        timeXpActive={xpStatus?.time_xp_active ?? null}
+        externalXpThisSession={externalXpThisSession}
+      />
 
       {/* Logout confirmation: ensure user can re-login with Twitch, offer to save account (stay logged in) */}
       {showLogoutConfirm && (

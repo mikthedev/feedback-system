@@ -137,6 +137,7 @@ export default function CuratorPage() {
   const [sessionsToDelete, setSessionsToDelete] = useState<number[]>([])
   const [showSettings, setShowSettings] = useState(false)
   const [showXpHelpModal, setShowXpHelpModal] = useState(false)
+  const [skipping, setSkipping] = useState(false)
 
   const fetchSubmissionsStatus = async () => {
     try {
@@ -397,6 +398,39 @@ export default function CuratorPage() {
       setError('An error occurred. Please try again.')
     } finally {
       setToggling(false)
+    }
+  }
+
+  const handleSkipToCarryover = async () => {
+    if (!selectedSubmission) return
+    if (!confirm('Move this track to Carryover? The user will need to wait 60 minutes before submitting again.')) return
+    setSkipping(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/submissions/${selectedSubmission.id}/skip`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error || 'Failed to move to carryover')
+        return
+      }
+      setSuccess('Track moved to carryover.')
+      setSelectedSubmission(null)
+      setScores({
+        sound_score: '0',
+        structure_score: '0',
+        mix_score: '0',
+        vibe_score: '0',
+      })
+      fetchPendingSubmissions()
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (e) {
+      setError('An error occurred. Please try again.')
+    } finally {
+      setSkipping(false)
     }
   }
 
@@ -724,6 +758,14 @@ export default function CuratorPage() {
                     className="px-3 py-1.5 text-sm rounded-button font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press"
                   >
                     {grantingDonation ? '...' : 'Grant +20 donation XP'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSkipToCarryover}
+                    disabled={skipping}
+                    className="px-3 py-1.5 text-sm rounded-button font-medium bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press"
+                  >
+                    {skipping ? '...' : 'Skip'}
                   </button>
                 </div>
                 <form onSubmit={handleSubmitReview} className="space-y-4">

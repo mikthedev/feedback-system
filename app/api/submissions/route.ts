@@ -119,6 +119,75 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // CARRYOVER RESTRICTION: User with carryover cannot submit for 60 min (tester bypass)
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single()
+
+    if (userRow?.role !== 'tester') {
+      let latestTransferredAt: string | null = null
+
+      // 1. Curator-skipped (status='carryover')
+      const { data: skipped } = await supabase
+        .from('submissions')
+        .select('updated_at')
+        .eq('user_id', userId)
+        .eq('status', 'carryover')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (skipped?.updated_at) {
+        latestTransferredAt = skipped.updated_at
+      }
+
+      // 2. Pending in closed sessions (session ended before review)
+      const { data: closedSessions } = await supabase
+        .from('submission_sessions')
+        .select('session_number, ended_at')
+        .not('ended_at', 'is', null)
+      const closedNumbers = (closedSessions || []).map((s: { session_number: number }) => s.session_number)
+
+      if (closedNumbers.length > 0) {
+        const { data: pendingClosed } = await supabase
+          .from('submissions')
+          .select('session_number')
+          .eq('user_id', userId)
+          .eq('status', 'pending')
+          .in('session_number', closedNumbers)
+
+        if (pendingClosed && pendingClosed.length > 0) {
+          const closedMap = new Map(
+            (closedSessions || []).map((s: { session_number: number; ended_at: string }) => [s.session_number, s.ended_at])
+          )
+          for (const p of pendingClosed) {
+            const endedAt = closedMap.get(p.session_number)
+            if (endedAt && (!latestTransferredAt || new Date(endedAt) > new Date(latestTransferredAt))) {
+              latestTransferredAt = endedAt
+            }
+          }
+        }
+      }
+
+      if (latestTransferredAt) {
+        const transferredMs = new Date(latestTransferredAt).getTime()
+        const now = Date.now()
+        const minutesSinceTransfer = (now - transferredMs) / (1000 * 60)
+        if (minutesSinceTransfer < 60) {
+          const minutesRemaining = Math.ceil(60 - minutesSinceTransfer)
+          return NextResponse.json(
+            {
+              error: `Your previous submission was moved to carryover. You must wait ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''} before submitting again. This happens when you miss the feedback livestream or the curator (MikeGTC) moves your track to another session.`,
+              warning: false,
+            },
+            { status: 400 }
+          )
+        }
+      }
+    }
+
     // HARD SUBMISSION LIMIT: Check user's submissions in current session
     const { data: userSubmissionsInSession, error: submissionsError } = await supabase
       .from('submissions')

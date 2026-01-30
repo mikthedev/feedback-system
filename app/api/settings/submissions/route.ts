@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { addXp } from '@/lib/xp'
+import { CARRYOVER_XP } from '@/lib/xp'
 import { cookies } from 'next/headers'
 
 // GET - Get submissions status (app_config.submissions_open)
@@ -109,12 +111,32 @@ export async function POST(request: NextRequest) {
     } else if (!submissions_open && currentlyOpen) {
       const { data: openRow } = await supabase
         .from('submission_sessions')
-        .select('id')
+        .select('id, session_number')
         .is('ended_at', null)
         .order('session_number', { ascending: false })
         .limit(1)
         .maybeSingle()
       if (openRow) {
+        const sn = (openRow as { session_number: number }).session_number
+        const { data: pending } = await supabase
+          .from('submissions')
+          .select('id, user_id, carryover_bonus_granted')
+          .eq('status', 'pending')
+          .eq('session_number', sn)
+        for (const row of pending || []) {
+          const r = row as { id: string; user_id: string; carryover_bonus_granted: boolean }
+          if (!r.carryover_bonus_granted) {
+            try {
+              await addXp(supabase, r.user_id, CARRYOVER_XP)
+            } catch (e) {
+              console.error('Carryover XP grant error:', e)
+            }
+            await supabase
+              .from('submissions')
+              .update({ carryover_bonus_granted: true })
+              .eq('id', r.id)
+          }
+        }
         const { error: updateErr } = await supabase
           .from('submission_sessions')
           .update({ ended_at: new Date().toISOString() })

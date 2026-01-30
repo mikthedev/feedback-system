@@ -164,3 +164,45 @@ html, body {
 .button-press:active {
   animation: button-press 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* XP section animations */
+@keyframes xp-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(202, 247, 111, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(202, 247, 111, 0);
+  }
+}
+
+@keyframes xp-glow {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.15);
+  }
+}
+
+@keyframes xp-stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-xp-pulse {
+  animation: xp-pulse 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.animate-xp-glow {
+  animation: xp-glow 2.5s ease-in-out infinite;
+}
+
+.animate-xp-stagger-in {
+  animation: xp-stagger-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

@@ -37,6 +37,18 @@ The schema file ends with `DROP TABLE IF EXISTS settings;`. The app now uses `ap
 
 ---
 
+## XP system (per-user `users.xp`, Clear all XP)
+
+For **XP storage** (each user’s XP in `users.xp`) and the **Clear all XP** button, run the SQL from **`supabase/XP_SQL_GUIDE.md`** in order:
+
+1. **Block A** – XP columns and tables (`users.xp`, `user_tokens`, `user_session_xp`, etc.).
+2. **Block B** – Tester role.
+3. **Block C** (optional) – Manual “clear all XP” via `SELECT clear_all_user_xp();`.
+
+The guide includes copy-paste SQL and verification steps. The **Clear all XP** button works after Block A and B (no Block C required).
+
+---
+
 ## Verify
 
 - **app_config:** `SELECT * FROM app_config;` → one row, `submissions_open` boolean.

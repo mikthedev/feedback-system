@@ -77,6 +77,7 @@ SoundCloudEmbed.displayName = 'SoundCloudEmbed'
 
 interface Submission {
   id: string
+  user_id: string
   soundcloud_url: string
   description?: string
   artist_name?: string
@@ -117,6 +118,8 @@ export default function CuratorPage() {
   const [success, setSuccess] = useState<string | boolean>(false)
   const [submissionsOpen, setSubmissionsOpen] = useState(true)
   const [toggling, setToggling] = useState(false)
+  const [clearingXp, setClearingXp] = useState(false)
+  const [grantingDonation, setGrantingDonation] = useState(false)
   const [embedData, setEmbedData] = useState<EmbedData | null>(null)
   const [submissionArtworks, setSubmissionArtworks] = useState<SubmissionArtwork>({})
   const [sessions, setSessions] = useState<any[]>([])
@@ -370,6 +373,51 @@ export default function CuratorPage() {
     }
   }
 
+  const handleGrantDonationXp = async () => {
+    if (!selectedSubmission?.user_id) return
+    setGrantingDonation(true)
+    setError('')
+    try {
+      const res = await fetch('/api/xp/grant-donation', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: selectedSubmission.user_id }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Failed to grant donation XP')
+        return
+      }
+      setSuccess('+20 donation XP granted.')
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (e) {
+      setError('An error occurred. Please try again.')
+    } finally {
+      setGrantingDonation(false)
+    }
+  }
+
+  const handleClearAllXp = async () => {
+    if (!confirm('Clear all XP for every user? This cannot be undone.')) return
+    setClearingXp(true)
+    setError('')
+    try {
+      const res = await fetch('/api/xp/clear-all', { method: 'POST', credentials: 'include' })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Failed to clear XP')
+        return
+      }
+      setSuccess('All XP cleared.')
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (e) {
+      setError('An error occurred. Please try again.')
+    } finally {
+      setClearingXp(false)
+    }
+  }
+
   // Convert SoundCloud URL to embed URL - simplified approach
   const getEmbedUrl = (url: string) => {
     if (!url || (!url.includes('soundcloud.com') && !url.includes('on.soundcloud.com'))) return ''
@@ -459,6 +507,23 @@ export default function CuratorPage() {
                   }`}
                 >
                   {toggling ? '...' : submissionsOpen ? 'Close' : 'Open'}
+                </button>
+              </div>
+
+              {/* Clear all XP */}
+              <div className="flex items-center justify-between p-3 bg-background-lighter rounded-lg border border-amber-500/30">
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-text-primary">Clear all XP</h3>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    Set every user&apos;s XP to 0 (stored in Supabase)
+                  </p>
+                </div>
+                <button
+                  onClick={handleClearAllXp}
+                  disabled={clearingXp}
+                  className="px-4 py-1.5 text-sm rounded-button font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md active:scale-[0.98] button-press"
+                >
+                  {clearingXp ? '...' : 'Clear all XP'}
                 </button>
               </div>
 
@@ -627,6 +692,16 @@ export default function CuratorPage() {
                 </div>
 
                 {/* Scoring System - Compact Grid */}
+                <div className="flex flex-wrap items-center gap-2 pb-2">
+                  <button
+                    type="button"
+                    onClick={handleGrantDonationXp}
+                    disabled={grantingDonation}
+                    className="px-3 py-1.5 text-sm rounded-button font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press"
+                  >
+                    {grantingDonation ? '...' : 'Grant +20 donation XP'}
+                  </button>
+                </div>
                 <form onSubmit={handleSubmitReview} className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     {[

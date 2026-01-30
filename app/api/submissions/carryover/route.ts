@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         artist_name,
         session_number,
         created_at,
-        users (
+        users!submissions_user_id_fkey (
           display_name
         )
       `)

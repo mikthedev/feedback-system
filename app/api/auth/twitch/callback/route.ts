@@ -39,6 +39,9 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.json()
     const accessToken = tokenData.access_token
+    const refreshToken = tokenData.refresh_token ?? ''
+    const expiresIn = typeof tokenData.expires_in === 'number' ? tokenData.expires_in : 0
+    const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString()
 
     // Get user info from Twitch
     const userResponse = await fetch('https://api.twitch.tv/helix/users', {
@@ -126,6 +129,18 @@ export async function GET(request: NextRequest) {
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7,
     })
+
+    // Persist Twitch tokens for follow/sub checks (user_tokens)
+    await supabase.from('user_tokens').upsert(
+      {
+        user_id: userId,
+        access_token: accessToken,
+        refresh_token: refreshToken || '',
+        expires_at: expiresAt,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' }
+    )
 
     return NextResponse.redirect(new URL('/dashboard', request.url))
   } catch (error) {

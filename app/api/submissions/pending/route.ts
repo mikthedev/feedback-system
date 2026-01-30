@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       .from('submissions')
       .select(`
         *,
-        users (
+        users!submissions_user_id_fkey (
           display_name,
           twitch_id
         )

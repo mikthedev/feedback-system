@@ -22,7 +22,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ user })
+    const u = user as Record<string, unknown>
+    let xp = 0
+    const v = u.xp
+    if (typeof v === 'number' && !Number.isNaN(v)) xp = Math.max(0, Math.floor(v))
+    else if (typeof v === 'string') {
+      const n = parseInt(v, 10)
+      if (!Number.isNaN(n)) xp = Math.max(0, n)
+    }
+    return NextResponse.json({ user: { ...u, xp } })
   } catch (error) {
     console.error('Error fetching user:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

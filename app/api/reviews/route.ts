@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { reviewSchema } from '@/lib/validators'
+import { addXp, curatorAverage, curatorXpFromAverage } from '@/lib/xp'
 import { cookies } from 'next/headers'
 
 // POST - Create review (curator only)
@@ -75,6 +76,30 @@ export async function POST(request: NextRequest) {
       .eq('id', validatedData.submission_id)
 
     if (updateError) throw updateError
+
+    // Grant curator XP to the submitter (not the curator)
+    const { data: submission, error: subErr } = await supabase
+      .from('submissions')
+      .select('user_id')
+      .eq('id', validatedData.submission_id)
+      .single()
+
+    if (!subErr && submission?.user_id) {
+      const avg = curatorAverage(
+        validatedData.sound_score,
+        validatedData.structure_score,
+        validatedData.mix_score,
+        validatedData.vibe_score
+      )
+      const xpAmount = curatorXpFromAverage(avg)
+      if (xpAmount > 0) {
+        try {
+          await addXp(supabase, submission.user_id, xpAmount)
+        } catch (e) {
+          console.error('Curator XP grant error:', e)
+        }
+      }
+    }
 
     return NextResponse.json({ 
       success: true, 

@@ -25,7 +25,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Get pending submissions with user info
+    const { data: currentSession } = await supabase
+      .from('submission_sessions')
+      .select('session_number')
+      .is('ended_at', null)
+      .order('session_number', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!currentSession?.session_number) {
+      return NextResponse.json({ submissions: [] })
+    }
+
+    const sn = currentSession.session_number
+
     const { data: submissions, error } = await supabase
       .from('submissions')
       .select(`
@@ -36,11 +49,13 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('status', 'pending')
+      .eq('session_number', sn)
+      .order('queue_position', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true })
 
     if (error) throw error
 
-    return NextResponse.json({ submissions })
+    return NextResponse.json({ submissions: submissions ?? [] })
   } catch (error) {
     console.error('Error fetching pending submissions:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

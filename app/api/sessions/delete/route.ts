@@ -68,6 +68,14 @@ export async function DELETE(request: NextRequest) {
 
         if (deleteSubmissionsError) throw deleteSubmissionsError
 
+        // Reset user_session_xp for these sessions (moves_used, sub/donation flags, etc.)
+        const { error: deleteUsxError } = await supabase
+          .from('user_session_xp')
+          .delete()
+          .in('session_number', sessionNumbers)
+
+        if (deleteUsxError) throw deleteUsxError
+
         // Delete the sessions
         const { error: deleteSessionsError } = await supabase
           .from('submission_sessions')
@@ -105,6 +113,14 @@ export async function DELETE(request: NextRequest) {
         .in('session_number', validSessionNumbers)
 
       if (deleteSubmissionsError) throw deleteSubmissionsError
+
+      // Reset user_session_xp for these sessions
+      const { error: deleteUsxError } = await supabase
+        .from('user_session_xp')
+        .delete()
+        .in('session_number', validSessionNumbers)
+
+      if (deleteUsxError) throw deleteUsxError
 
       // Delete the sessions
       const { error: deleteSessionsError } = await supabase

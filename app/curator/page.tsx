@@ -75,6 +75,12 @@ const SoundCloudEmbed = memo(({
 
 SoundCloudEmbed.displayName = 'SoundCloudEmbed'
 
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return n + (s[(v - 20) % 10] || s[v] || s[0])
+}
+
 interface Submission {
   id: string
   user_id: string
@@ -232,7 +238,7 @@ export default function CuratorPage() {
 
   const fetchPendingSubmissions = async () => {
     try {
-      const response = await fetch('/api/submissions/pending')
+      const response = await fetch('/api/submissions/pending', { credentials: 'include' })
       if (response.ok) {
         const data = await response.json()
         setSubmissions(data.submissions || [])
@@ -267,7 +273,11 @@ export default function CuratorPage() {
     fetchPendingSubmissions()
     fetchSubmissionsStatus()
     fetchSessions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only fetch
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(fetchPendingSubmissions, 8000)
+    return () => clearInterval(interval)
   }, [])
 
   const handleScoreChange = (field: string, value: string) => {
@@ -583,22 +593,22 @@ export default function CuratorPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Compact Submissions List */}
-          <div className="lg:col-span-1 bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border border-gray-800/50 flex flex-col min-w-0 max-w-full">
-            <h2 className="text-lg font-bold text-text-primary mb-3 flex-shrink-0">
-              Pending ({submissions.length})
+          {/* Queue-ordered submissions list (matches dashboard queue) */}
+          <div className="lg:col-span-1 bg-background-light rounded-xl shadow-lg p-3 animate-fade-in border border-gray-800/50 flex flex-col min-w-0 max-w-full">
+            <h2 className="text-sm font-bold text-text-primary mb-2 flex-shrink-0">
+              Queue · Pending ({submissions.length})
             </h2>
             {submissions.length === 0 ? (
-              <p className="text-sm text-text-secondary">No pending submissions</p>
+              <p className="text-xs text-text-secondary">No pending submissions</p>
             ) : (
-              <div className="space-y-1.5 max-h-[calc(100vh-300px)] overflow-y-auto overflow-x-hidden scrollbar-hide flex-1 min-w-0 w-full">
-                {submissions.map((submission) => (
+              <div className="space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto overflow-x-hidden scrollbar-hide flex-1 min-w-0 w-full">
+                {submissions.map((submission, index) => (
                   <div
                     key={submission.id}
-                    className={`border rounded-lg p-2 cursor-pointer transition-all duration-200 w-full min-w-0 max-w-full ${
+                    className={`flex items-center gap-2 border rounded-lg p-1.5 cursor-pointer transition-all duration-200 w-full min-w-0 max-w-full ${
                       selectedSubmission?.id === submission.id
-                        ? 'border-primary bg-primary/10 shadow-md scale-[1.01]'
-                        : 'border-gray-800/50 hover:border-primary/50 hover:shadow-sm hover:bg-background-lighter'
+                        ? 'border-primary bg-primary/10 shadow-md'
+                        : 'border-gray-800/50 hover:border-primary/50 hover:bg-background-lighter'
                     }`}
                     onClick={async () => {
                       setScores({
@@ -611,48 +621,45 @@ export default function CuratorPage() {
                       setError('')
                       setSuccess(false)
                       setEmbedData(null)
-                      
                       try {
                         const embedResponse = await fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(submission.soundcloud_url)}`)
                         if (embedResponse.ok) {
                           const embedResult = await embedResponse.json()
-                          setEmbedData({ 
-                            html: embedResult.html,
-                            thumbnail_url: embedResult.thumbnail_url 
-                          })
+                          setEmbedData({ html: embedResult.html, thumbnail_url: embedResult.thumbnail_url })
                         } else {
                           setEmbedData({ error: 'Failed to load embed' })
                         }
-                      } catch (error) {
+                      } catch {
                         setEmbedData({ error: 'Failed to load embed' })
                       }
                     }}
                   >
-                    <div className="flex gap-2 w-full min-w-0">
-                      {submissionArtworks[submission.id] && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={submissionArtworks[submission.id] || ''}
-                          alt={submission.song_title || 'Track artwork'}
-                          className="w-12 h-12 rounded object-cover flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none'
-                          }}
-                        />
-                      )}
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        <p className="font-semibold text-xs text-text-primary truncate">
-                          {submission.song_title || 'Untitled Track'}
-                        </p>
-                        <p className="text-xs text-text-secondary truncate mt-0.5">
-                          {submission.artist_name || submission.users.display_name}
-                        </p>
-                        {submission.session_number && (
-                          <p className="text-xs text-text-muted mt-0.5">
-                            #{submission.session_number}
-                          </p>
-                        )}
+                    <div
+                      className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center"
+                      title={`${ordinal(index + 1)} in queue`}
+                    >
+                      <span className="text-[10px] font-bold text-primary">{index + 1}</span>
+                    </div>
+                    {submissionArtworks[submission.id] ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={submissionArtworks[submission.id] || ''}
+                        alt=""
+                        className="w-9 h-9 rounded object-cover flex-shrink-0"
+                        onError={(e) => { e.currentTarget.style.display = 'none' }}
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded bg-background-lighter border border-gray-800/50 flex-shrink-0 flex items-center justify-center">
+                        <span className="text-[10px] text-text-muted">♪</span>
                       </div>
+                    )}
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <p className="font-semibold text-[11px] text-text-primary truncate">
+                        {submission.song_title || 'Untitled'}
+                      </p>
+                      <p className="text-[10px] text-text-secondary truncate">
+                        {submission.artist_name || submission.users.display_name}
+                      </p>
                     </div>
                   </div>
                 ))}

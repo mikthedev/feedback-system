@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Queue, { type QueueLoadedItem } from '../components/Queue'
 import Carryover from '../components/Carryover'
 import XpHelpModal, { getXpHelpDismissed } from '../components/XpHelpModal'
+import DashboardFooter from '../components/DashboardFooter'
 
 interface User {
   id: string
@@ -60,10 +61,14 @@ export default function Dashboard() {
   const [xp, setXp] = useState<number>(0)
   const [xpUsedThisSession, setXpUsedThisSession] = useState<number>(0)
   const [unusedExternal, setUnusedExternal] = useState<number>(0)
+  const [externalXpThisSession, setExternalXpThisSession] = useState<number>(0)
   const [xpStatus, setXpStatus] = useState<{
     time_xp_active: boolean
     following_mikegtcoff: boolean | null
   } | null>(null)
+  const [xpLog, setXpLog] = useState<Array<{ id: string; amount: number; source: string; description?: string; created_at: string }>>([])
+  const [loadingXpLog, setLoadingXpLog] = useState(false)
+  const [carryoverCount, setCarryoverCount] = useState(0)
   const [queueRefetchTrigger, setQueueRefetchTrigger] = useState(0)
   const [xpAdjustMessage, setXpAdjustMessage] = useState<string | null>(null)
   const [useXpMessage, setUseXpMessage] = useState<string | null>(null)
@@ -160,6 +165,40 @@ export default function Dashboard() {
       else if (typeof ue === 'string') {
         const n = parseInt(ue, 10)
         if (!Number.isNaN(n)) setUnusedExternal(Math.max(0, n))
+      }
+      const ext = data.external_xp_this_session
+      if (typeof ext === 'number' && !Number.isNaN(ext)) setExternalXpThisSession(Math.max(0, Math.floor(ext)))
+      else if (typeof ext === 'string') {
+        const n = parseInt(ext, 10)
+        if (!Number.isNaN(n)) setExternalXpThisSession(Math.max(0, n))
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const fetchXpLog = async () => {
+    setLoadingXpLog(true)
+    try {
+      const res = await fetch('/api/xp/log', { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        setXpLog(data.log ?? [])
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setLoadingXpLog(false)
+    }
+  }
+
+  const fetchCarryoverCount = async () => {
+    try {
+      const res = await fetch('/api/submissions/carryover', { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        const count = typeof data.my_carryover_count === 'number' ? data.my_carryover_count : 0
+        setCarryoverCount(count)
       }
     } catch {
       /* ignore */
@@ -310,6 +349,8 @@ export default function Dashboard() {
     fetchReviewedList()
     fetchXp()
     fetchXpStatus()
+    fetchXpLog()
+    fetchCarryoverCount()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only fetch
   }, [])
 
@@ -335,6 +376,8 @@ export default function Dashboard() {
       fetchReviewedList()
       fetchXp()
       fetchXpStatus()
+      fetchXpLog()
+      fetchCarryoverCount()
     }
     const handler = () => document.visibilityState === 'visible' && onFocus()
     window.addEventListener('visibilitychange', handler)
@@ -550,6 +593,21 @@ export default function Dashboard() {
       {/* Main Content with consistent spacing */}
       <div className="pt-12 md:pt-14 p-3 md:p-4">
         <div className="max-w-6xl mx-auto space-y-4">
+          {/* Small indicators on top — one compact row */}
+          <DashboardFooter
+            xp={xp}
+            xpUsedThisSession={xpUsedThisSession}
+            unusedExternal={unusedExternal}
+            externalXpThisSession={externalXpThisSession}
+            timeXpActive={xpStatus?.time_xp_active ?? null}
+            followingMikegtcoff={xpStatus?.following_mikegtcoff ?? null}
+            carryoverCount={carryoverCount}
+            xpLog={xpLog}
+            loadingLog={loadingXpLog}
+            onShowXpHelp={() => setShowXpHelpModal(true)}
+            compactTop
+          />
+
           <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-gray-800/50">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
               <div className="flex flex-wrap items-center gap-2 md:gap-3">
@@ -582,9 +640,6 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
-                  <span className="text-xs text-text-muted">
-                    Used this session: <span className="font-semibold text-text-primary">{xpUsedThisSession}</span> / 300
-                  </span>
                   {xp >= 100 && xpUsedThisSession < 300 && (
                     <button
                       type="button"
@@ -601,55 +656,26 @@ export default function Dashboard() {
                     {useXpMessage}
                   </p>
                 )}
-                {/* Live XP indicators */}
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium border ${
-                      xpStatus?.time_xp_active
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                        : 'bg-gray-500/10 text-text-muted border-gray-600/40'
-                    }`}
-                    title={xpStatus?.time_xp_active ? 'Stream live + submissions open: +5 XP per 5 min' : 'Time XP paused (offline or submissions closed)'}
-                  >
-                    {xpStatus?.time_xp_active ? '✓' : '○'} Time XP {xpStatus?.time_xp_active ? 'on' : 'off'}
-                  </span>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium border ${
-                      xpStatus?.following_mikegtcoff === true
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                        : xpStatus?.following_mikegtcoff === false
-                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                          : 'bg-gray-500/10 text-text-muted border-gray-600/40'
-                    }`}
-                    title={
-                      xpStatus?.following_mikegtcoff === true
-                        ? 'Following MikeGTC — eligible for +10 XP (if not already claimed)'
-                        : xpStatus?.following_mikegtcoff === false
-                          ? 'Not following MikeGTC — follow to earn +10 XP'
-                          : 'Follow status unknown (log in again to refresh)'
-                    }
-                  >
-                    {xpStatus?.following_mikegtcoff === true ? '✓' : xpStatus?.following_mikegtcoff === false ? '✗' : '—'} Follow MikeGTC
-                  </span>
-                </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
-                {/* Average ratings – only when user has at least one reviewed submission */}
+                {/* Average ratings — compact: collapse into details or single line */}
                 {getAverageScores() && (
-                  <div className="flex flex-wrap items-center gap-1.5 md:gap-2 order-first md:order-none w-full md:w-auto mb-2 md:mb-0 md:mr-2">
-                    <span className="text-xs text-text-muted font-medium hidden sm:inline">Avg:</span>
-                    {[
-                      { label: 'Sound', score: getAverageScores()!.sound, color: 'text-blue-400' },
-                      { label: 'Structure', score: getAverageScores()!.structure, color: 'text-purple-400' },
-                      { label: 'Mix', score: getAverageScores()!.mix, color: 'text-pink-400' },
-                      { label: 'Vibe', score: getAverageScores()!.vibe, color: 'text-orange-400' },
-                    ].map(({ label, score, color }) => (
-                      <div key={label} className="px-2 py-1 bg-background-lighter border border-gray-700/50 rounded-lg">
-                        <p className="text-[10px] text-text-muted leading-tight">{label}</p>
-                        <p className={`text-xs font-bold ${color} leading-tight`}>{score}/10</p>
-                      </div>
-                    ))}
-                  </div>
+                  <details className="group/avg order-first md:order-none">
+                    <summary className="list-none cursor-pointer text-xs text-text-muted hover:text-text-primary font-medium inline-flex items-center gap-1">
+                      Avg <span className="text-primary font-bold">{((Number(getAverageScores()!.sound) + Number(getAverageScores()!.structure) + Number(getAverageScores()!.mix) + Number(getAverageScores()!.vibe)) / 4).toFixed(1)}</span>/10
+                      <svg className="w-3 h-3 opacity-70 group-open/avg:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </summary>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                      {[
+                        { label: 'S', score: getAverageScores()!.sound, color: 'text-blue-400' },
+                        { label: 'St', score: getAverageScores()!.structure, color: 'text-purple-400' },
+                        { label: 'M', score: getAverageScores()!.mix, color: 'text-pink-400' },
+                        { label: 'V', score: getAverageScores()!.vibe, color: 'text-orange-400' },
+                      ].map(({ label, score, color }) => (
+                        <span key={label} className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${color} bg-background-lighter border border-gray-700/50`} title={label === 'S' ? 'Sound' : label === 'St' ? 'Structure' : label === 'M' ? 'Mix' : 'Vibe'}>{label} {score}</span>
+                      ))}
+                    </div>
+                  </details>
                 )}
                 {user.role === 'curator' && (
                   <Link
@@ -659,13 +685,6 @@ export default function Dashboard() {
                     MikeGTC Panel
                   </Link>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setShowXpHelpModal(true)}
-                  className="text-text-secondary hover:text-primary text-xs md:text-sm font-medium transition-colors underline underline-offset-2"
-                >
-                  How XP works
-                </button>
                 <Link
                   href="/submit"
                   className="bg-primary hover:bg-primary-hover active:bg-primary-active text-background px-3 py-1.5 rounded-button transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press text-xs md:text-sm font-medium"
@@ -1080,25 +1099,19 @@ export default function Dashboard() {
             <Carryover />
           </div>
 
-          {/* XP footer: Used this session, Stored, Unused external */}
-          <div className="max-w-2xl mx-auto mt-6 pt-4 border-t border-gray-800/50">
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <span className="text-text-muted">
-                Used this session: <span className="font-semibold text-text-primary">{xpUsedThisSession}</span> / 300 XP
-              </span>
-              <span className="text-text-muted">
-                Stored: <span className="font-semibold text-primary">{xp}</span> XP
-              </span>
-              {unusedExternal > 0 && (
-                <span className="text-text-muted">
-                  Unused external: <span className="font-semibold text-primary">{unusedExternal}</span> XP
-                </span>
-              )}
-              <span className="text-xs text-text-muted">
-                Up to 300 XP per session via &quot;Use my XP&quot;. Stored XP carries over.
-              </span>
-            </div>
-          </div>
+          {/* Dashboard footer: XP summary + How XP works + expandable XP log */}
+          <DashboardFooter
+            xp={xp}
+            xpUsedThisSession={xpUsedThisSession}
+            unusedExternal={unusedExternal}
+            externalXpThisSession={externalXpThisSession}
+            timeXpActive={xpStatus?.time_xp_active ?? null}
+            followingMikegtcoff={xpStatus?.following_mikegtcoff ?? null}
+            carryoverCount={carryoverCount}
+            xpLog={xpLog}
+            loadingLog={loadingXpLog}
+            onShowXpHelp={() => setShowXpHelpModal(true)}
+          />
         </div>
       </div>
 

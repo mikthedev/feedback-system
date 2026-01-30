@@ -1,6 +1,6 @@
 # Demo Feedback System
 
-A minimal MVP for a demo submission and feedback system that can be embedded into a Framer website via iframe.
+A minimal MVP for a demo submission and feedback system that can be embedded into a Framer website via iframe. Users log in with Twitch, submit SoundCloud demos, and earn XP for participation; curators review submissions and manage sessions (open/close). Queue position can be improved by spending XP.
 
 ## Tech Stack
 
@@ -14,14 +14,35 @@ A minimal MVP for a demo submission and feedback system that can be embedded int
 
 ## Features
 
-- ✅ Twitch OAuth authentication
-- ✅ Demo submission (SoundCloud URLs only)
-- ✅ Server-side URL validation (abuse-resistant)
-- ✅ Email confirmation via Resend
-- ✅ Curator panel for reviewing submissions
-- ✅ User dashboard to view submissions and scores
-- ✅ Iframe-embeddable for Framer
-- ✅ Role-based access control (user/curator)
+### Authentication & roles
+- Twitch OAuth authentication
+- Role-based access: **user**, **curator**, **tester**
+- Cookie-based session management
+
+### Submissions & reviews
+- Demo submission (SoundCloud URLs only), with optional description, artist name, song title
+- Server-side URL validation (abuse-resistant)
+- Edit pending submissions via `/submit?edit=<id>`
+- Curator panel: review pending submissions (sound, structure, mix, vibe 0–10), submit reviews
+- User dashboard: view own submissions, scores, and reviewed tracks
+- SoundCloud oEmbed for in-app playback
+
+### Sessions & carryover
+- **Submission sessions**: curator can open/close submissions. When closed, the current session ends.
+- **Carryover**: Pending submissions from a closed session are held and automatically join the next session when submissions open again. See `CARRYOVER_BEHAVIOR.md`.
+
+### XP system
+- **Per-user XP** stored in `users.xp`
+- **Earning XP**: time-based (+5 XP per 5 min when stream is live and submissions open), follow bonus (+10), sub/donation (+20), curator ratings (average 0–10 → 0–60 XP), audience score (0–10 → 0–20 XP)
+- **Queue movement**: spend 100 XP per position move (max 3 moves per session); tie-break by presence time
+- **Carryover bonus**: +25 XP when your carried-over submission is in the next session
+- Curator: **Clear all XP**, **Adjust XP** (tester/curator), **Grant donation XP**
+- **XP log**: per-user history of XP changes (source, amount, description)
+
+### Other
+- Email confirmation via Resend
+- Iframe-embeddable for Framer
+- Submissions open/closed controlled via `app_config` (curator toggles in app)
 
 ## Prerequisites
 
@@ -42,9 +63,10 @@ npm install
 
 ### 2. Supabase Setup
 
-1. Go to [supabase.com](https://supabase.com) and create a new project
-2. In the **SQL Editor**, run the entire contents of `supabase/schema.sql` (single canonical schema for all tables, functions, and RPCs). See `supabase/APPLY_TO_SUPABASE.md` for step-by-step instructions and how to change or re-apply the schema.
-3. Go to Settings > API and copy:
+1. Go to [supabase.com](https://supabase.com) and create a new project.
+2. **Base schema**: In **SQL Editor**, run the entire contents of `supabase/schema.sql`. See `supabase/APPLY_TO_SUPABASE.md` for step-by-step instructions.
+3. **XP system**: Run the SQL blocks from `supabase/XP_SQL_GUIDE.md` in order (Block A: XP columns/tables, Block B: tester role). Block C is optional (manual clear-all).
+4. Go to **Settings → API** and copy:
    - Project URL
    - `anon` public key
    - `service_role` secret key
@@ -67,7 +89,7 @@ npm install
 
 ### 5. Environment Variables
 
-Create a `.env.local` file in the root directory:
+Create a `.env.local` file in the root (see `.env.local.example`):
 
 ```env
 # Supabase
@@ -98,22 +120,29 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Database Schema
 
-The system uses three main tables:
+**Base schema** (`supabase/schema.sql`):
 
-- **users**: Stores Twitch OAuth user data and roles
-- **submissions**: Stores demo submissions with SoundCloud URLs
-- **reviews**: Stores curator ratings (sound, structure, mix, vibe)
+- **users** – Twitch OAuth user data, `role` (user/curator/tester). After XP setup: `xp`, `follow_bonus_granted`
+- **submissions** – Demo submissions (SoundCloud URL, description, artist_name, song_title), `status` (pending/reviewed), `session_number`
+- **reviews** – Curator ratings per submission (sound, structure, mix, vibe)
+- **submission_sessions** – Session tracking (`session_number`, `started_at`, `ended_at`); RPCs `get_or_create_current_session()`, `close_current_session()`
+- **app_config** – Single row: `submissions_open` (boolean)
 
-See `supabase/schema.sql` for the complete schema (indexes, triggers; RLS is disabled).
+**XP additions** (from `supabase/XP_SQL_GUIDE.md`):
 
-## Making a User a Curator
+- **users**: `xp`, `follow_bonus_granted`
+- **user_tokens**, **user_session_xp**, **xp_log** (and related columns on submissions)
 
-To assign curator role to a user:
+RLS is disabled; auth is Twitch OAuth + API with service role server-side.
 
-1. Go to Supabase Dashboard > Table Editor > `users`
-2. Find the user by their `twitch_id` or `display_name`
-3. Edit the `role` field and change it from `user` to `curator`
+## Making a User a Curator or Tester
+
+1. Go to **Supabase Dashboard → Table Editor → users**
+2. Find the user by `twitch_id` or `display_name`
+3. Set **role** to `curator` or `tester`
 4. Save
+
+Curators can close/open submissions, review, clear all XP, adjust XP, grant donation XP. Testers can adjust XP for testing.
 
 ## Deployment to Vercel
 
@@ -130,86 +159,111 @@ git push -u origin main
 ### 2. Deploy to Vercel
 
 1. Go to [vercel.com](https://vercel.com)
-2. Click "New Project"
-3. Import your GitHub repository
-4. Add all environment variables from `.env.local`
-5. Update `NEXT_PUBLIC_TWITCH_REDIRECT_URI` to your Vercel URL:
-   ```
-   NEXT_PUBLIC_TWITCH_REDIRECT_URI=https://yourproject.vercel.app/api/auth/twitch/callback
-   ```
-6. Update `NEXT_PUBLIC_APP_URL` to your Vercel URL
-7. Deploy
+2. Click **New Project** and import your GitHub repository
+3. Add all environment variables from `.env.local`
+4. Set:
+   - `NEXT_PUBLIC_TWITCH_REDIRECT_URI` = `https://yourproject.vercel.app/api/auth/twitch/callback`
+   - `NEXT_PUBLIC_APP_URL` = `https://yourproject.vercel.app`
+5. Deploy
 
-### 3. Update Twitch OAuth Redirect URI
+### 3. Twitch OAuth
 
-After deployment, add your production callback URL to your Twitch app's OAuth Redirect URLs list.
+Add your production callback URL to the Twitch app’s OAuth Redirect URLs.
 
 ## Embedding in Framer
 
 1. In Framer, add an **Embed** component
-2. Set the URL to your deployed Vercel app: `https://yourproject.vercel.app`
-3. The app will automatically work in the iframe
+2. Set the URL to your deployed app: `https://yourproject.vercel.app`
+3. The app will work in the iframe
 
 ## Security Features
 
-- ✅ Server-side SoundCloud URL validation (no frontend bypass)
-- ✅ Duplicate submission prevention (1-hour cooldown)
-- ✅ Role-based access control
-- ✅ Cookie-based session management
-- ✅ Enter key prevention on submission form
+- Server-side SoundCloud URL validation (no frontend bypass)
+- Duplicate submission prevention (per user/session/URL)
+- Role-based access control (user / curator / tester)
+- Cookie-based session management
+- Enter key prevention on submission form where appropriate
 
 ## API Routes
 
-- `GET /api/auth/twitch` - Initiate Twitch OAuth
-- `GET /api/auth/twitch/callback` - Twitch OAuth callback
-- `GET /api/auth/me` - Get current user
-- `POST /api/auth/logout` - Logout
-- `GET /api/submissions` - Get user's submissions
-- `POST /api/submissions` - Create new submission
-- `GET /api/submissions/pending` - Get pending submissions (curator only)
-- `POST /api/reviews` - Submit review (curator only)
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/auth/twitch` | GET | Start Twitch OAuth |
+| `/api/auth/twitch/callback` | GET | Twitch OAuth callback |
+| `/api/auth/me` | GET | Current user |
+| `/api/auth/logout` | POST | Logout |
+| `/api/sessions` | GET | List/current session (curator) |
+| `/api/sessions/delete` | POST | Delete session (curator) |
+| `/api/settings/submissions` | GET, POST | Submissions open/closed (GET public); POST toggles (curator). Opening moves carryover into new session. |
+| `/api/submissions` | GET, POST | User’s submissions, create submission |
+| `/api/submissions/[id]` | GET | Single submission (owner) |
+| `/api/submissions/pending` | GET | Pending submissions (curator) |
+| `/api/submissions/queue` | GET | Queue for current session |
+| `/api/submissions/reviewed` | GET | Reviewed submissions (user) |
+| `/api/submissions/carryover` | GET | Carryover submissions (pending from closed sessions) |
+| `/api/reviews` | POST | Submit review (curator) |
+| `/api/soundcloud/oembed` | GET | SoundCloud oEmbed proxy |
+| `/api/xp` | GET | Current user XP |
+| `/api/xp/status` | GET | XP status (time XP, follow) |
+| `/api/xp/adjust` | POST | Adjust user XP (curator/tester) |
+| `/api/xp/use` | POST | Use XP for queue move |
+| `/api/xp/clear-all` | POST | Clear all users’ XP (curator) |
+| `/api/xp/grant-donation` | POST | Grant donation XP (curator) |
+| `/api/xp/log` | GET | Current user XP log |
+| `/api/test-db` | GET | Test DB connection |
 
 ## Project Structure
 
 ```
 demo-feedback-system/
 ├── app/
-│   ├── api/              # API routes
-│   ├── curator/          # Curator panel page
-│   ├── dashboard/        # User dashboard
-│   ├── submit/           # Submission page
-│   ├── layout.tsx        # Root layout
-│   ├── page.tsx          # Home/login page
-│   └── globals.css       # Global styles
+│   ├── api/                 # API routes (auth, sessions, settings, submissions, reviews, xp, soundcloud, test-db)
+│   ├── components/          # Carryover, DashboardFooter, Footer, Queue, XpHelpModal
+│   ├── curator/             # Curator panel page
+│   ├── dashboard/           # User dashboard page
+│   ├── submit/              # Submit / edit submission page
+│   ├── layout.tsx
+│   ├── page.tsx             # Home / Twitch login
+│   └── globals.css
 ├── lib/
-│   ├── supabase/         # Supabase clients
-│   ├── auth.ts           # Auth helpers
-│   ├── validators.ts     # Validation schemas
-│   └── resend.ts         # Email service
+│   ├── supabase/            # admin, client, server
+│   ├── auth.ts
+│   ├── auth-client.ts
+│   ├── resend.ts
+│   ├── twitch.ts
+│   ├── validators.ts
+│   └── xp.ts                # XP constants, queue movement, rating→XP
 ├── supabase/
-│   └── schema.sql        # Database schema
+│   ├── schema.sql           # Canonical base schema (run first)
+│   ├── migrations/          # Optional migration files (XP, tester, etc.)
+│   ├── APPLY_TO_SUPABASE.md # How to apply schema
+│   └── XP_SQL_GUIDE.md      # XP blocks to run after schema.sql
+├── middleware.ts
 └── README.md
 ```
 
+## Documentation
+
+- **supabase/APPLY_TO_SUPABASE.md** – How to apply and change the schema
+- **supabase/XP_SQL_GUIDE.md** – XP system SQL (blocks A, B, C)
+- **CARRYOVER_BEHAVIOR.md** – Carryover flow when sessions close/open
+
 ## Troubleshooting
 
-### Twitch OAuth not working
-- Verify redirect URI matches exactly in Twitch console
-- Check environment variables are set correctly
-- Ensure callback URL is accessible
+**Twitch OAuth not working**
+- Redirect URI must match exactly in the Twitch console
+- Check all Twitch env vars in Vercel/local
 
-### Email not sending
-- Verify Resend API key is correct
-- Check domain verification in Resend dashboard
+**Email not sending**
+- Check Resend API key and domain verification
 - Ensure `RESEND_FROM_EMAIL` is verified
 
-### Database errors / "Supabase can't see users or submissions"
-- Run `supabase/schema.sql` in Supabase SQL Editor (creates tables, **RLS is disabled** for this app)
-- **Users and submissions** are in **Table Editor** → `users` and `submissions`, **not** in Authentication → Users (we use Twitch OAuth)
-- Verify `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` match the project you're viewing in the dashboard
-- Hit `/api/test-db` to confirm the app can read from the same DB
+**Database / “can’t see users or submissions”**
+- Run `supabase/schema.sql` first, then XP blocks from `XP_SQL_GUIDE.md`
+- Users and submissions are in **Table Editor** → `users`, `submissions` (not Supabase Auth)
+- Confirm `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` match the project
+- Use `/api/test-db` to verify the app can read from the DB
 
 ## License
 
 MIT
-# feedback-system

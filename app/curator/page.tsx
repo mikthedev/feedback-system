@@ -144,6 +144,7 @@ export default function CuratorPage() {
   const [showSettings, setShowSettings] = useState(false)
   const [showXpHelpModal, setShowXpHelpModal] = useState(false)
   const [skipping, setSkipping] = useState(false)
+  const [showRatingSliders, setShowRatingSliders] = useState(false)
 
   const fetchSubmissionsStatus = async () => {
     try {
@@ -669,202 +670,259 @@ export default function CuratorPage() {
             {error}
           </div>
         )}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-          <div className="lg:col-span-1 bg-background-light rounded-lg sm:rounded-xl shadow-lg p-2 sm:p-3 animate-fade-in border border-gray-800/50 flex flex-col min-w-0 max-w-full">
-            <h2 className="text-xs sm:text-sm font-bold text-text-primary mb-1.5 sm:mb-2 flex-shrink-0">
-              Pending ({submissions.length})
-            </h2>
-            {submissions.length === 0 ? (
-              <p className="text-[11px] sm:text-xs text-text-secondary">No pending submissions</p>
-            ) : (
-              <div className="space-y-1 max-h-[min(40vh,280px)] sm:max-h-[calc(100vh-280px)] overflow-y-auto overflow-x-hidden scrollbar-hide flex-1 min-w-0 w-full">
-                {submissions.map((submission, index) => (
-                  <div
-                    key={submission.id}
-                    className={`flex items-center gap-2 border rounded-lg p-1.5 cursor-pointer transition-all duration-200 w-full min-w-0 max-w-full ${
-                      selectedSubmission?.id === submission.id
-                        ? 'border-primary bg-primary/10 shadow-md'
-                        : 'border-gray-800/50 hover:border-primary/50 hover:bg-background-lighter'
-                    }`}
-                    onClick={async () => {
-                      setScores({
-                        sound_score: '0',
-                        structure_score: '0',
-                        mix_score: '0',
-                        vibe_score: '0',
-                      })
-                      setSelectedSubmission(submission)
-                      setError('')
-                      setSuccess(false)
-                      setEmbedData(null)
-                      try {
-                        const embedResponse = await fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(submission.soundcloud_url)}`)
-                        if (embedResponse.ok) {
-                          const embedResult = await embedResponse.json()
-                          setEmbedData({ html: embedResult.html, thumbnail_url: embedResult.thumbnail_url })
-                        } else {
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Pending submissions sidebar - compact, on the left */}
+          <div className={`${selectedSubmission ? 'hidden lg:block' : 'block'} lg:w-56 xl:w-64 lg:shrink-0`}>
+            <div className="bg-background-light rounded-xl shadow-lg p-3 animate-fade-in border-2 border-gray-700/60">
+              <h2 className="text-sm font-extrabold text-text-primary mb-3 tracking-tight">
+                Queue ({submissions.length})
+              </h2>
+              {submissions.length === 0 ? (
+                <p className="text-xs text-text-secondary font-medium">No pending submissions</p>
+              ) : (
+                <div className="space-y-1.5 max-h-[500px] overflow-y-auto overflow-x-hidden scrollbar-hide">
+                  {submissions.map((submission, index) => (
+                    <div
+                      key={submission.id}
+                      className={`flex items-center gap-2 border-2 rounded-lg p-2 cursor-pointer transition-all duration-200 ${
+                        selectedSubmission?.id === submission.id
+                          ? 'border-primary bg-primary/10 shadow-md'
+                          : 'border-gray-700/50 hover:border-primary/50 hover:bg-background-lighter'
+                      }`}
+                      onClick={async () => {
+                        setScores({
+                          sound_score: '0',
+                          structure_score: '0',
+                          mix_score: '0',
+                          vibe_score: '0',
+                        })
+                        setShowRatingSliders(false)
+                        setSelectedSubmission(submission)
+                        setError('')
+                        setSuccess(false)
+                        setEmbedData(null)
+                        try {
+                          const embedResponse = await fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(submission.soundcloud_url)}`)
+                          if (embedResponse.ok) {
+                            const embedResult = await embedResponse.json()
+                            setEmbedData({ html: embedResult.html, thumbnail_url: embedResult.thumbnail_url })
+                          } else {
+                            setEmbedData({ error: 'Failed to load embed' })
+                          }
+                        } catch {
                           setEmbedData({ error: 'Failed to load embed' })
                         }
-                      } catch {
-                        setEmbedData({ error: 'Failed to load embed' })
-                      }
-                    }}
-                  >
-                    <div
-                      className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center"
-                      title={`${ordinal(index + 1)} in queue`}
+                      }}
                     >
-                      <span className="text-[10px] font-bold text-primary">{index + 1}</span>
-                    </div>
-                    {submissionArtworks[submission.id] ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={submissionArtworks[submission.id] || ''}
-                        alt=""
-                        className="w-9 h-9 rounded object-cover flex-shrink-0"
-                        onError={(e) => { e.currentTarget.style.display = 'none' }}
-                      />
-                    ) : (
-                      <div className="w-9 h-9 rounded bg-background-lighter border border-gray-800/50 flex-shrink-0 flex items-center justify-center">
-                        <span className="text-[10px] text-text-muted">♪</span>
+                      <div
+                        className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center"
+                        title={`${ordinal(index + 1)} in queue`}
+                      >
+                        <span className="text-[10px] font-extrabold text-primary">{index + 1}</span>
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0 overflow-hidden">
-                      <p className="text-[11px] truncate">
-                        <span className="font-semibold text-primary">&quot;{submission.song_title || submissionSoundCloudMetadata[submission.id]?.title || 'Untitled'}&quot;</span>
-                        <span className="text-text-muted font-normal mx-0.5">by</span>
-                        <span className="text-text-secondary italic">&quot;{submission.artist_name || submissionSoundCloudMetadata[submission.id]?.author_name || submission.users.display_name}&quot;</span>
-                      </p>
-                      <p className="text-[10px] truncate flex items-center gap-1.5 mt-0.5">
-                        <span className="text-text-secondary font-medium">&quot;{submission.users.display_name}&quot;</span>
-                        {submission.session_number != null && (
-                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-primary/20 text-primary text-[9px] font-semibold">#{submission.session_number}</span>
-                        )}
-                      </p>
+                      {submissionArtworks[submission.id] ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={submissionArtworks[submission.id] || ''}
+                          alt=""
+                          className="w-8 h-8 rounded object-cover flex-shrink-0 border border-gray-600"
+                          onError={(e) => { e.currentTarget.style.display = 'none' }}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded bg-background-lighter border border-gray-600 flex-shrink-0 flex items-center justify-center">
+                          <span className="text-xs text-text-muted">♪</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <p className="text-xs truncate font-medium text-text-primary">
+                          {submission.song_title || submissionSoundCloudMetadata[submission.id]?.title || 'Untitled'}
+                        </p>
+                        <p className="text-[10px] truncate text-text-secondary">
+                          {submission.users.display_name}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="lg:col-span-2 bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 md:p-6 animate-fade-in border border-gray-800/50 min-w-0">
-            {selectedSubmission ? (
-              <div className="space-y-2 sm:space-y-4">
-                <div className="pb-2 sm:pb-3 border-b border-gray-800/50">
-                  <h2 className="text-sm sm:text-base md:text-lg mb-0.5 sm:mb-1 line-clamp-1">
-                    <span className="font-bold text-primary">&quot;{selectedSubmission.song_title || submissionSoundCloudMetadata[selectedSubmission.id]?.title || 'Untitled Track'}&quot;</span>
-                    <span className="text-text-muted font-normal mx-1">by</span>
-                    <span className="font-semibold text-text-secondary italic">&quot;{selectedSubmission.artist_name || submissionSoundCloudMetadata[selectedSubmission.id]?.author_name || selectedSubmission.users.display_name}&quot;</span>
-                  </h2>
-                  <p className="text-[11px] sm:text-xs md:text-sm line-clamp-1 flex items-center gap-2 flex-wrap">
-                    <span className="text-text-secondary font-medium border-l-2 border-primary/50 pl-2">&quot;{selectedSubmission.users.display_name}&quot;</span>
-                    {selectedSubmission.session_number != null && (
-                      <span className="inline-flex px-2 py-0.5 rounded-md bg-primary/20 text-primary text-xs font-semibold">Session #{selectedSubmission.session_number}</span>
-                    )}
-                  </p>
-                  {selectedSubmission.description && (
-                    <p className="text-[11px] sm:text-xs text-text-muted mt-1 sm:mt-2 line-clamp-2">
-                      {selectedSubmission.description}
-                    </p>
-                  )}
-                </div>
-                <div className="bg-background-lighter rounded-md sm:rounded-lg p-2 sm:p-3 border border-gray-800/50">
-                  <SoundCloudEmbed 
-                    key={`embed-wrapper-${selectedSubmission.id}`}
-                    submissionId={selectedSubmission.id}
-                    embedData={embedData}
-                    soundcloudUrl={selectedSubmission.soundcloud_url}
-                    getEmbedUrl={getEmbedUrl}
-                  />
-                </div>
+          {/* Review window - wider, focuses on embed */}
+          <div className={`${selectedSubmission ? 'block' : 'hidden lg:block'} flex-1 min-w-0`}>
+            <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-5 animate-fade-in border-2 border-gray-700/60">
+              {selectedSubmission ? (
+                <div className="space-y-4">
+                  {/* Back button on mobile */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubmission(null)
+                      setShowRatingSliders(false)
+                    }}
+                    className="lg:hidden flex items-center gap-2 text-text-secondary hover:text-primary transition-colors font-medium text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back
+                  </button>
 
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pb-1.5 sm:pb-2">
-                  <button
-                    type="button"
-                    onClick={handleGrantDonationXp}
-                    disabled={grantingDonation}
-                    className="min-h-[36px] px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-sm rounded-button font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation"
-                  >
-                    {grantingDonation ? '…' : '+20 XP'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSkipToCarryover}
-                    disabled={skipping}
-                    className="min-h-[36px] px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-sm rounded-button font-medium bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation"
-                  >
-                    {skipping ? '…' : 'Skip'}
-                  </button>
-                </div>
-                <form onSubmit={handleSubmitReview} className="space-y-2 sm:space-y-4">
-                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                    {[
-                      { key: 'sound_score', label: 'Sound', colorClass: 'text-blue-400' },
-                      { key: 'structure_score', label: 'Structure', colorClass: 'text-purple-400' },
-                      { key: 'mix_score', label: 'Mix', colorClass: 'text-pink-400' },
-                      { key: 'vibe_score', label: 'Vibe', colorClass: 'text-orange-400' },
-                    ].map(({ key, label, colorClass }) => (
-                      <div key={key} className="space-y-1.5 bg-background rounded-lg p-2.5 border border-gray-800/50">
-                        <div className="flex justify-between items-center">
-                          <label className="text-xs font-semibold text-text-primary">
-                            {label}
-                          </label>
-                          <span className={`text-sm font-bold ${colorClass}`}>
-                            {scores[key as keyof typeof scores]}/10
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="10"
-                          step="0.5"
-                          value={scores[key as keyof typeof scores]}
-                          onChange={(e) => handleSliderChange(key, parseFloat(e.target.value))}
-                          className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer transition-all duration-200 hover:h-2.5"
-                          style={{
-                            background: key === 'sound_score' 
-                              ? `linear-gradient(to right, #60a5fa 0%, #60a5fa ${(parseFloat(scores[key as keyof typeof scores]) / 10) * 100}%, #1f2937 ${(parseFloat(scores[key as keyof typeof scores]) / 10) * 100}%, #1f2937 100%)`
-                              : key === 'structure_score'
-                              ? `linear-gradient(to right, #a78bfa 0%, #a78bfa ${(parseFloat(scores[key as keyof typeof scores]) / 10) * 100}%, #1f2937 ${(parseFloat(scores[key as keyof typeof scores]) / 10) * 100}%, #1f2937 100%)`
-                              : key === 'mix_score'
-                              ? `linear-gradient(to right, #f472b6 0%, #f472b6 ${(parseFloat(scores[key as keyof typeof scores]) / 10) * 100}%, #1f2937 ${(parseFloat(scores[key as keyof typeof scores]) / 10) * 100}%, #1f2937 100%)`
-                              : `linear-gradient(to right, #fb923c 0%, #fb923c ${(parseFloat(scores[key as keyof typeof scores]) / 10) * 100}%, #1f2937 ${(parseFloat(scores[key as keyof typeof scores]) / 10) * 100}%, #1f2937 100%)`
-                          }}
-                        />
-                      </div>
-                    ))}
+                  {/* Track info - compact */}
+                  <div className="flex items-center gap-3 pb-3 border-b border-gray-700/50">
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-base sm:text-lg font-extrabold text-primary tracking-tight truncate">
+                        {selectedSubmission.song_title || submissionSoundCloudMetadata[selectedSubmission.id]?.title || 'Untitled Track'}
+                      </h2>
+                      <p className="text-sm text-text-secondary font-medium truncate">
+                        {selectedSubmission.artist_name || submissionSoundCloudMetadata[selectedSubmission.id]?.author_name || selectedSubmission.users.display_name}
+                        <span className="text-text-muted mx-2">•</span>
+                        <span className="text-text-muted">{selectedSubmission.users.display_name}</span>
+                      </p>
+                    </div>
+                    {selectedSubmission.session_number != null && (
+                      <span className="shrink-0 px-2 py-1 rounded-lg bg-primary/20 text-primary text-xs font-bold border border-primary/40">
+                        #{selectedSubmission.session_number}
+                      </span>
+                    )}
                   </div>
 
-                  <div className="flex gap-2 sm:gap-3 pt-2">
+                  {/* Large SoundCloud embed */}
+                  <div className="soundcloud-embed-large bg-background rounded-xl border-2 border-gray-700/50 overflow-hidden p-3">
+                    <SoundCloudEmbed 
+                      key={`embed-wrapper-${selectedSubmission.id}`}
+                      submissionId={selectedSubmission.id}
+                      embedData={embedData}
+                      soundcloudUrl={selectedSubmission.soundcloud_url}
+                      getEmbedUrl={getEmbedUrl}
+                    />
+                  </div>
+
+                  {/* Main action buttons */}
+                  <div className="flex gap-3">
                     <button
-                      type="submit"
-                      disabled={submitting}
-                      className="flex-1 min-h-[44px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-medium py-2.5 px-3 sm:px-4 rounded-button transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press text-sm touch-manipulation"
+                      type="button"
+                      onClick={() => setShowRatingSliders(!showRatingSliders)}
+                      className={`flex-1 min-h-[56px] px-6 py-3 text-base rounded-xl font-bold transition-all active:scale-[0.98] button-press touch-manipulation ${
+                        showRatingSliders
+                          ? 'bg-primary text-background border-2 border-primary/50 shadow-lg'
+                          : 'bg-primary/20 hover:bg-primary/30 text-primary border-2 border-primary/40'
+                      }`}
                     >
-                      {submitting ? '…' : 'Submit Review'}
+                      {showRatingSliders ? 'Hide Ratings' : 'Rate Song'}
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        setSelectedSubmission(null)
-                        setScores({ sound_score: '0', structure_score: '0', mix_score: '0', vibe_score: '0' })
-                      }}
-                      className="min-h-[44px] px-3 sm:px-4 py-2.5 border border-gray-700 text-text-primary rounded-button hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press text-sm touch-manipulation"
+                      onClick={handleSkipToCarryover}
+                      disabled={skipping}
+                      className="flex-1 min-h-[56px] px-6 py-3 text-base rounded-xl font-bold bg-red-500/20 hover:bg-red-500/30 text-red-400 border-2 border-red-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation"
                     >
-                      Cancel
+                      {skipping ? '…' : 'Skip'}
                     </button>
                   </div>
-                </form>
-              </div>
-            ) : (
-              <div className="text-center text-text-muted py-16">
-                <svg className="w-16 h-16 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                </svg>
-                <p className="text-sm">Select a submission to review</p>
-              </div>
-            )}
+
+                  {/* Extra actions - smaller */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleGrantDonationXp}
+                      disabled={grantingDonation}
+                      className="px-3 py-1.5 text-xs rounded-lg font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation"
+                    >
+                      {grantingDonation ? '…' : '+20 XP'}
+                    </button>
+                  </div>
+
+                  {/* Rating sliders - hidden by default */}
+                  {showRatingSliders && (
+                    <form onSubmit={handleSubmitReview} className="space-y-4 animate-fade-in">
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { key: 'sound_score', label: 'Sound' },
+                          { key: 'structure_score', label: 'Structure' },
+                          { key: 'mix_score', label: 'Mix' },
+                          { key: 'vibe_score', label: 'Vibe' },
+                        ].map(({ key, label }) => {
+                          const score = parseFloat(scores[key as keyof typeof scores])
+                          
+                          return (
+                            <div key={key} className="space-y-2 bg-background rounded-lg p-3 border border-gray-700/50">
+                              <div className="flex justify-between items-center">
+                                <label className="text-sm font-bold text-text-primary">
+                                  {label}
+                                </label>
+                                <span className="text-lg font-extrabold text-primary tabular-nums">
+                                  {scores[key as keyof typeof scores]}<span className="text-sm text-text-muted">/10</span>
+                                </span>
+                              </div>
+                              
+                              <div className="relative">
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="10"
+                                  step="0.5"
+                                  value={scores[key as keyof typeof scores]}
+                                  onChange={(e) => handleSliderChange(key, parseFloat(e.target.value))}
+                                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-gradient"
+                                  style={{
+                                    background: `linear-gradient(to right, 
+                                      #ef4444 0%, 
+                                      #f97316 25%, 
+                                      #eab308 50%, 
+                                      #84cc16 75%, 
+                                      #22c55e 100%)`,
+                                    boxShadow: `inset 0 1px 2px rgba(0,0,0,0.3)`,
+                                  }}
+                                />
+                                
+                                {/* Score indicators - compact */}
+                                <div className="flex justify-between mt-1.5">
+                                  {[0, 2, 4, 6, 8, 10].map((num) => (
+                                    <span key={num} className={`text-[9px] font-bold tabular-nums transition-colors ${
+                                      Math.abs(score - num) < 1 ? 'text-primary' : 'text-text-muted'
+                                    }`}>
+                                      {num}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          type="submit"
+                          disabled={submitting}
+                          className="flex-1 min-h-[48px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-2.5 px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] button-press text-sm border-2 border-primary/50 touch-manipulation"
+                        >
+                          {submitting ? '…' : 'Submit Review'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowRatingSliders(false)
+                            setScores({ sound_score: '0', structure_score: '0', mix_score: '0', vibe_score: '0' })
+                          }}
+                          className="min-h-[48px] px-4 py-2.5 border-2 border-gray-700 text-text-primary rounded-xl hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press text-sm font-bold touch-manipulation"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center text-text-muted py-16">
+                  <svg className="w-16 h-16 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                  <p className="text-sm font-bold">Select a submission to review</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -109,6 +109,11 @@ interface SubmissionArtwork {
   [key: string]: string | null
 }
 
+interface SoundCloudMetadata {
+  title?: string
+  author_name?: string
+}
+
 export default function CuratorPage() {
   const router = useRouter()
   const [submissions, setSubmissions] = useState<Submission[]>([])
@@ -130,6 +135,7 @@ export default function CuratorPage() {
   const [grantingDonation, setGrantingDonation] = useState(false)
   const [embedData, setEmbedData] = useState<EmbedData | null>(null)
   const [submissionArtworks, setSubmissionArtworks] = useState<SubmissionArtwork>({})
+  const [submissionSoundCloudMetadata, setSubmissionSoundCloudMetadata] = useState<Record<string, SoundCloudMetadata>>({})
   const [sessions, setSessions] = useState<any[]>([])
   const [loadingSessions, setLoadingSessions] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -252,20 +258,46 @@ export default function CuratorPage() {
             const embedResponse = await fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(submission.soundcloud_url)}`)
             if (embedResponse.ok) {
               const embedResult = await embedResponse.json()
-              return { id: submission.id, artwork: embedResult.thumbnail_url || null }
+              // SoundCloud oEmbed returns title (e.g. "Flickermood by Forss" or "Artist - Track") and sometimes author_name
+              let title = embedResult.title?.trim()
+              let author_name = embedResult.author_name?.trim()
+              if (title) {
+                if (title.includes(' by ') && !author_name) {
+                  const parts = title.split(' by ').map((s: string) => s.trim()).filter(Boolean)
+                  if (parts.length >= 2) {
+                    author_name = parts[parts.length - 1]
+                    title = parts.slice(0, -1).join(' by ')
+                  }
+                } else if (title.includes(' - ')) {
+                  const parts = title.split(' - ')
+                  title = parts[parts.length - 1]?.trim() || title
+                  if (parts.length > 1 && !author_name) author_name = parts[0]?.trim()
+                }
+              }
+              return {
+                id: submission.id,
+                artwork: embedResult.thumbnail_url || null,
+                title: title || undefined,
+                author_name: author_name || undefined,
+              }
             }
           } catch (error) {
             console.error('Error fetching artwork:', error)
           }
-          return { id: submission.id, artwork: null }
+          return { id: submission.id, artwork: null, title: undefined, author_name: undefined }
         })
         
         const artworkResults = await Promise.all(artworkPromises)
         const artworkMap: SubmissionArtwork = {}
-        artworkResults.forEach(({ id, artwork }) => {
+        const metadataMap: Record<string, SoundCloudMetadata> = {}
+        artworkResults.forEach(({ id, artwork, title, author_name }) => {
           artworkMap[id] = artwork
+          if (title || author_name) {
+            metadataMap[id] = { title, author_name }
+          }
         })
         setSubmissionArtworks(artworkMap)
+        setSubmissionSoundCloudMetadata(metadataMap)
       }
     } catch (error) {
       console.error('Error fetching submissions:', error)
@@ -698,11 +730,16 @@ export default function CuratorPage() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0 overflow-hidden">
-                      <p className="font-semibold text-[11px] text-text-primary truncate">
-                        {submission.song_title || 'Untitled'}
+                      <p className="text-[11px] truncate">
+                        <span className="font-semibold text-primary">&quot;{submission.song_title || submissionSoundCloudMetadata[submission.id]?.title || 'Untitled'}&quot;</span>
+                        <span className="text-text-muted font-normal mx-0.5">by</span>
+                        <span className="text-text-secondary italic">&quot;{submission.artist_name || submissionSoundCloudMetadata[submission.id]?.author_name || submission.users.display_name}&quot;</span>
                       </p>
-                      <p className="text-[10px] text-text-secondary truncate">
-                        {submission.artist_name || submission.users.display_name}
+                      <p className="text-[10px] truncate flex items-center gap-1.5 mt-0.5">
+                        <span className="text-text-secondary font-medium">&quot;{submission.users.display_name}&quot;</span>
+                        {submission.session_number != null && (
+                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-primary/20 text-primary text-[9px] font-semibold">#{submission.session_number}</span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -715,12 +752,16 @@ export default function CuratorPage() {
             {selectedSubmission ? (
               <div className="space-y-2 sm:space-y-4">
                 <div className="pb-2 sm:pb-3 border-b border-gray-800/50">
-                  <h2 className="text-sm sm:text-base md:text-lg font-bold text-text-primary mb-0.5 sm:mb-1 line-clamp-1">
-                    {selectedSubmission.song_title || 'Untitled Track'}
+                  <h2 className="text-sm sm:text-base md:text-lg mb-0.5 sm:mb-1 line-clamp-1">
+                    <span className="font-bold text-primary">&quot;{selectedSubmission.song_title || submissionSoundCloudMetadata[selectedSubmission.id]?.title || 'Untitled Track'}&quot;</span>
+                    <span className="text-text-muted font-normal mx-1">by</span>
+                    <span className="font-semibold text-text-secondary italic">&quot;{selectedSubmission.artist_name || submissionSoundCloudMetadata[selectedSubmission.id]?.author_name || selectedSubmission.users.display_name}&quot;</span>
                   </h2>
-                  <p className="text-[11px] sm:text-xs md:text-sm text-text-secondary line-clamp-1">
-                    {selectedSubmission.artist_name || selectedSubmission.users.display_name}
-                    {selectedSubmission.session_number && ` • #${selectedSubmission.session_number}`}
+                  <p className="text-[11px] sm:text-xs md:text-sm line-clamp-1 flex items-center gap-2 flex-wrap">
+                    <span className="text-text-secondary font-medium border-l-2 border-primary/50 pl-2">&quot;{selectedSubmission.users.display_name}&quot;</span>
+                    {selectedSubmission.session_number != null && (
+                      <span className="inline-flex px-2 py-0.5 rounded-md bg-primary/20 text-primary text-xs font-semibold">Session #{selectedSubmission.session_number}</span>
+                    )}
                   </p>
                   {selectedSubmission.description && (
                     <p className="text-[11px] sm:text-xs text-text-muted mt-1 sm:mt-2 line-clamp-2">

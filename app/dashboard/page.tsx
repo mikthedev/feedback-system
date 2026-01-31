@@ -548,13 +548,10 @@ export default function Dashboard() {
     return null
   }
 
-  // Calculate banner position based on state
+  // Calculate banner position based on state - always fixed at top when visible
   const getBannerClasses = () => {
-    if (bannerState === 'visible') {
+    if (bannerState === 'visible' || bannerState === 'below') {
       return 'opacity-100 translate-y-0'
-    } else if (bannerState === 'below') {
-      // Move down to position below Welcome panel (approximately 80px from top)
-      return 'opacity-100 translate-y-[80px] md:translate-y-[90px]'
     } else {
       return 'opacity-0 -translate-y-full pointer-events-none'
     }
@@ -569,8 +566,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background animate-page-transition">
-      {/* Floating Status Banner - compact */}
+    <div className="bg-background animate-page-transition">{/* Floating Status Banner - compact */}
       <div
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out pt-[env(safe-area-inset-top)] ${getBannerClasses()} ${getBannerAnimation()}`}
       >

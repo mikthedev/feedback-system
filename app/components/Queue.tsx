@@ -156,56 +156,61 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded }: 
   }, [queue, metadataCache])
 
   return (
-    <div className="bg-background-light rounded-xl shadow-md p-3 sm:p-3 animate-fade-in border border-gray-800/50 max-w-md w-full min-w-0 sm:rounded-lg">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <h3 className="text-base font-bold text-text-primary sm:text-sm">Queue</h3>
+    <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60 w-full">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="p-2 bg-primary/10 rounded-lg border-2 border-primary/30 shrink-0">
+          <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+          </svg>
+        </div>
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <h3 className="text-base font-extrabold text-text-primary tracking-tight">Queue</h3>
           {processedQueue.length > 0 && (
-            <span className="text-sm text-text-secondary bg-background-lighter px-2.5 py-1 rounded-full sm:text-xs sm:px-2 sm:py-0.5">
+            <span className="text-sm font-bold text-text-secondary bg-background-lighter px-3 py-1 rounded-full border-2 border-gray-600">
               {processedQueue.length}
             </span>
           )}
         </div>
       </div>
-      <div className="mt-2">
+      <div>
         {loading && processedQueue.length === 0 ? (
-          <p className="text-sm text-text-secondary py-3 sm:text-xs sm:py-2">Loading...</p>
+          <p className="text-sm font-medium text-text-secondary py-4">Loading...</p>
         ) : processedQueue.length === 0 ? (
-          <p className="text-sm text-text-secondary py-3 sm:text-xs sm:py-2">No tracks in queue.</p>
+          <p className="text-sm font-medium text-text-secondary py-4">No tracks in queue.</p>
         ) : (
-            <div className="space-y-2 max-h-[220px] sm:max-h-[280px] overflow-y-auto overflow-x-hidden scrollbar-hide sm:space-y-1.5">
+            <div className="space-y-3 max-h-[240px] sm:max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-hide">
               {processedQueue.map((item, index) => (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-3 p-3 rounded-xl border border-gray-800/50 hover:border-primary/30 hover:bg-background-lighter transition-all duration-200 min-h-[52px] sm:rounded-lg sm:p-2 sm:gap-2 sm:min-h-[44px] ${
+                  className={`flex items-center gap-3 p-3 rounded-xl border-2 border-gray-700/50 hover:border-primary/40 hover:bg-background-lighter transition-all duration-200 min-h-[56px] ${
                     item._isNew ? 'animate-slide-in bg-primary/5 border-primary/30' : ''
                   } ${currentUserId && item.user_id === currentUserId ? 'ring-1 ring-primary/40 bg-primary/5' : ''}`}
                   style={{ animationDelay: item._isNew ? `${Math.min(index * 30, 200)}ms` : '0ms' }}
                 >
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center sm:w-6 sm:h-6">
-                    <span className="text-xs font-bold text-primary sm:text-[10px]">{item.queueNumber}</span>
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center">
+                    <span className="text-[11px] font-extrabold text-primary">{item.queueNumber}</span>
                   </div>
                   {currentUserId && item.user_id === currentUserId && (
-                    <span className="flex-shrink-0 px-2 py-0.5 text-xs font-bold bg-primary/20 text-primary rounded border border-primary/30 sm:px-1.5 sm:text-[10px]">You</span>
+                    <span className="flex-shrink-0 px-2 py-0.5 text-[11px] font-bold bg-primary/20 text-primary rounded-md border-2 border-primary/40">You</span>
                   )}
                   {item.artwork ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={item.artwork}
                       alt={item.displayTitle}
-                      className="w-10 h-10 rounded object-cover flex-shrink-0 sm:w-10 sm:h-10"
+                      className="w-9 h-9 rounded-lg object-cover flex-shrink-0 border-2 border-gray-600"
                       onError={(e) => { e.currentTarget.style.display = 'none' }}
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded bg-background-lighter border border-gray-800/50 flex-shrink-0 flex items-center justify-center sm:w-10 sm:h-10">
-                      <svg className="w-5 h-5 text-text-muted sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-9 h-9 rounded-lg bg-background-lighter border-2 border-gray-600 flex-shrink-0 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                       </svg>
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-text-primary truncate sm:text-xs">{item.displayTitle}</p>
-                    <p className="text-xs text-text-secondary truncate mt-0.5 sm:text-[10px]">{item.displayArtist}</p>
+                    <p className="text-sm font-bold text-text-primary truncate" title={item.displayTitle}>{item.displayTitle}</p>
+                    <p className="text-xs text-text-secondary truncate mt-0.5 font-medium">{item.displayArtist}</p>
                   </div>
                 </div>
               ))}

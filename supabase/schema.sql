@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
   twitch_id TEXT UNIQUE NOT NULL,
   display_name TEXT NOT NULL,
   email TEXT,
+  profile_image_url TEXT,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'curator')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

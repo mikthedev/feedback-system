@@ -81,6 +81,15 @@ export async function GET(request: NextRequest) {
 
     let userId: string
 
+    const rawUrl =
+      (typeof (twitchUser as { profile_image_url?: string }).profile_image_url === 'string'
+        ? (twitchUser as { profile_image_url: string }).profile_image_url.trim()
+        : '') ||
+      (typeof (twitchUser as { profileImageUrl?: string }).profileImageUrl === 'string'
+        ? (twitchUser as { profileImageUrl: string }).profileImageUrl.trim()
+        : '')
+    const profileImageUrl = rawUrl || null
+
     if (existingUser) {
       // Update existing user
       const { data: updatedUser, error: updateError } = await supabase
@@ -88,6 +97,7 @@ export async function GET(request: NextRequest) {
         .update({
           display_name: twitchUser.display_name,
           email: twitchUser.email || existingUser.email,
+          profile_image_url: profileImageUrl,
           updated_at: new Date().toISOString(),
         })
         .eq('twitch_id', twitchUser.id)
@@ -105,6 +115,7 @@ export async function GET(request: NextRequest) {
           display_name: twitchUser.display_name,
           email: twitchUser.email,
           role: 'user',
+          profile_image_url: profileImageUrl,
         })
         .select()
         .single()

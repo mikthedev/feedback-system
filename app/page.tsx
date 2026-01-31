@@ -13,20 +13,20 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-6 sm:px-3 sm:py-6 sm:p-4 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="bg-background-light rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 max-w-md w-full border border-gray-800/50 shadow-xl">
-        <div className="text-center mb-5 sm:mb-6 animate-fade-in">
-          <h1 className="text-lg font-bold mb-2 text-text-primary leading-tight sm:text-3xl md:text-4xl sm:mb-3">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-6 sm:px-4 sm:py-6 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="bg-background-light rounded-xl sm:rounded-2xl p-6 sm:p-6 md:p-8 max-w-md w-full border-2 border-gray-700/60 shadow-xl">
+        <div className="text-center mb-6 animate-fade-in">
+          <h1 className="text-xl font-extrabold mb-4 text-text-primary leading-tight sm:text-3xl md:text-4xl tracking-tight">
             Demo Feedback System
           </h1>
-          <p className="text-text-secondary text-sm leading-relaxed sm:text-sm md:text-base">
+          <p className="text-text-secondary text-sm font-medium leading-relaxed sm:text-base">
             Submit your music demos and get feedback from MikeGTC
           </p>
         </div>
         <button
           onClick={handleTwitchLogin}
           disabled={loading}
-          className="relative w-full min-h-[48px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-semibold py-3.5 px-4 rounded-xl text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group shadow-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] button-press touch-manipulation sm:min-h-[44px] sm:rounded-button sm:font-medium sm:text-sm"
+          className="relative w-full min-h-[52px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-4 px-5 rounded-xl text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group shadow-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30"
         >
           <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
           <span className="relative flex items-center justify-center gap-2">

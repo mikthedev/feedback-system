@@ -7,12 +7,14 @@ import Queue, { type QueueLoadedItem } from '../components/Queue'
 import XpHelpModal, { getXpHelpDismissed } from '../components/XpHelpModal'
 import IndicatorsHelpModal from '../components/IndicatorsHelpModal'
 import DashboardFooter from '../components/DashboardFooter'
+import SoundCloudEmbed from '../components/SoundCloudEmbed'
 
 interface User {
   id: string
   display_name: string
   role: string
   xp?: number
+  profile_image_url?: string | null
 }
 
 interface Submission {
@@ -74,6 +76,9 @@ export default function Dashboard() {
   const [xpAdjustMessage, setXpAdjustMessage] = useState<string | null>(null)
   const [useXpMessage, setUseXpMessage] = useState<string | null>(null)
   const [useXpLoading, setUseXpLoading] = useState(false)
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
+  const [profileImageFailed, setProfileImageFailed] = useState(false)
+  const profileImageRequestedRef = useRef(false)
   const lastMyPositionsRef = useRef<Record<string, number>>({})
 
   useEffect(() => {
@@ -130,11 +135,18 @@ export default function Dashboard() {
       }
       const data = await response.json()
       setUser(data.user)
-      const u = data.user as { xp?: unknown }
+      const u = data.user as { xp?: unknown; profile_image_url?: string | null }
       if (typeof u?.xp === 'number') setXp(u.xp)
       else if (typeof u?.xp === 'string') {
         const n = parseInt(u.xp, 10)
         if (!Number.isNaN(n)) setXp(Math.max(0, n))
+      }
+      setProfileImageFailed(false)
+      profileImageRequestedRef.current = false
+      if (typeof u?.profile_image_url === 'string' && u.profile_image_url.trim()) {
+        setProfileImageUrl(u.profile_image_url.trim())
+      } else {
+        setProfileImageUrl(null)
       }
     } catch (error) {
       console.error('Error fetching user:', error)
@@ -342,6 +354,23 @@ export default function Dashboard() {
       console.error('Error fetching reviewed list:', error)
     }
   }
+
+  useEffect(() => {
+    if (!user || profileImageFailed || profileImageRequestedRef.current) return
+    const fromUser = typeof user.profile_image_url === 'string' && user.profile_image_url.trim()
+    if (fromUser) return
+    profileImageRequestedRef.current = true
+    fetch('/api/user/profile-image', { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (typeof data?.url === 'string' && data.url.trim()) {
+          setProfileImageUrl(data.url.trim())
+        } else {
+          setProfileImageFailed(true)
+        }
+      })
+      .catch(() => setProfileImageFailed(true))
+  }, [user, profileImageFailed])
 
   useEffect(() => {
     fetchUser()
@@ -570,16 +599,16 @@ export default function Dashboard() {
       <div
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out pt-[env(safe-area-inset-top)] ${getBannerClasses()} ${getBannerAnimation()}`}
       >
-        <div className="max-w-6xl mx-auto px-3 sm:px-3 pt-2 pb-2 sm:pt-1.5 sm:pb-1.5">
+        <div className="max-w-6xl mx-auto px-2 sm:px-3 pt-1.5 pb-1.5 sm:pt-1 sm:pb-1">
           <div
-            className={`rounded-lg px-3 py-2 sm:py-2 shadow-md backdrop-blur-sm border ${
+            className={`rounded-md px-2.5 py-1.5 shadow-md backdrop-blur-sm border ${
               submissionsOpen
                 ? 'bg-primary/20 backdrop-blur-md text-primary border-primary/30'
                 : 'bg-red-500/20 backdrop-blur-md text-red-400 border-red-500/30'
             }`}
           >
             <div className="flex items-center justify-center">
-              <span className="text-xs font-semibold uppercase tracking-wider sm:text-xs md:text-sm">
+              <span className="text-[11px] font-semibold uppercase tracking-wider sm:text-xs">
                 {submissionsOpen ? 'Submission Open' : 'Submission Closed'}
               </span>
             </div>
@@ -587,9 +616,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Main Content - mobile-first: compact, readable, clear hierarchy */}
-      <div className="pt-11 sm:pt-12 md:pt-14 px-3 sm:px-3 md:p-4 pb-4 sm:pb-4">
-        <div className="max-w-6xl mx-auto space-y-3 sm:space-y-3">
+      {/* Main: even spacing (space-y-4); on lg, main column + sticky sidebar */}
+      <div className="pt-8 sm:pt-9 md:pt-10 px-3 sm:px-4 md:px-5 pb-4 sm:pb-5">
+        <div className="max-w-6xl mx-auto space-y-4">
           <DashboardFooter
             xp={xp}
             xpUsedThisSession={xpUsedThisSession}
@@ -605,71 +634,81 @@ export default function Dashboard() {
             compactTop
           />
 
-          {/* Welcome card: greeting + XP + action grid (mobile: 2-col grid, readable text) */}
-          <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-4 animate-fade-in border border-gray-800/50">
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <h1 className="text-base font-bold text-text-primary truncate sm:text-lg md:text-xl">
-                    Welcome, {user.display_name}!
-                  </h1>
-                  {user.role === 'curator' && (
-                    <p className="text-sm text-text-secondary mt-0.5">MikeGTC Dashboard</p>
+          <div className="lg:flex lg:gap-6 lg:items-start">
+            {/* Main column: welcome, submissions, reviewed — even space-y-4 */}
+            <div className="lg:flex-1 lg:min-w-0 space-y-4">
+          {/* Welcome card */}
+          <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto sm:flex-1">
+                  {(profileImageUrl ?? user.profile_image_url) && !profileImageFailed ? (
+                    <img
+                      src={profileImageUrl ?? user.profile_image_url ?? ''}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
+                      className="h-11 w-11 shrink-0 rounded-full border-2 border-gray-600 bg-background-lighter object-cover"
+                      onError={() => setProfileImageFailed(true)}
+                    />
+                  ) : (
+                    <div className="h-11 w-11 shrink-0 rounded-full border-2 border-gray-600 bg-background-lighter flex items-center justify-center text-text-muted text-base font-bold" aria-hidden>
+                      {(user.display_name || '?').charAt(0).toUpperCase()}
+                    </div>
                   )}
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-lg font-extrabold text-text-primary break-words sm:text-xl md:text-2xl sm:truncate tracking-tight">
+                      Welcome, {user.display_name}!
+                    </h1>
+                    {user.role === 'curator' && (
+                      <p className="text-sm text-text-secondary mt-1 font-medium">MikeGTC Dashboard</p>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4 shrink-0">
+                  <div className="flex items-center gap-4">
                     <div
-                      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/30 animate-xp-pulse min-h-[44px] sm:min-h-[36px] sm:rounded-button sm:px-3 sm:py-1.5"
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border-2 border-primary/40 animate-xp-pulse min-h-[44px] sm:min-h-[40px]"
                       title="Your XP — use it to move up the queue"
                     >
-                      <span className="text-xs font-medium text-text-muted uppercase tracking-wider sm:text-xs">XP</span>
-                      <span className="text-base font-bold text-primary tabular-nums sm:text-base">{xp}</span>
+                      <span className="text-xs font-bold text-text-muted uppercase tracking-wider">XP</span>
+                      <span className="text-base font-extrabold text-primary tabular-nums">{xp}</span>
                       {xpInBlock > 0 && (
-                        <div className="hidden sm:flex items-center gap-1.5 ml-0.5">
-                          <div className="w-10 h-1.5 bg-background-lighter rounded-full overflow-hidden">
+                        <div className="hidden sm:flex items-center gap-2 ml-1">
+                          <div className="w-12 h-2 bg-background-lighter rounded-full overflow-hidden">
                             <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${xpInBlock}%` }} />
                           </div>
-                          <span className="text-xs text-text-muted tabular-nums">{xpToNext} to +1</span>
+                          <span className="text-xs text-text-muted tabular-nums font-medium">{xpToNext} to +1</span>
                         </div>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowXpHelpModal(true)}
-                      className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-background-lighter hover:bg-primary/10 text-text-muted hover:text-primary border border-gray-700 hover:border-primary/30 transition-all touch-manipulation p-0 sm:min-h-[36px] sm:min-w-[36px] sm:rounded-button"
-                      title="How XP works"
-                      aria-label="How XP works"
-                    >
-                      <svg className="w-5 h-5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </button>
                   </div>
                   <button
                     type="button"
                     onClick={openLogoutConfirm}
-                    className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-background-lighter hover:bg-gray-800 text-text-primary border border-gray-700 transition-all duration-200 active:scale-[0.98] button-press touch-manipulation sm:min-h-[36px] sm:min-w-[36px] sm:rounded-button overflow-hidden"
+                    className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-background-lighter hover:bg-gray-800 text-text-primary border-2 border-gray-600 transition-all duration-200 active:scale-[0.98] button-press touch-manipulation sm:min-h-[40px] sm:min-w-[40px] overflow-hidden"
                     title="Log out"
                     aria-label="Log out"
                   >
-                    <svg className="w-5 h-5 sm:w-4 sm:h-4 shrink-0 block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    <svg className="w-4 h-4 shrink-0 block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                   </button>
                 </div>
               </div>
               {useXpMessage && (
-                <p className="text-sm font-medium text-primary bg-primary/10 border border-primary/30 rounded-lg px-3 py-2 animate-scale-in">
+                <p className="text-sm font-bold text-primary bg-primary/10 border-2 border-primary/40 rounded-lg px-4 py-2 animate-scale-in">
                   {useXpMessage}
                 </p>
               )}
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2 sm:pt-0.5">
+              <div className="grid grid-cols-2 gap-4 sm:flex sm:flex-wrap">
                 {user.role === 'curator' && (
-                  <Link href="/curator" className="min-h-[48px] flex items-center justify-center px-3 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-semibold transition-all active:scale-[0.98] button-press touch-manipulation sm:min-h-[36px] sm:rounded-button sm:py-1.5 sm:font-medium sm:text-xs">
+                  <Link href="/curator" className="min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30">
                     MikeGTC
                   </Link>
                 )}
-                <Link href="/submit" className="min-h-[48px] flex items-center justify-center px-3 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-semibold transition-all active:scale-[0.98] button-press touch-manipulation sm:min-h-[36px] sm:rounded-button sm:py-1.5 sm:font-medium sm:text-xs">
+                <Link href="/submit" className="min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30">
                   Submit Demo
                 </Link>
-                <Link href="/carryover" className="min-h-[48px] flex items-center justify-center px-3 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-semibold transition-all active:scale-[0.98] button-press touch-manipulation sm:min-h-[36px] sm:rounded-button sm:py-1.5 sm:font-medium sm:text-xs">
+                <Link href="/carryover" className="min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30">
                   Carryover {carryoverCount > 0 ? `(${carryoverCount})` : ''}
                 </Link>
                 {xp >= 100 && xpUsedThisSession < 300 && (
@@ -677,7 +716,7 @@ export default function Dashboard() {
                     type="button"
                     onClick={handleUseXp}
                     disabled={useXpLoading}
-                    className="min-h-[48px] flex items-center justify-center px-3 py-3 rounded-xl bg-primary hover:bg-primary-hover hover:shadow-lg hover:shadow-primary/25 active:bg-primary-active active:scale-[0.98] text-background text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all button-press touch-manipulation sm:min-h-[36px] sm:rounded-button sm:py-1.5 sm:font-medium sm:text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background-light"
+                    className="min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover hover:shadow-lg hover:shadow-primary/25 active:bg-primary-active active:scale-[0.98] text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all button-press touch-manipulation border-2 border-transparent hover:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background-light"
                   >
                     {useXpLoading ? '…' : 'Use XP'}
                   </button>
@@ -686,56 +725,56 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Tester panel: add/remove XP - compact */}
+          {/* Tester panel */}
           {user.role === 'tester' && (
-            <div className="bg-amber-500/5 rounded-xl shadow-lg p-4 sm:p-4 border border-amber-500/30 animate-fade-in">
-              <h2 className="text-base font-bold text-text-primary mb-1 sm:text-base">Adjust XP</h2>
-              <p className="text-sm text-text-secondary mb-3">Add/remove XP, then &quot;Use XP&quot; to apply.</p>
-              <form onSubmit={handleXpAdjustSubmit} className="flex flex-wrap items-center gap-2">
+            <div className="bg-amber-500/5 rounded-xl shadow-lg p-4 border-2 border-amber-500/40 animate-fade-in">
+              <h2 className="text-base font-extrabold text-text-primary mb-1">Adjust XP</h2>
+              <p className="text-sm text-text-secondary mb-4 font-medium">Add/remove XP, then &quot;Use XP&quot; to apply.</p>
+              <form onSubmit={handleXpAdjustSubmit} className="flex flex-wrap items-center gap-4">
                 <input
                   type="number"
                   value={xpAdjustValue}
                   onChange={(e) => setXpAdjustValue(e.target.value)}
                   placeholder="e.g. 50 or -25"
-                  className="w-24 sm:w-28 px-3 py-2.5 rounded-xl bg-background-lighter border border-gray-700 text-text-primary text-base focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none min-h-[48px] sm:min-h-[36px] sm:rounded-button sm:py-2 sm:text-sm"
+                  className="w-24 sm:w-28 px-4 py-3 rounded-xl bg-background-lighter border-2 border-gray-600 text-text-primary text-base font-semibold focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none min-h-[48px]"
                 />
-                <button type="submit" disabled={xpAdjusting || !xpAdjustValue.trim()} className="min-h-[48px] px-3 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation sm:min-h-[36px] sm:rounded-button sm:py-2">
+                <button type="submit" disabled={xpAdjusting || !xpAdjustValue.trim()} className="min-h-[48px] px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation border-2 border-transparent">
                   {xpAdjusting ? '…' : 'Apply'}
                 </button>
-                <button type="button" onClick={() => handleXpAdjust(50)} disabled={xpAdjusting} className="min-h-[48px] px-3 py-2.5 rounded-xl bg-background-lighter hover:bg-gray-700 border border-gray-600 text-text-primary text-sm font-medium disabled:opacity-50 touch-manipulation sm:min-h-[36px] sm:rounded-button sm:py-1.5">
+                <button type="button" onClick={() => handleXpAdjust(50)} disabled={xpAdjusting} className="min-h-[48px] px-4 py-3 rounded-xl bg-background-lighter hover:bg-gray-700 border-2 border-gray-600 text-text-primary text-sm font-bold disabled:opacity-50 touch-manipulation">
                   +50
                 </button>
-                <button type="button" onClick={() => handleXpAdjust(-50)} disabled={xpAdjusting} className="min-h-[48px] px-3 py-2.5 rounded-xl bg-background-lighter hover:bg-gray-700 border border-gray-600 text-text-primary text-sm font-medium disabled:opacity-50 touch-manipulation sm:min-h-[36px] sm:rounded-button sm:py-1.5">
+                <button type="button" onClick={() => handleXpAdjust(-50)} disabled={xpAdjusting} className="min-h-[48px] px-4 py-3 rounded-xl bg-background-lighter hover:bg-gray-700 border-2 border-gray-600 text-text-primary text-sm font-bold disabled:opacity-50 touch-manipulation">
                   −50
                 </button>
               </form>
               {xpAdjustMessage && (
-                <p className="mt-3 text-sm font-medium text-primary bg-primary/10 border border-primary/30 rounded-lg px-3 py-2 animate-scale-in">
+                <p className="mt-4 text-sm font-bold text-primary bg-primary/10 border-2 border-primary/40 rounded-lg px-4 py-2 animate-scale-in">
                   {xpAdjustMessage}
                 </p>
               )}
             </div>
           )}
 
-          <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-4 animate-fade-in border border-gray-800/50">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
-                <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+          <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+              <div className="flex flex-wrap items-center gap-4 min-w-0">
+                <div className="p-2 bg-primary/10 rounded-lg shrink-0 border-2 border-primary/30">
                   <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-base font-bold text-text-primary sm:text-base md:text-lg">Your Submissions</h2>
-                  <p className="text-sm text-text-secondary mt-0.5">
+                  <h2 className="text-base font-extrabold text-text-primary sm:text-lg tracking-tight">Your Submissions</h2>
+                  <p className="text-sm text-text-secondary mt-1 font-medium">
                     {submissions.length === 0 ? 'No active submissions' : `${submissions.length} pending`}
                   </p>
                 </div>
                 {getAverageScores() && (
                   <details className="group/avg shrink-0">
-                    <summary className="list-none cursor-pointer text-sm text-text-muted hover:text-text-primary font-medium inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-700/50 hover:border-primary/30 bg-background-lighter/50 touch-manipulation min-h-[44px] items-center sm:min-h-0 sm:px-2 sm:py-1 sm:text-xs">
-                      Avg <span className="text-primary font-bold">{((Number(getAverageScores()!.sound) + Number(getAverageScores()!.structure) + Number(getAverageScores()!.mix) + Number(getAverageScores()!.vibe)) / 4).toFixed(1)}</span>/10
-                      <svg className="w-4 h-4 opacity-70 group-open/avg:rotate-180 transition-transform sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    <summary className="list-none cursor-pointer text-sm text-text-muted hover:text-text-primary font-bold inline-flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-gray-600 hover:border-primary/40 bg-background-lighter/50 touch-manipulation min-h-[44px] items-center">
+                      Avg <span className="text-primary font-extrabold">{((Number(getAverageScores()!.sound) + Number(getAverageScores()!.structure) + Number(getAverageScores()!.mix) + Number(getAverageScores()!.vibe)) / 4).toFixed(1)}</span>/10
+                      <svg className="w-4 h-4 opacity-70 group-open/avg:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </summary>
-                    <div className="flex flex-wrap items-center gap-2 mt-2 py-2 sm:gap-1.5 sm:mt-1 sm:py-1.5">
+                    <div className="flex flex-wrap items-center gap-4 mt-4 py-4">
                       {[
                         { label: 'S', score: getAverageScores()!.sound, color: 'text-blue-400' },
                         { label: 'St', score: getAverageScores()!.structure, color: 'text-purple-400' },
@@ -748,10 +787,10 @@ export default function Dashboard() {
                   </details>
                 )}
               </div>
-              <button
+                <button
                 onClick={fetchReviewedSubmissions}
                 disabled={loadingReviewed}
-                className="min-h-[48px] w-full sm:w-auto group relative flex items-center justify-center gap-2 px-4 py-3 bg-background-lighter hover:bg-primary/10 border border-gray-700 hover:border-primary/30 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation text-sm font-semibold sm:min-h-[36px] sm:rounded-button sm:py-2 sm:font-medium"
+                className="min-h-[48px] w-full sm:w-auto group relative flex items-center justify-center gap-2 px-4 py-3 bg-background-lighter hover:bg-primary/10 border-2 border-gray-600 hover:border-primary/40 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation text-sm font-bold"
               >
                 {loadingReviewed ? (
                   <>
@@ -784,13 +823,13 @@ export default function Dashboard() {
               </button>
             </div>
           {submissions.length === 0 ? (
-            <p className="text-sm text-text-secondary">No submissions yet. Submit your first demo!</p>
+            <p className="text-sm font-medium text-text-secondary">No submissions yet. Submit your first demo!</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {submissions.map((submission, index) => (
                 <div
                   key={submission.id}
-                  className="border rounded-xl p-3 sm:p-3 md:p-4 hover:shadow-lg transition-all duration-200 animate-slide-in bg-background-lighter border-yellow-500/30"
+                  className="border-2 rounded-xl p-4 hover:shadow-lg transition-all duration-200 animate-slide-in bg-background-lighter border-yellow-500/40"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex justify-between items-start gap-3 mb-2">
@@ -827,48 +866,13 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="mt-2 sm:mt-3">
-                    {embedData[submission.id]?.html ? (
-                      <div 
-                        className="soundcloud-embed w-full"
-                        style={{ maxWidth: '100%', overflow: 'hidden' }}
-                        dangerouslySetInnerHTML={{ __html: embedData[submission.id].html || '' }}
-                      />
-                    ) : embedData[submission.id]?.error ? (
-                      <div className="p-4 bg-background-lighter rounded-lg border border-gray-800/50">
-                        <p className="text-sm text-text-secondary mb-2">
-                          Unable to embed this track. 
-                          <a 
-                            href={submission.soundcloud_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-primary hover:text-primary-hover underline underline-offset-2 ml-1 transition-colors duration-200"
-                          >
-                            Open in SoundCloud
-                          </a>
-                        </p>
-                        <iframe
-                          width="100%"
-                          height="166"
-                          scrolling="no"
-                          frameBorder="no"
-                          allow="autoplay"
-                          src={getEmbedUrl(submission.soundcloud_url)}
-                          className="rounded"
-                          title="SoundCloud Player"
-                        ></iframe>
-                      </div>
-                    ) : (
-                      <iframe
-                        width="100%"
-                        height="166"
-                        scrolling="no"
-                        frameBorder="no"
-                        allow="autoplay"
-                        src={getEmbedUrl(submission.soundcloud_url)}
-                        className="rounded"
-                        title="SoundCloud Player"
-                      ></iframe>
-                    )}
+                    <SoundCloudEmbed
+                      id={submission.id}
+                      embedHtml={embedData[submission.id]?.html ?? null}
+                      embedError={!!embedData[submission.id]?.error}
+                      soundcloudUrl={submission.soundcloud_url}
+                      embedUrl={getEmbedUrl(submission.soundcloud_url)}
+                    />
                   </div>
                 </div>
               ))}
@@ -876,29 +880,29 @@ export default function Dashboard() {
           )}
           </div>
 
-          {/* Previous Reviewed Submissions Section - compact */}
+          {/* Previous Reviewed Submissions Section */}
           {showReviewed && (
-            <div className="bg-gradient-to-br from-background-light to-background-lighter rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 md:p-5 mt-3 border border-primary/20 animate-fade-in">
-                <div className="flex flex-wrap items-center gap-2 mb-3 pb-3 border-b border-gray-800/50">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 sm:p-2 bg-primary/20 rounded-md sm:rounded-lg">
-                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div className="bg-gradient-to-br from-background-light to-background-lighter rounded-xl shadow-lg p-4 md:p-5 mt-4 border-2 border-primary/30 animate-fade-in">
+                <div className="flex flex-wrap items-center gap-4 mb-4 pb-4 border-b-2 border-gray-700/50">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-primary/20 rounded-lg border-2 border-primary/40">
+                      <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                     <div>
-                      <h2 className="text-sm sm:text-base md:text-lg font-bold text-text-primary flex items-center gap-1.5">
+                      <h2 className="text-base sm:text-lg font-extrabold text-text-primary flex items-center gap-2 tracking-tight">
                         Results
-                        <span className="px-1.5 py-0.5 text-[10px] sm:text-xs font-bold bg-primary/20 text-primary rounded-full">{reviewedSubmissions.length}</span>
+                        <span className="px-2 py-1 text-xs font-bold bg-primary/20 text-primary rounded-full border-2 border-primary/40">{reviewedSubmissions.length}</span>
                       </h2>
-                      <p className="text-[11px] sm:text-xs text-text-secondary mt-0.5">Reviewed from previous sessions</p>
+                      <p className="text-sm text-text-secondary mt-1 font-medium">Reviewed from previous sessions</p>
                     </div>
                   </div>
                 </div>
                 {reviewedSubmissions.length > 0 ? (
-                  <div className="space-y-2 sm:space-y-3">
+                  <div className="space-y-4">
                     {reviewedSubmissions.map((submission, index) => (
                       <div
                         key={submission.id}
-                        className="group border rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 hover:shadow-xl transition-all duration-300 animate-slide-in bg-background-lighter border-primary/30 hover:border-primary/50"
+                        className="group border-2 rounded-xl p-4 hover:shadow-xl transition-all duration-300 animate-slide-in bg-background-lighter border-primary/40 hover:border-primary/50"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         <div className="flex justify-between items-start mb-2 sm:mb-3 gap-2 sm:gap-4">
@@ -954,48 +958,13 @@ export default function Dashboard() {
                           </div>
                         )}
                         <div className="mt-2 sm:mt-3">
-                          {reviewedEmbedData[submission.id]?.html ? (
-                            <div 
-                              className="soundcloud-embed w-full rounded-lg overflow-hidden"
-                              style={{ maxWidth: '100%', overflow: 'hidden' }}
-                              dangerouslySetInnerHTML={{ __html: reviewedEmbedData[submission.id].html || '' }}
-                            />
-                          ) : reviewedEmbedData[submission.id]?.error ? (
-                            <div className="p-4 bg-background-lighter rounded-lg border border-gray-800/50">
-                              <p className="text-sm text-text-secondary mb-2">
-                                Unable to embed this track. 
-                                <a 
-                                  href={submission.soundcloud_url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:text-primary-hover underline underline-offset-2 ml-1 transition-colors duration-200"
-                                >
-                                  Open in SoundCloud
-                                </a>
-                              </p>
-                              <iframe
-                                width="100%"
-                                height="166"
-                                scrolling="no"
-                                frameBorder="no"
-                                allow="autoplay"
-                                src={getEmbedUrl(submission.soundcloud_url)}
-                                className="rounded"
-                                title="SoundCloud Player"
-                              ></iframe>
-                            </div>
-                          ) : (
-                            <iframe
-                              width="100%"
-                              height="166"
-                              scrolling="no"
-                              frameBorder="no"
-                              allow="autoplay"
-                              src={getEmbedUrl(submission.soundcloud_url)}
-                              className="rounded"
-                              title="SoundCloud Player"
-                            ></iframe>
-                          )}
+                          <SoundCloudEmbed
+                            id={`reviewed-${submission.id}`}
+                            embedHtml={reviewedEmbedData[submission.id]?.html ?? null}
+                            embedError={!!reviewedEmbedData[submission.id]?.error}
+                            soundcloudUrl={submission.soundcloud_url}
+                            embedUrl={getEmbedUrl(submission.soundcloud_url)}
+                          />
                         </div>
                       </div>
                     ))}
@@ -1014,28 +983,29 @@ export default function Dashboard() {
               </div>
           )}
 
-          {/* Queue - compact, full width on mobile */}
-          <div className="flex justify-center max-w-2xl mx-auto w-full">
+            </div>
+
+          {/* Sidebar on lg: XP footer (above) + Queue */}
+          <aside className="lg:w-80 xl:w-96 lg:shrink-0 lg:sticky lg:top-16 space-y-4 mt-4 lg:mt-0">
+            <DashboardFooter
+              xp={xp}
+              xpUsedThisSession={xpUsedThisSession}
+              unusedExternal={unusedExternal}
+              externalXpThisSession={externalXpThisSession}
+              timeXpActive={xpStatus?.time_xp_active ?? null}
+              followingMikegtcoff={xpStatus?.following_mikegtcoff ?? null}
+              carryoverCount={carryoverCount}
+              xpLog={xpLog}
+              loadingLog={loadingXpLog}
+              onShowXpHelp={() => setShowXpHelpModal(true)}
+            />
             <Queue
               currentUserId={user?.id}
               refetchTrigger={queueRefetchTrigger}
               onQueueLoaded={handleQueueLoaded}
             />
+          </aside>
           </div>
-
-          {/* Dashboard footer: XP summary + How XP works + expandable XP log */}
-          <DashboardFooter
-            xp={xp}
-            xpUsedThisSession={xpUsedThisSession}
-            unusedExternal={unusedExternal}
-            externalXpThisSession={externalXpThisSession}
-            timeXpActive={xpStatus?.time_xp_active ?? null}
-            followingMikegtcoff={xpStatus?.following_mikegtcoff ?? null}
-            carryoverCount={carryoverCount}
-            xpLog={xpLog}
-            loadingLog={loadingXpLog}
-            onShowXpHelp={() => setShowXpHelpModal(true)}
-          />
         </div>
       </div>
 

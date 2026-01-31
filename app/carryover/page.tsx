@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import SoundCloudEmbed from '../components/SoundCloudEmbed'
 
 interface CarryoverItem {
   id: string
@@ -103,31 +104,31 @@ export default function CarryoverPage() {
 
   return (
     <div className="bg-background animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="pt-11 sm:pt-12 md:pt-14 px-4 sm:px-3 md:p-4">
+      <div className="pt-8 sm:pt-9 px-3 sm:px-4 md:px-5 pb-4">
         <div className="max-w-6xl mx-auto space-y-4">
-          <Link href="/dashboard" className="inline-flex items-center min-h-[44px] text-sm font-semibold text-primary hover:text-primary-hover underline underline-offset-2 touch-manipulation sm:min-h-0 sm:text-sm sm:font-medium">
+          <Link href="/dashboard" className="inline-flex items-center min-h-[48px] text-sm font-bold text-primary hover:text-primary-hover underline underline-offset-2 touch-manipulation">
             ← Dashboard
           </Link>
-          <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-4 md:p-5 animate-fade-in border border-gray-800/50">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="p-2 bg-amber-500/10 rounded-lg shrink-0">
+          <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border-2 border-gray-700/60">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="p-2 bg-amber-500/10 rounded-lg shrink-0 border-2 border-amber-500/30">
                 <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
               <div className="min-w-0">
-                <h1 className="text-base font-bold text-text-primary sm:text-base md:text-lg">Carryover</h1>
-                <p className="text-sm text-amber-400/90 mt-1 leading-relaxed">
+                <h1 className="text-lg font-extrabold text-text-primary sm:text-xl tracking-tight">Carryover</h1>
+                <p className="text-sm text-amber-400/90 mt-1 font-medium leading-snug">
                   Track skipped or session ended. You cannot submit again until 60 min after transfer.
                 </p>
               </div>
             </div>
             {loading ? (
-              <p className="text-sm text-text-secondary">Loading…</p>
+              <p className="text-xs text-text-secondary">Loading…</p>
             ) : myCarryover.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-text-secondary">No tracks in carryover.</p>
-                <Link href="/dashboard" className="inline-flex items-center min-h-[48px] mt-4 px-4 py-3 rounded-xl bg-primary text-background font-semibold text-base hover:bg-primary-hover transition-colors touch-manipulation sm:min-h-[44px] sm:rounded-button sm:py-2 sm:text-sm">
+              <div className="text-center py-6">
+                <p className="text-xs text-text-secondary">No tracks in carryover.</p>
+                <Link href="/dashboard" className="inline-flex items-center min-h-[40px] mt-3 px-3 py-2 rounded-lg bg-primary text-background font-semibold text-sm hover:bg-primary-hover transition-colors touch-manipulation sm:min-h-[36px] sm:rounded-md">
                   Back to Dashboard
                 </Link>
               </div>
@@ -136,7 +137,7 @@ export default function CarryoverPage() {
                 {myCarryover.map((item, index) => (
                   <div
                     key={item.id}
-                    className="border rounded-xl p-4 sm:p-3 md:p-4 bg-background-lighter border-amber-500/30 animate-slide-in"
+                    className="border-2 rounded-xl p-4 bg-background-lighter border-amber-500/40 animate-slide-in"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex justify-between items-start gap-3 mb-2">
@@ -157,35 +158,13 @@ export default function CarryoverPage() {
                       </span>
                     </div>
                     <div className="mt-2 sm:mt-3">
-                      {embedData[item.id]?.html ? (
-                        <div
-                          className="soundcloud-embed w-full"
-                          style={{ maxWidth: '100%', overflow: 'hidden' }}
-                          dangerouslySetInnerHTML={{ __html: embedData[item.id].html || '' }}
-                        />
-                      ) : embedData[item.id]?.error ? (
-                        <iframe
-                          width="100%"
-                          height="166"
-                          scrolling="no"
-                          frameBorder="no"
-                          allow="autoplay"
-                          src={getEmbedUrl(item.soundcloud_url)}
-                          className="rounded"
-                          title="SoundCloud Player"
-                        />
-                      ) : (
-                        <iframe
-                          width="100%"
-                          height="166"
-                          scrolling="no"
-                          frameBorder="no"
-                          allow="autoplay"
-                          src={getEmbedUrl(item.soundcloud_url)}
-                          className="rounded"
-                          title="SoundCloud Player"
-                        />
-                      )}
+                      <SoundCloudEmbed
+                        id={item.id}
+                        embedHtml={embedData[item.id]?.html ?? null}
+                        embedError={!!embedData[item.id]?.error}
+                        soundcloudUrl={item.soundcloud_url}
+                        embedUrl={getEmbedUrl(item.soundcloud_url)}
+                      />
                     </div>
                   </div>
                 ))}

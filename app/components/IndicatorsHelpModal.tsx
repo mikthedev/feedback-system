@@ -37,25 +37,25 @@ export default function IndicatorsHelpModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-3 bg-black/60 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-3 bg-black/60 backdrop-blur-sm animate-fade-in"
       onClick={handleBackdrop}
       role="dialog"
       aria-modal="true"
       aria-labelledby="indicators-help-title"
     >
       <div
-        className="relative w-full max-w-lg max-h-[90vh] overflow-hidden rounded-xl bg-background-light border border-gray-800 shadow-xl animate-scale-in flex flex-col"
+        className="relative w-full max-w-lg max-h-[82vh] sm:max-h-[90vh] overflow-hidden rounded-xl bg-background-light border border-gray-800 shadow-xl animate-scale-in flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-800/50 shrink-0">
-          <h2 id="indicators-help-title" className="text-base font-bold text-text-primary flex items-center gap-2">
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold">?</span>
+        <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-800/50 shrink-0 sm:px-4 sm:py-3">
+          <h2 id="indicators-help-title" className="text-sm font-bold text-text-primary flex items-center gap-1.5 sm:text-base sm:gap-2">
+            <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary/20 text-primary text-[10px] sm:text-xs font-bold">?</span>
             Live indicators
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-background-lighter transition-colors"
+            className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-background-lighter transition-colors touch-manipulation"
             aria-label="Close"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,15 +64,15 @@ export default function IndicatorsHelpModal({
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-4 py-4 space-y-4 scrollbar-thin text-sm">
-          <p className="text-text-secondary text-xs">
+        <div className="overflow-y-auto flex-1 px-3 py-3 space-y-2.5 scrollbar-thin sm:px-4 sm:py-4 sm:space-y-4">
+          <p className="text-text-secondary text-[11px] leading-snug sm:text-xs">
             These indicators update in real time. They show your current XP-related status for this session.
           </p>
 
-          <div className="space-y-3">
-            <div className="p-3 rounded-lg border border-gray-800/50 bg-background-lighter/50">
-              <p className="font-semibold text-text-primary text-xs uppercase tracking-wider mb-2">Time XP</p>
-              <p className="text-text-secondary text-xs leading-relaxed mb-2">
+          <div className="space-y-2 sm:space-y-3">
+            <div className="p-2 rounded-lg border border-gray-800/50 bg-background-lighter/50 sm:p-3">
+              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">Time XP</p>
+              <p className="text-text-secondary text-[11px] leading-relaxed mb-1.5 sm:text-xs sm:mb-2">
                 <span className={timeXpActive ? 'text-emerald-400' : 'text-text-muted'}>
                   {timeXpActive ? '✓ On' : '○ Off'}
                 </span>
@@ -80,9 +80,9 @@ export default function IndicatorsHelpModal({
               </p>
             </div>
 
-            <div className="p-3 rounded-lg border border-gray-800/50 bg-background-lighter/50">
-              <p className="font-semibold text-text-primary text-xs uppercase tracking-wider mb-2">MikeGTC (Follow)</p>
-              <p className="text-text-secondary text-xs leading-relaxed mb-2">
+            <div className="p-2 rounded-lg border border-gray-800/50 bg-background-lighter/50 sm:p-3">
+              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">MikeGTC (Follow)</p>
+              <p className="text-text-secondary text-[11px] leading-relaxed mb-1.5 sm:text-xs sm:mb-2">
                 <span className={
                   followingMikegtcoff === true ? 'text-emerald-400' : followingMikegtcoff === false ? 'text-amber-400' : 'text-text-muted'
                 }>
@@ -95,7 +95,7 @@ export default function IndicatorsHelpModal({
                   href={MIKEY_TWITCH_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-button bg-primary/20 hover:bg-primary/30 text-primary text-xs font-medium border border-primary/30 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-button bg-primary/20 hover:bg-primary/30 text-primary text-[11px] sm:text-xs font-medium border border-primary/30 transition-colors touch-manipulation sm:px-2.5 sm:py-1.5"
                 >
                   Follow on Twitch
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,34 +105,34 @@ export default function IndicatorsHelpModal({
               )}
             </div>
 
-            <div className="p-3 rounded-lg border border-gray-800/50 bg-background-lighter/50">
-              <p className="font-semibold text-text-primary text-xs uppercase tracking-wider mb-2">Sub / Donation</p>
-              <p className="text-text-secondary text-xs leading-relaxed">
+            <div className="p-2 rounded-lg border border-gray-800/50 bg-background-lighter/50 sm:p-3">
+              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">Sub / Donation</p>
+              <p className="text-text-secondary text-[11px] leading-relaxed sm:text-xs">
                 Shows <strong className="text-text-primary">{externalXpThisSession}</strong> XP from subscriptions or donations this session. Subscribe to MikeGTC on Twitch or donate during the stream to earn <strong className="text-primary">+20 XP</strong> (each once per session).
               </p>
             </div>
 
-            <div className="p-3 rounded-lg border border-gray-800/50 bg-background-lighter/50">
-              <p className="font-semibold text-text-primary text-xs uppercase tracking-wider mb-2">Ratings</p>
-              <p className="text-text-secondary text-xs leading-relaxed">
+            <div className="p-2 rounded-lg border border-gray-800/50 bg-background-lighter/50 sm:p-3">
+              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">Ratings</p>
+              <p className="text-text-secondary text-[11px] leading-relaxed sm:text-xs">
                 <span className="text-text-muted">✓ / ○</span> — Whether your review scores from the curator have been counted toward your XP. After your track is reviewed, the ratings XP is added to your total.
               </p>
             </div>
 
-            <div className="p-3 rounded-lg border border-gray-800/50 bg-background-lighter/50">
-              <p className="font-semibold text-text-primary text-xs uppercase tracking-wider mb-2">Carry</p>
-              <p className="text-text-secondary text-xs leading-relaxed">
+            <div className="p-2 rounded-lg border border-gray-800/50 bg-background-lighter/50 sm:p-3">
+              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">Carry</p>
+              <p className="text-text-secondary text-[11px] leading-relaxed sm:text-xs">
                 Number of your tracks in carryover (skipped or moved to another session). Click to view details.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="px-4 py-3 border-t border-gray-800/50 shrink-0">
+        <div className="px-3 py-2 border-t border-gray-800/50 shrink-0 sm:px-4 sm:py-3">
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 rounded-lg bg-primary hover:bg-primary-hover text-background font-medium text-sm transition-colors"
+            className="w-full py-2 rounded-lg bg-primary hover:bg-primary-hover text-background font-medium text-sm transition-colors touch-manipulation sm:py-2.5"
           >
             Got it
           </button>

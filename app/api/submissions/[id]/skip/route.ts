@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { addXp, logXp, CARRYOVER_XP } from '@/lib/xp'
 import { cookies } from 'next/headers'
 
 // POST - Curator moves a submission to carryover (Skip)
-// Only curator role can call this. Sets status='carryover'.
+// Only curator role can call this. Sets status='carryover', grants +25 XP to the user, and logs it.
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -47,12 +48,21 @@ export async function POST(
       )
     }
 
+    const submitterUserId = (submission as { user_id: string }).user_id
+
     const { error: updateError } = await supabase
       .from('submissions')
-      .update({ status: 'carryover' })
+      .update({ status: 'carryover', carryover_bonus_granted: true })
       .eq('id', id)
 
     if (updateError) throw updateError
+
+    try {
+      await addXp(supabase, submitterUserId, CARRYOVER_XP)
+      await logXp(supabase, submitterUserId, CARRYOVER_XP, 'carryover', 'Track moved to carryover +25 XP')
+    } catch (xpErr) {
+      console.error('Error granting carryover XP on skip:', xpErr)
+    }
 
     return NextResponse.json({
       success: true,

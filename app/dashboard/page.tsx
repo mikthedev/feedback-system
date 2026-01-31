@@ -570,30 +570,30 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background animate-page-transition">
-      {/* Floating Status Banner */}
+      {/* Floating Status Banner - compact */}
       <div
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${getBannerClasses()} ${getBannerAnimation()}`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out pt-[env(safe-area-inset-top)] ${getBannerClasses()} ${getBannerAnimation()}`}
       >
-        <div className="max-w-6xl mx-auto px-3 md:px-4 pt-2 pb-2">
+        <div className="max-w-6xl mx-auto px-2 sm:px-3 pt-1.5 pb-1.5">
           <div
-            className={`rounded-lg px-4 py-2 shadow-md backdrop-blur-sm border ${
+            className={`rounded-md sm:rounded-lg px-3 py-1.5 sm:py-2 shadow-md backdrop-blur-sm border ${
               submissionsOpen
                 ? 'bg-primary/20 backdrop-blur-md text-primary border-primary/30'
                 : 'bg-red-500/20 backdrop-blur-md text-red-400 border-red-500/30'
             }`}
           >
             <div className="flex items-center justify-center">
-              <span className="text-xs md:text-sm font-semibold uppercase tracking-wider">
-                {submissionsOpen ? '✓ Submissions Open' : '✗ Submissions Closed'}
+              <span className="text-[10px] sm:text-xs md:text-sm font-semibold uppercase tracking-wider">
+                {submissionsOpen ? 'Submission Open' : 'Submission Closed'}
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content with consistent spacing */}
-      <div className="pt-12 md:pt-14 p-3 md:p-4">
-        <div className="max-w-6xl mx-auto space-y-4">
+      {/* Main Content - compact spacing */}
+      <div className="pt-10 sm:pt-12 md:pt-14 px-2 sm:px-3 md:p-4 pb-4">
+        <div className="max-w-6xl mx-auto space-y-3">
           {/* Small indicators on top — one compact row */}
           <DashboardFooter
             xp={xp}
@@ -610,33 +610,23 @@ export default function Dashboard() {
             compactTop
           />
 
-          <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-gray-800/50">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-              <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                <div>
-                  <h1 className="text-lg md:text-xl font-bold text-text-primary">
-                    Welcome, {user.display_name}!
-                  </h1>
-                  {user.role === 'curator' && (
-                    <p className="text-text-secondary text-xs md:text-sm mt-0.5">
-                      MikeGTC Dashboard
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
+          <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border border-gray-800/50">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h1 className="text-base sm:text-lg md:text-xl font-bold text-text-primary truncate min-w-0">
+                  Welcome, {user.display_name}!
+                </h1>
+                <div className="flex items-center gap-1.5 shrink-0">
                   <div
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-button bg-primary/10 border border-primary/30 animate-xp-pulse"
+                    className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-button bg-primary/10 border border-primary/30 animate-xp-pulse min-h-[36px]"
                     title="Your XP — use it to move up the queue"
                   >
-                    <span className="text-xs font-medium text-text-muted uppercase tracking-wider">XP</span>
-                    <span className="text-base font-bold text-primary tabular-nums">{xp}</span>
+                    <span className="text-[10px] sm:text-xs font-medium text-text-muted uppercase tracking-wider">XP</span>
+                    <span className="text-sm sm:text-base font-bold text-primary tabular-nums">{xp}</span>
                     {xpInBlock > 0 && (
-                      <div className="hidden sm:flex items-center gap-1.5 ml-1">
-                        <div className="w-12 h-1.5 bg-background-lighter rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary rounded-full transition-all duration-500"
-                            style={{ width: `${xpInBlock}%` }}
-                          />
+                      <div className="hidden sm:flex items-center gap-1.5 ml-0.5">
+                        <div className="w-10 h-1.5 bg-background-lighter rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${xpInBlock}%` }} />
                         </div>
                         <span className="text-[10px] text-text-muted tabular-nums">{xpToNext} to +1</span>
                       </div>
@@ -647,144 +637,114 @@ export default function Dashboard() {
                       type="button"
                       onClick={handleUseXp}
                       disabled={useXpLoading}
-                      className="px-3 py-1.5 rounded-button bg-primary hover:bg-primary-hover text-background text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] button-press"
+                      className="min-h-[36px] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-button bg-primary hover:bg-primary-hover text-background text-[11px] sm:text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] button-press touch-manipulation"
                     >
-                      {useXpLoading ? '…' : 'Use my XP'}
+                      {useXpLoading ? '…' : 'Use XP'}
                     </button>
                   )}
-                </div>
-                {useXpMessage && (
-                  <p className="w-full text-sm font-medium text-primary bg-primary/10 border border-primary/30 rounded-lg px-3 py-2 mt-1 animate-scale-in">
-                    {useXpMessage}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
-                {/* Dashboard footer actions: MikeGTC (curator), Submit Demo, Carryover, How XP works, Log out */}
-                {user.role === 'curator' && (
-                  <Link
-                    href="/curator"
-                    className="bg-primary hover:bg-primary-hover active:bg-primary-active text-background px-3 py-1.5 rounded-button transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press text-xs md:text-sm font-medium"
+                  <button
+                    type="button"
+                    onClick={openLogoutConfirm}
+                    className="min-h-[36px] min-w-[36px] p-1.5 rounded-button bg-background-lighter hover:bg-gray-800 text-text-primary border border-gray-700 transition-all duration-200 active:scale-[0.98] button-press touch-manipulation"
+                    title="Log out"
+                    aria-label="Log out"
                   >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                  </button>
+                </div>
+              </div>
+              {user.role === 'curator' && (
+                <p className="text-text-secondary text-[11px] sm:text-xs -mt-1">MikeGTC Dashboard</p>
+              )}
+              {useXpMessage && (
+                <p className="text-xs sm:text-sm font-medium text-primary bg-primary/10 border border-primary/30 rounded-lg px-2.5 py-1.5 animate-scale-in">
+                  {useXpMessage}
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-0.5">
+                {user.role === 'curator' && (
+                  <Link href="/curator" className="min-h-[36px] inline-flex items-center px-2.5 sm:px-3 py-1.5 rounded-button bg-primary hover:bg-primary-hover text-background text-[11px] sm:text-xs font-medium transition-all active:scale-[0.98] button-press touch-manipulation">
                     MikeGTC
                   </Link>
                 )}
-                <Link
-                  href="/submit"
-                  className="bg-primary hover:bg-primary-hover active:bg-primary-active text-background px-3 py-1.5 rounded-button transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press text-xs md:text-sm font-medium"
-                >
+                <Link href="/submit" className="min-h-[36px] inline-flex items-center px-2.5 sm:px-3 py-1.5 rounded-button bg-primary hover:bg-primary-hover text-background text-[11px] sm:text-xs font-medium transition-all active:scale-[0.98] button-press touch-manipulation">
                   Submit Demo
                 </Link>
-                <Link
-                  href="/carryover"
-                  className="bg-background-lighter hover:bg-amber-500/10 text-text-primary hover:text-amber-400 px-3 py-1.5 rounded-button transition-all duration-200 border border-gray-700 hover:border-amber-500/30 text-xs md:text-sm font-medium"
-                >
-                  Carryover {carryoverCount > 0 && `(${carryoverCount})`}
+                <Link href="/carryover" className="min-h-[36px] inline-flex items-center px-2.5 sm:px-3 py-1.5 rounded-button bg-primary hover:bg-primary-hover text-background text-[11px] sm:text-xs font-medium transition-all active:scale-[0.98] button-press touch-manipulation">
+                  Carryover {carryoverCount > 0 ? `(${carryoverCount})` : ''}
                 </Link>
                 <button
                   type="button"
                   onClick={() => setShowXpHelpModal(true)}
-                  className="inline-flex items-center gap-2 bg-background-lighter hover:bg-primary/10 text-text-primary hover:text-primary px-3 py-1.5 rounded-button transition-all duration-200 border border-gray-700 hover:border-primary/30 text-xs md:text-sm font-medium"
+                  className="min-h-[36px] inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-button bg-background-lighter hover:bg-primary/10 text-text-primary hover:text-primary border border-gray-700 hover:border-primary/30 text-[11px] sm:text-xs font-medium transition-all touch-manipulation"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   How XP works
-                </button>
-                <button
-                  type="button"
-                  onClick={openLogoutConfirm}
-                  className="p-1.5 rounded-button bg-background-lighter hover:bg-gray-800 text-text-primary border border-gray-700 transition-all duration-200 active:scale-[0.98] button-press"
-                  title="Log out"
-                  aria-label="Log out"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Tester panel: add/remove XP */}
+          {/* Tester panel: add/remove XP - compact */}
           {user.role === 'tester' && (
-            <div className="bg-amber-500/5 rounded-xl shadow-lg p-4 md:p-5 border border-amber-500/30 animate-fade-in">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="px-2 py-0.5 text-xs font-bold bg-amber-500/20 text-amber-400 rounded border border-amber-500/30 uppercase tracking-wider">Tester</span>
-                <h2 className="text-base font-bold text-text-primary">Adjust XP</h2>
+            <div className="bg-amber-500/5 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 border border-amber-500/30 animate-fade-in">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-1.5 py-0.5 text-[10px] sm:text-xs font-bold bg-amber-500/20 text-amber-400 rounded border border-amber-500/30 uppercase tracking-wider">Tester</span>
+                <h2 className="text-sm sm:text-base font-bold text-text-primary">Adjust XP</h2>
               </div>
-              <p className="text-xs text-text-secondary mb-3">Manually add or remove XP. Then click &quot;Use my XP&quot; to apply and move up the queue. No automatic usage.</p>
-              <form onSubmit={handleXpAdjustSubmit} className="flex flex-wrap items-center gap-2">
+              <p className="text-[11px] sm:text-xs text-text-secondary mb-2">Add/remove XP, then &quot;Use XP&quot; to apply.</p>
+              <form onSubmit={handleXpAdjustSubmit} className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <input
                   type="number"
                   value={xpAdjustValue}
                   onChange={(e) => setXpAdjustValue(e.target.value)}
                   placeholder="e.g. 50 or -25"
-                  className="w-28 px-3 py-2 rounded-button bg-background-lighter border border-gray-700 text-text-primary text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none"
+                  className="w-24 sm:w-28 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-button bg-background-lighter border border-gray-700 text-text-primary text-xs sm:text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none min-h-[36px]"
                 />
-                <button
-                  type="submit"
-                  disabled={xpAdjusting || !xpAdjustValue.trim()}
-                  className="px-3 py-2 rounded-button bg-primary hover:bg-primary-hover text-background text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                <button type="submit" disabled={xpAdjusting || !xpAdjustValue.trim()} className="min-h-[36px] px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-button bg-primary hover:bg-primary-hover text-background text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation">
                   {xpAdjusting ? '…' : 'Apply'}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleXpAdjust(50)}
-                  disabled={xpAdjusting}
-                  className="px-3 py-2 rounded-button bg-background-lighter hover:bg-gray-700 border border-gray-600 text-text-primary text-sm font-medium disabled:opacity-50"
-                >
+                <button type="button" onClick={() => handleXpAdjust(50)} disabled={xpAdjusting} className="min-h-[36px] px-2 sm:px-3 py-1.5 rounded-button bg-background-lighter hover:bg-gray-700 border border-gray-600 text-text-primary text-xs sm:text-sm font-medium disabled:opacity-50 touch-manipulation">
                   +50
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleXpAdjust(-50)}
-                  disabled={xpAdjusting}
-                  className="px-3 py-2 rounded-button bg-background-lighter hover:bg-gray-700 border border-gray-600 text-text-primary text-sm font-medium disabled:opacity-50"
-                >
+                <button type="button" onClick={() => handleXpAdjust(-50)} disabled={xpAdjusting} className="min-h-[36px] px-2 sm:px-3 py-1.5 rounded-button bg-background-lighter hover:bg-gray-700 border border-gray-600 text-text-primary text-xs sm:text-sm font-medium disabled:opacity-50 touch-manipulation">
                   −50
                 </button>
               </form>
               {xpAdjustMessage && (
-                <p className="mt-3 text-sm font-medium text-primary bg-primary/10 border border-primary/30 rounded-lg px-3 py-2 animate-scale-in">
+                <p className="mt-2 text-xs sm:text-sm font-medium text-primary bg-primary/10 border border-primary/30 rounded-lg px-2.5 py-1.5 animate-scale-in">
                   {xpAdjustMessage}
                 </p>
               )}
             </div>
           )}
 
-          <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-gray-800/50">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+          <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border border-gray-800/50">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2 sm:mb-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
+                <div className="p-1.5 sm:p-2 bg-primary/10 rounded-md sm:rounded-lg shrink-0">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
-                <div>
-                  <h2 className="text-base md:text-lg font-bold text-text-primary">Your Submissions</h2>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    {submissions.length === 0 
-                      ? 'No active submissions' 
-                      : `${submissions.length} pending submission${submissions.length !== 1 ? 's' : ''}`
-                    }
+                <div className="min-w-0">
+                  <h2 className="text-sm sm:text-base md:text-lg font-bold text-text-primary">Your Submissions</h2>
+                  <p className="text-[11px] sm:text-xs text-text-secondary mt-0.5">
+                    {submissions.length === 0 ? 'No active submissions' : `${submissions.length} pending`}
                   </p>
                 </div>
                 {getAverageScores() && (
-                  <details className="group/avg">
-                    <summary className="list-none cursor-pointer text-xs text-text-muted hover:text-text-primary font-medium inline-flex items-center gap-1 px-2 py-1 rounded border border-gray-700/50 hover:border-primary/30 bg-background-lighter/50">
+                  <details className="group/avg shrink-0">
+                    <summary className="list-none cursor-pointer text-[10px] sm:text-xs text-text-muted hover:text-text-primary font-medium inline-flex items-center gap-1 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded border border-gray-700/50 hover:border-primary/30 bg-background-lighter/50 touch-manipulation">
                       Avg <span className="text-primary font-bold">{((Number(getAverageScores()!.sound) + Number(getAverageScores()!.structure) + Number(getAverageScores()!.mix) + Number(getAverageScores()!.vibe)) / 4).toFixed(1)}</span>/10
                       <svg className="w-3 h-3 opacity-70 group-open/avg:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </summary>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5 py-2">
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 mt-1 py-1.5">
                       {[
                         { label: 'S', score: getAverageScores()!.sound, color: 'text-blue-400' },
                         { label: 'St', score: getAverageScores()!.structure, color: 'text-purple-400' },
                         { label: 'M', score: getAverageScores()!.mix, color: 'text-pink-400' },
                         { label: 'V', score: getAverageScores()!.vibe, color: 'text-orange-400' },
                       ].map(({ label, score, color }) => (
-                        <span key={label} className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${color} bg-background-lighter border border-gray-700/50`} title={label === 'S' ? 'Sound' : label === 'St' ? 'Structure' : label === 'M' ? 'Mix' : 'Vibe'}>{label} {score}</span>
+                        <span key={label} className={`px-1 sm:px-1.5 py-0.5 rounded text-[10px] font-bold ${color} bg-background-lighter border border-gray-700/50`} title={label === 'S' ? 'Sound' : label === 'St' ? 'Structure' : label === 'M' ? 'Mix' : 'Vibe'}>{label} {score}</span>
                       ))}
                     </div>
                   </details>
@@ -793,7 +753,7 @@ export default function Dashboard() {
               <button
                 onClick={fetchReviewedSubmissions}
                 disabled={loadingReviewed}
-                className="group relative flex items-center gap-2 px-4 py-2 bg-background-lighter hover:bg-primary/10 border border-gray-700 hover:border-primary/30 rounded-button transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press"
+                className="min-h-[36px] group relative flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-background-lighter hover:bg-primary/10 border border-gray-700 hover:border-primary/30 rounded-button transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation text-[11px] sm:text-xs md:text-sm font-medium"
               >
                 {loadingReviewed ? (
                   <>
@@ -813,8 +773,8 @@ export default function Dashboard() {
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
-                    <span className="text-xs md:text-sm font-medium text-text-primary group-hover:text-primary transition-colors duration-200">
-                      {showReviewed ? 'Hide Results' : 'View Results'}
+                    <span className="text-[11px] sm:text-xs md:text-sm font-medium text-text-primary group-hover:text-primary transition-colors duration-200">
+                      {showReviewed ? 'Hide' : 'Results'}
                     </span>
                     {reviewedSubmissions.length > 0 && (
                       <span className="px-1.5 py-0.5 text-xs font-bold bg-primary/20 text-primary rounded-full min-w-[20px] text-center">
@@ -826,60 +786,49 @@ export default function Dashboard() {
               </button>
             </div>
           {submissions.length === 0 ? (
-            <p className="text-text-secondary">No submissions yet. Submit your first demo!</p>
+            <p className="text-text-secondary text-xs sm:text-sm">No submissions yet. Submit your first demo!</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {submissions.map((submission, index) => (
                 <div
                   key={submission.id}
-                  className="border rounded-xl p-3 md:p-4 hover:shadow-lg transition-all duration-200 animate-slide-in bg-background-lighter border-yellow-500/30"
+                  className="border rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 hover:shadow-lg transition-all duration-200 animate-slide-in bg-background-lighter border-yellow-500/30"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="flex justify-between items-start mb-2 md:mb-3 gap-3">
+                  <div className="flex justify-between items-start gap-2 mb-1.5 sm:mb-2">
                     <div className="flex-1 min-w-0">
-                      <div className="mb-1.5 md:mb-2">
+                      <div className="mb-0.5 sm:mb-1">
                         {submission.song_title && (
-                          <h3 className="text-sm md:text-base font-semibold text-text-primary break-words">
+                          <h3 className="text-xs sm:text-sm md:text-base font-semibold text-text-primary break-words line-clamp-1">
                             {submission.song_title}
                           </h3>
                         )}
                         {submission.artist_name && (
-                          <p className="text-xs md:text-sm text-text-secondary break-words mt-0.5">
+                          <p className="text-[11px] sm:text-xs md:text-sm text-text-secondary break-words mt-0.5 line-clamp-1">
                             by {submission.artist_name}
                           </p>
                         )}
                       </div>
                       {submission.description && (
-                        <p className="text-xs md:text-sm text-text-secondary mb-1.5 md:mb-2 break-words whitespace-pre-wrap line-clamp-2">
+                        <p className="text-[11px] sm:text-xs text-text-secondary mb-1 break-words whitespace-pre-wrap line-clamp-2">
                           {submission.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <p className="text-xs text-text-muted">
-                          {new Date(submission.created_at).toLocaleDateString()}
-                        </p>
-                        {submission.session_number && (
-                          <span className="text-xs text-text-muted">
-                            • Session #{submission.session_number}
-                          </span>
-                        )}
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap text-[10px] sm:text-xs text-text-muted">
+                        <span>{new Date(submission.created_at).toLocaleDateString()}</span>
+                        {submission.session_number && <span>• #{submission.session_number}</span>}
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5 md:gap-2 flex-shrink-0">
-                      <span className="px-3 py-1.5 rounded-button text-xs md:text-sm font-bold whitespace-nowrap transition-all duration-200 shadow-md bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-button text-[10px] sm:text-xs md:text-sm font-bold whitespace-nowrap bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
                         ⏳ Pending
                       </span>
-                      <Link
-                        href={`/submit?edit=${submission.id}`}
-                        className="text-xs text-primary hover:text-primary-hover font-medium whitespace-nowrap transition-colors duration-200 underline underline-offset-2"
-                      >
+                      <Link href={`/submit?edit=${submission.id}`} className="text-[11px] sm:text-xs text-primary hover:text-primary-hover font-medium whitespace-nowrap underline underline-offset-2 touch-manipulation">
                         Edit
                       </Link>
                     </div>
                   </div>
-                  
-                  {/* SoundCloud Embed */}
-                  <div className="mt-4">
+                  <div className="mt-2 sm:mt-3">
                     {embedData[submission.id]?.html ? (
                       <div 
                         className="soundcloud-embed w-full"
@@ -929,129 +878,84 @@ export default function Dashboard() {
           )}
           </div>
 
-          {/* Previous Reviewed Submissions Section */}
+          {/* Previous Reviewed Submissions Section - compact */}
           {showReviewed && (
-            <div className="bg-gradient-to-br from-background-light to-background-lighter rounded-xl shadow-lg p-4 md:p-5 mt-4 border border-primary/20 animate-fade-in">
-                {/* Header with Statistics */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b border-gray-800/50">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-primary/20 rounded-lg">
-                      <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+            <div className="bg-gradient-to-br from-background-light to-background-lighter rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 md:p-5 mt-3 border border-primary/20 animate-fade-in">
+                <div className="flex flex-wrap items-center gap-2 mb-3 pb-3 border-b border-gray-800/50">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 sm:p-2 bg-primary/20 rounded-md sm:rounded-lg">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                     <div>
-                      <h2 className="text-lg md:text-xl font-bold text-text-primary flex items-center gap-2">
-                        Previous Submission Results
-                        <span className="px-2 py-0.5 text-xs font-bold bg-primary/20 text-primary rounded-full">
-                          {reviewedSubmissions.length}
-                        </span>
+                      <h2 className="text-sm sm:text-base md:text-lg font-bold text-text-primary flex items-center gap-1.5">
+                        Results
+                        <span className="px-1.5 py-0.5 text-[10px] sm:text-xs font-bold bg-primary/20 text-primary rounded-full">{reviewedSubmissions.length}</span>
                       </h2>
-                      <p className="text-xs text-text-secondary mt-1">
-                        Your reviewed submissions from previous sessions
-                      </p>
+                      <p className="text-[11px] sm:text-xs text-text-secondary mt-0.5">Reviewed from previous sessions</p>
                     </div>
                   </div>
                 </div>
-
-                {/* Reviewed Submissions List */}
                 {reviewedSubmissions.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-2 sm:space-y-3">
                     {reviewedSubmissions.map((submission, index) => (
                       <div
                         key={submission.id}
-                        className="group border rounded-xl p-4 md:p-5 hover:shadow-xl transition-all duration-300 animate-slide-in bg-background-lighter border-primary/30 hover:border-primary/50 hover:bg-background-light"
+                        className="group border rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 hover:shadow-xl transition-all duration-300 animate-slide-in bg-background-lighter border-primary/30 hover:border-primary/50"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
-                        <div className="flex justify-between items-start mb-3 gap-4">
+                        <div className="flex justify-between items-start mb-2 sm:mb-3 gap-2 sm:gap-4">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start gap-3 mb-2">
-                              <div className="p-1.5 bg-primary/10 rounded-lg mt-0.5 flex-shrink-0">
-                                <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                                </svg>
+                            <div className="flex items-start gap-2 mb-1">
+                              <div className="p-1 bg-primary/10 rounded-md mt-0.5 flex-shrink-0">
+                                <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
                               </div>
                               <div className="flex-1 min-w-0">
                                 {submission.song_title && (
-                                  <h3 className="text-base md:text-lg font-semibold text-text-primary break-words group-hover:text-primary transition-colors duration-200">
+                                  <h3 className="text-xs sm:text-sm md:text-base font-semibold text-text-primary break-words line-clamp-1 group-hover:text-primary transition-colors duration-200">
                                     {submission.song_title}
                                   </h3>
                                 )}
                                 {submission.artist_name && (
-                                  <p className="text-sm text-text-secondary break-words mt-1">
-                                    by {submission.artist_name}
-                                  </p>
+                                  <p className="text-[11px] sm:text-xs text-text-secondary break-words mt-0.5 line-clamp-1">by {submission.artist_name}</p>
                                 )}
                               </div>
                             </div>
                             {submission.description && (
-                              <p className="text-sm text-text-secondary mb-3 break-words whitespace-pre-wrap line-clamp-2">
+                              <p className="text-[11px] sm:text-xs text-text-secondary mb-1.5 break-words whitespace-pre-wrap line-clamp-2">
                                 {submission.description}
                               </p>
                             )}
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <div className="flex items-center gap-1.5 text-xs text-text-muted">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                {new Date(submission.created_at).toLocaleDateString('en-US', { 
-                                  year: 'numeric', 
-                                  month: 'short', 
-                                  day: 'numeric' 
-                                })}
-                              </div>
-                              {submission.session_number && (
-                                <div className="flex items-center gap-1.5 text-xs text-text-muted">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                                  </svg>
-                                  Session #{submission.session_number}
-                                </div>
-                              )}
+                            <div className="flex items-center gap-2 flex-wrap text-[10px] sm:text-xs text-text-muted">
+                              <span>{new Date(submission.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                              {submission.session_number && <span>• #{submission.session_number}</span>}
                             </div>
                           </div>
-                          <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                            <span className="px-3 py-1.5 rounded-button text-xs md:text-sm font-bold whitespace-nowrap transition-all duration-200 shadow-md bg-primary text-background flex items-center gap-1.5">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Reviewed
+                          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                            <span className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-button text-[10px] sm:text-xs font-bold whitespace-nowrap bg-primary text-background flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                              Done
                             </span>
                           </div>
                         </div>
-                        
-                        {/* Review Scores - Prominent Display */}
                         {submission.reviews && submission.reviews.length > 0 && (
-                          <div className="mb-4 p-4 bg-gradient-to-br from-background-light to-background-lighter rounded-lg border border-primary/20">
-                            <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
-                              <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                              </svg>
-                              Review Scores
-                            </h3>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-gradient-to-br from-background-light to-background-lighter rounded-md sm:rounded-lg border border-primary/20">
+                            <h3 className="text-[10px] sm:text-xs font-semibold text-text-primary mb-1.5 sm:mb-2 flex items-center gap-1">Scores</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
                               {[
-                                { label: 'Sound', score: submission.reviews[0].sound_score, bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-400', icon: '🔊' },
-                                { label: 'Structure', score: submission.reviews[0].structure_score, bg: 'bg-purple-500/20', border: 'border-purple-500/30', text: 'text-purple-400', icon: '🏗️' },
-                                { label: 'Mix', score: submission.reviews[0].mix_score, bg: 'bg-pink-500/20', border: 'border-pink-500/30', text: 'text-pink-400', icon: '🎚️' },
-                                { label: 'Vibe', score: submission.reviews[0].vibe_score, bg: 'bg-orange-500/20', border: 'border-orange-500/30', text: 'text-orange-400', icon: '✨' },
-                              ].map(({ label, score, bg, border, text, icon }) => (
-                                <div key={label} className={`${bg} border ${border} rounded-lg p-3 shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden min-w-0 box-border`}>
-                                  <div className="flex items-center justify-between mb-1 gap-1">
-                                    <p className={`text-xs ${text} font-medium truncate min-w-0`}>{label}</p>
-                                    <span className="text-xs opacity-70 flex-shrink-0">{icon}</span>
-                                  </div>
-                                  <p className={`text-xl md:text-2xl font-bold ${text} break-words pl-0.5 pr-1`}>
-                                    {score}<span className="text-sm opacity-70">/10</span>
-                                  </p>
+                                { label: 'Sound', score: submission.reviews[0].sound_score, bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-400' },
+                                { label: 'Struct', score: submission.reviews[0].structure_score, bg: 'bg-purple-500/20', border: 'border-purple-500/30', text: 'text-purple-400' },
+                                { label: 'Mix', score: submission.reviews[0].mix_score, bg: 'bg-pink-500/20', border: 'border-pink-500/30', text: 'text-pink-400' },
+                                { label: 'Vibe', score: submission.reviews[0].vibe_score, bg: 'bg-orange-500/20', border: 'border-orange-500/30', text: 'text-orange-400' },
+                              ].map(({ label, score, bg, border, text }) => (
+                                <div key={label} className={`${bg} border ${border} rounded-md sm:rounded-lg p-1.5 sm:p-2 overflow-hidden min-w-0`}>
+                                  <p className={`text-[10px] sm:text-xs ${text} font-medium truncate`}>{label}</p>
+                                  <p className={`text-sm sm:text-base font-bold ${text}`}>{score}<span className="text-[10px] opacity-70">/10</span></p>
                                 </div>
                               ))}
                             </div>
                           </div>
                         )}
-                        
-                        {/* SoundCloud Embed */}
-                        <div className="mt-4">
+                        <div className="mt-2 sm:mt-3">
                           {reviewedEmbedData[submission.id]?.html ? (
                             <div 
                               className="soundcloud-embed w-full rounded-lg overflow-hidden"
@@ -1112,8 +1016,8 @@ export default function Dashboard() {
               </div>
           )}
 
-          {/* Queue - always visible under Your Submissions */}
-          <div className="flex justify-center max-w-2xl mx-auto">
+          {/* Queue - compact, full width on mobile */}
+          <div className="flex justify-center max-w-2xl mx-auto w-full">
             <Queue
               currentUserId={user?.id}
               refetchTrigger={queueRefetchTrigger}
@@ -1146,26 +1050,25 @@ export default function Dashboard() {
         externalXpThisSession={externalXpThisSession}
       />
 
-      {/* Logout confirmation: ensure user can re-login with Twitch, offer to save account (stay logged in) */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" aria-modal="true" role="dialog">
-          <div className="bg-background-lighter border border-gray-700 rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-text-primary mb-2">Log out?</h3>
-            <p className="text-text-secondary text-sm mb-4">
-              You can sign in again with Twitch anytime. Do you want to save your current account before logging out?
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 safe-area-padding" aria-modal="true" role="dialog">
+          <div className="bg-background-lighter border border-gray-700 rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-text-primary mb-1.5 sm:mb-2">Log out?</h3>
+            <p className="text-text-secondary text-xs sm:text-sm mb-3 sm:mb-4">
+              You can sign in again with Twitch anytime.
             </p>
-            <div className="flex flex-wrap gap-3 justify-end">
+            <div className="flex flex-wrap gap-2 sm:gap-3 justify-end">
               <button
                 type="button"
                 onClick={() => setShowLogoutConfirm(false)}
-                className="px-4 py-2 rounded-button bg-background border border-gray-600 text-text-primary text-sm font-medium hover:bg-gray-700 transition-colors"
+                className="min-h-[44px] px-3 sm:px-4 py-2 rounded-button bg-background border border-gray-600 text-text-primary text-xs sm:text-sm font-medium hover:bg-gray-700 transition-colors touch-manipulation"
               >
-                Stay logged in
+                Stay
               </button>
               <button
                 type="button"
                 onClick={performLogout}
-                className="px-4 py-2 rounded-button bg-primary hover:bg-primary-hover text-background text-sm font-medium transition-colors"
+                className="min-h-[44px] px-3 sm:px-4 py-2 rounded-button bg-primary hover:bg-primary-hover text-background text-xs sm:text-sm font-medium transition-colors touch-manipulation"
               >
                 Log out
               </button>

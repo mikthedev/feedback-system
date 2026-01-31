@@ -4,12 +4,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* SoundCloud embed styling */
+/* SoundCloud embed styling - compact on small screens */
 .soundcloud-embed iframe {
   width: 100% !important;
   max-width: 100% !important;
-  height: 166px !important;
-  border-radius: 0.5rem;
+  height: 140px !important;
+  border-radius: 0.375rem;
+}
+@media (min-width: 640px) {
+  .soundcloud-embed iframe {
+    height: 166px !important;
+    border-radius: 0.5rem;
+  }
 }
 
 body {
@@ -22,13 +28,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: #111111;
   color: #ffffff;
+  font-size: 15px;
 }
 
 /* Iframe compatibility */
 html, body {
   height: 100%;
+  min-height: 100dvh;
   overflow-x: hidden;
   background: #111111;
+}
+
+/* Safe area for notched phones / mobile */
+.safe-area-padding {
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 /* Animations - Framer-like smooth micro-animations */

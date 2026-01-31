@@ -102,73 +102,63 @@ export default function CarryoverPage() {
   const myCarryover = carryover.filter((s) => s.user_id === user.id)
 
   return (
-    <div className="min-h-screen bg-background animate-page-transition">
-      <div className="pt-12 md:pt-14 p-3 md:p-4">
-        <div className="max-w-6xl mx-auto space-y-4">
+    <div className="min-h-screen bg-background animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="pt-10 sm:pt-12 md:pt-14 px-2 sm:px-3 md:p-4">
+        <div className="max-w-6xl mx-auto space-y-3">
           <div className="flex items-center justify-between">
-            <Link
-              href="/dashboard"
-              className="text-primary hover:text-primary-hover text-sm font-medium underline underline-offset-2"
-            >
-              ← Back to Dashboard
+            <Link href="/dashboard" className="text-primary hover:text-primary-hover text-[11px] sm:text-sm font-medium underline underline-offset-2 touch-manipulation">
+              ← Dashboard
             </Link>
           </div>
-
-          <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border border-gray-800/50">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 md:p-5 animate-fade-in border border-gray-800/50">
+            <div className="flex items-start gap-2 sm:gap-3 mb-3">
+              <div className="p-1.5 sm:p-2 bg-amber-500/10 rounded-md sm:rounded-lg shrink-0">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
-              <div>
-                <h1 className="text-base md:text-lg font-bold text-text-primary">Carryover</h1>
-                <p className="text-xs text-amber-400/90 mt-0.5">
-                  Your song was skipped or moved to another session — you likely missed the feedback livestream or the curator (MikeGTC) moved your submission. You cannot submit again until 60 minutes after the transfer.
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-base md:text-lg font-bold text-text-primary">Carryover</h1>
+                <p className="text-[11px] sm:text-xs text-amber-400/90 mt-0.5">
+                  Track skipped or session ended. You cannot submit again until 60 min after transfer.
                 </p>
               </div>
             </div>
-
             {loading ? (
-              <p className="text-text-secondary">Loading...</p>
+              <p className="text-text-secondary text-xs sm:text-sm">Loading…</p>
             ) : myCarryover.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-text-secondary">You have no tracks in carryover.</p>
-                <Link
-                  href="/dashboard"
-                  className="inline-block mt-3 text-primary hover:text-primary-hover font-medium text-sm"
-                >
-                  Return to Dashboard
+              <div className="text-center py-6 sm:py-8">
+                <p className="text-text-secondary text-xs sm:text-sm">No tracks in carryover.</p>
+                <Link href="/dashboard" className="inline-block mt-2 text-primary hover:text-primary-hover font-medium text-[11px] sm:text-sm touch-manipulation">
+                  Back to Dashboard
                 </Link>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {myCarryover.map((item, index) => (
                   <div
                     key={item.id}
-                    className="border rounded-xl p-3 md:p-4 bg-background-lighter border-amber-500/30 animate-slide-in"
+                    className="border rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 bg-background-lighter border-amber-500/30 animate-slide-in"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className="flex justify-between items-start mb-2 gap-3">
-                      <div>
-                        <h3 className="text-sm md:text-base font-semibold text-text-primary">
+                    <div className="flex justify-between items-start gap-2 mb-1.5 sm:mb-2">
+                      <div className="min-w-0">
+                        <h3 className="text-xs sm:text-sm md:text-base font-semibold text-text-primary line-clamp-1">
                           {item.song_title || 'Untitled Track'}
                         </h3>
-                        <p className="text-xs text-text-secondary mt-0.5">
+                        <p className="text-[11px] sm:text-xs text-text-secondary mt-0.5 line-clamp-1">
                           by {item.artist_name || item.users?.display_name || '—'}
-                          {item.session_number != null && ` · Session #${item.session_number}`}
+                          {item.session_number != null && ` · #${item.session_number}`}
                         </p>
-                        <p className="text-[11px] text-amber-400 mt-2">
-                          {item.carryover_type === 'curator_skip'
-                            ? 'Skipped by curator (MikeGTC) and moved to carryover'
-                            : 'Session ended before your track was reviewed — you may have missed the livestream'}
+                        <p className="text-[10px] sm:text-[11px] text-amber-400 mt-1.5">
+                          {item.carryover_type === 'curator_skip' ? 'Skipped by curator' : 'Session ended before review'}
                         </p>
                       </div>
-                      <span className="px-3 py-1.5 rounded-button text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 whitespace-nowrap">
+                      <span className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-button text-[10px] sm:text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 whitespace-nowrap shrink-0">
                         Carryover
                       </span>
                     </div>
-                    <div className="mt-4">
+                    <div className="mt-2 sm:mt-3">
                       {embedData[item.id]?.html ? (
                         <div
                           className="soundcloud-embed w-full"

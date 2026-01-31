@@ -525,31 +525,28 @@ export default function CuratorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-3 md:p-4 animate-page-transition">
-      <div className="max-w-7xl mx-auto">
-        {/* Compact Header */}
-        <div className="bg-background-light rounded-xl shadow-lg p-4 mb-4 animate-fade-in border border-gray-800/50">
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl md:text-2xl font-bold text-text-primary">MikeGTC Panel</h1>
-            <div className="flex gap-2">
+    <div className="min-h-screen bg-background px-2 sm:px-3 md:p-4 py-4 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="max-w-7xl mx-auto w-full min-w-0">
+        <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 mb-3 animate-fade-in border border-gray-800/50">
+          <div className="flex justify-between items-center gap-2">
+            <h1 className="text-base sm:text-xl md:text-2xl font-bold text-text-primary truncate min-w-0">MikeGTC Panel</h1>
+            <div className="flex gap-1.5 sm:gap-2 shrink-0">
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="px-3 py-1.5 text-sm bg-background-lighter hover:bg-gray-800 text-text-primary rounded-button transition-all duration-200 font-medium border border-gray-700 active:scale-[0.98] button-press"
+                className="min-h-[36px] px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-sm bg-background-lighter hover:bg-gray-800 text-text-primary rounded-button transition-all duration-200 font-medium border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
               >
                 {showSettings ? 'Hide' : 'Settings'}
               </button>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="px-3 py-1.5 text-sm bg-background-lighter hover:bg-gray-800 text-text-primary rounded-button transition-all duration-200 font-medium border border-gray-700 active:scale-[0.98] button-press"
+                className="min-h-[36px] px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-sm bg-background-lighter hover:bg-gray-800 text-text-primary rounded-button transition-all duration-200 font-medium border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
               >
                 Dashboard
               </button>
             </div>
           </div>
-          
-          {/* Collapsible Settings */}
           {showSettings && (
-            <div className="mt-4 pt-4 border-t border-gray-800/50 animate-slide-in space-y-3">
+            <div className="mt-3 pt-3 sm:mt-4 sm:pt-4 border-t border-gray-800/50 animate-slide-in space-y-2 sm:space-y-3">
               {/* Submissions Toggle */}
               <div className="flex items-center justify-between p-3 bg-background-lighter rounded-lg border border-gray-800/50">
                 <div className="flex-1">
@@ -630,29 +627,25 @@ export default function CuratorPage() {
           )}
         </div>
 
-        {/* Success/Error Messages */}
         {success && (
-          <div className="mb-3 p-3 bg-primary/10 border border-primary/30 text-primary rounded-lg animate-scale-in">
-            {typeof success === 'string' ? success : 'Review submitted successfully!'}
+          <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-primary/10 border border-primary/30 text-primary rounded-lg animate-scale-in text-xs sm:text-sm">
+            {typeof success === 'string' ? success : 'Review submitted!'}
           </div>
         )}
-
         {error && (
-          <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg animate-scale-in">
+          <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg animate-scale-in text-xs sm:text-sm">
             {error}
           </div>
         )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Queue-ordered submissions list (matches dashboard queue) */}
-          <div className="lg:col-span-1 bg-background-light rounded-xl shadow-lg p-3 animate-fade-in border border-gray-800/50 flex flex-col min-w-0 max-w-full">
-            <h2 className="text-sm font-bold text-text-primary mb-2 flex-shrink-0">
-              Queue · Pending ({submissions.length})
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="lg:col-span-1 bg-background-light rounded-lg sm:rounded-xl shadow-lg p-2 sm:p-3 animate-fade-in border border-gray-800/50 flex flex-col min-w-0 max-w-full">
+            <h2 className="text-xs sm:text-sm font-bold text-text-primary mb-1.5 sm:mb-2 flex-shrink-0">
+              Pending ({submissions.length})
             </h2>
             {submissions.length === 0 ? (
-              <p className="text-xs text-text-secondary">No pending submissions</p>
+              <p className="text-[11px] sm:text-xs text-text-secondary">No pending submissions</p>
             ) : (
-              <div className="space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto overflow-x-hidden scrollbar-hide flex-1 min-w-0 w-full">
+              <div className="space-y-1 max-h-[min(40vh,280px)] sm:max-h-[calc(100vh-280px)] overflow-y-auto overflow-x-hidden scrollbar-hide flex-1 min-w-0 w-full">
                 {submissions.map((submission, index) => (
                   <div
                     key={submission.id}
@@ -718,28 +711,24 @@ export default function CuratorPage() {
             )}
           </div>
 
-          {/* Review Panel - Focus on Embed and Scoring */}
-          <div className="lg:col-span-2 bg-background-light rounded-xl shadow-lg p-4 md:p-6 animate-fade-in border border-gray-800/50">
+          <div className="lg:col-span-2 bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 md:p-6 animate-fade-in border border-gray-800/50 min-w-0">
             {selectedSubmission ? (
-              <div className="space-y-4">
-                {/* Track Info - Compact */}
-                <div className="pb-3 border-b border-gray-800/50">
-                  <h2 className="text-lg font-bold text-text-primary mb-1">
+              <div className="space-y-2 sm:space-y-4">
+                <div className="pb-2 sm:pb-3 border-b border-gray-800/50">
+                  <h2 className="text-sm sm:text-base md:text-lg font-bold text-text-primary mb-0.5 sm:mb-1 line-clamp-1">
                     {selectedSubmission.song_title || 'Untitled Track'}
                   </h2>
-                  <p className="text-sm text-text-secondary">
+                  <p className="text-[11px] sm:text-xs md:text-sm text-text-secondary line-clamp-1">
                     {selectedSubmission.artist_name || selectedSubmission.users.display_name}
-                    {selectedSubmission.session_number && ` • Session #${selectedSubmission.session_number}`}
+                    {selectedSubmission.session_number && ` • #${selectedSubmission.session_number}`}
                   </p>
                   {selectedSubmission.description && (
-                    <p className="text-xs text-text-muted mt-2 line-clamp-2">
+                    <p className="text-[11px] sm:text-xs text-text-muted mt-1 sm:mt-2 line-clamp-2">
                       {selectedSubmission.description}
                     </p>
                   )}
                 </div>
-                
-                {/* SoundCloud Embed - Prominent */}
-                <div className="bg-background-lighter rounded-lg p-3 border border-gray-800/50">
+                <div className="bg-background-lighter rounded-md sm:rounded-lg p-2 sm:p-3 border border-gray-800/50">
                   <SoundCloudEmbed 
                     key={`embed-wrapper-${selectedSubmission.id}`}
                     submissionId={selectedSubmission.id}
@@ -749,27 +738,26 @@ export default function CuratorPage() {
                   />
                 </div>
 
-                {/* Scoring System - Compact Grid */}
-                <div className="flex flex-wrap items-center gap-2 pb-2">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pb-1.5 sm:pb-2">
                   <button
                     type="button"
                     onClick={handleGrantDonationXp}
                     disabled={grantingDonation}
-                    className="px-3 py-1.5 text-sm rounded-button font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press"
+                    className="min-h-[36px] px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-sm rounded-button font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation"
                   >
-                    {grantingDonation ? '...' : 'Grant +20 donation XP'}
+                    {grantingDonation ? '…' : '+20 XP'}
                   </button>
                   <button
                     type="button"
                     onClick={handleSkipToCarryover}
                     disabled={skipping}
-                    className="px-3 py-1.5 text-sm rounded-button font-medium bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press"
+                    className="min-h-[36px] px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-sm rounded-button font-medium bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation"
                   >
-                    {skipping ? '...' : 'Skip'}
+                    {skipping ? '…' : 'Skip'}
                   </button>
                 </div>
-                <form onSubmit={handleSubmitReview} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
+                <form onSubmit={handleSubmitReview} className="space-y-2 sm:space-y-4">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     {[
                       { key: 'sound_score', label: 'Sound', colorClass: 'text-blue-400' },
                       { key: 'structure_score', label: 'Structure', colorClass: 'text-purple-400' },
@@ -807,26 +795,21 @@ export default function CuratorPage() {
                     ))}
                   </div>
 
-                  <div className="flex gap-3 pt-2">
+                  <div className="flex gap-2 sm:gap-3 pt-2">
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="flex-1 bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-medium py-2.5 px-4 rounded-button transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press"
+                      className="flex-1 min-h-[44px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-medium py-2.5 px-3 sm:px-4 rounded-button transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press text-sm touch-manipulation"
                     >
-                      {submitting ? 'Submitting...' : 'Submit Review'}
+                      {submitting ? '…' : 'Submit Review'}
                     </button>
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedSubmission(null)
-                        setScores({
-                          sound_score: '0',
-                          structure_score: '0',
-                          mix_score: '0',
-                          vibe_score: '0',
-                        })
+                        setScores({ sound_score: '0', structure_score: '0', mix_score: '0', vibe_score: '0' })
                       }}
-                      className="px-4 py-2.5 border border-gray-700 text-text-primary rounded-button hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press"
+                      className="min-h-[44px] px-3 sm:px-4 py-2.5 border border-gray-700 text-text-primary rounded-button hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press text-sm touch-manipulation"
                     >
                       Cancel
                     </button>
@@ -844,9 +827,8 @@ export default function CuratorPage() {
           </div>
         </div>
 
-        {/* Curator footer strip — aligned with dashboard footer style */}
-        <div className="max-w-2xl mx-auto mt-6 pt-4 border-t border-gray-800/50">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted">
+        <div className="max-w-2xl mx-auto mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-800/50">
+          <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-[11px] sm:text-xs text-text-muted">
             <button
               type="button"
               onClick={() => setShowXpHelpModal(true)}

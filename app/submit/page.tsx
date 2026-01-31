@@ -242,37 +242,31 @@ function SubmitPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-3 md:p-4 animate-page-transition">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-6 animate-fade-in border border-gray-800/50">
-          <div className="flex items-center justify-between mb-4 md:mb-6">
-            <h1 className="text-xl md:text-2xl font-bold text-text-primary">
-              {isEditing ? 'Edit Submission' : 'Submit Demo'}
+    <div className="min-h-screen bg-background px-2 sm:px-3 md:p-4 py-4 sm:py-6 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="max-w-2xl mx-auto w-full min-w-0">
+        <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 md:p-6 animate-fade-in border border-gray-800/50">
+          <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
+            <h1 className="text-base sm:text-xl md:text-2xl font-bold text-text-primary truncate min-w-0">
+              {isEditing ? 'Edit' : 'Submit Demo'}
             </h1>
             {isEditing && (
-              <Link
-                href="/dashboard"
-                className="text-xs text-primary hover:text-primary-hover underline underline-offset-2 transition-colors duration-200"
-              >
-                ← Back to Dashboard
+              <Link href="/dashboard" className="text-[11px] sm:text-xs text-primary hover:text-primary-hover underline underline-offset-2 shrink-0 touch-manipulation">
+                ← Dashboard
               </Link>
             )}
           </div>
-          
           {!submissionsOpen && (
-            <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-lg">
-              <strong>⚠️ Submissions are currently closed.</strong> Please check back later or contact MikeGTC for more information.
+            <div className="mb-3 p-2.5 sm:p-3 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-lg text-xs sm:text-sm">
+              <strong>⚠️ Submissions closed.</strong> Check back later or contact MikeGTC.
             </div>
           )}
-
           {success && (
-            <div className="mb-4 p-3 bg-primary/10 border border-primary/30 text-primary rounded-lg animate-scale-in text-sm">
-              {isEditing ? 'Submission updated successfully!' : 'Demo submitted successfully!'} Redirecting to dashboard...
+            <div className="mb-3 p-2.5 sm:p-3 bg-primary/10 border border-primary/30 text-primary rounded-lg animate-scale-in text-xs sm:text-sm">
+              {isEditing ? 'Updated!' : 'Submitted!'} Redirecting…
             </div>
           )}
-
           {error && (
-            <div className={`mb-4 p-3 border rounded-lg animate-scale-in text-sm ${
+            <div className={`mb-3 p-2.5 sm:p-3 border rounded-lg animate-scale-in text-xs sm:text-sm ${
               error.includes('strictly prohibited') || error.includes('may result in a ban')
                 ? 'bg-red-500/15 border-red-500/50 text-red-400'
                 : error.includes('already been submitted') || error.includes('has already been submitted')
@@ -285,10 +279,9 @@ function SubmitPageContent() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-4">
-            {/* Primary Field: SoundCloud URL */}
+          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-3 sm:space-y-4">
             <div>
-              <label htmlFor="soundcloud_url" className="block text-sm font-semibold text-text-primary mb-2">
+              <label htmlFor="soundcloud_url" className="block text-xs sm:text-sm font-semibold text-text-primary mb-1.5">
                 SoundCloud URL <span className="text-primary">*</span>
               </label>
               <input
@@ -296,22 +289,18 @@ function SubmitPageContent() {
                 id="soundcloud_url"
                 value={soundcloudUrl}
                 onChange={(e) => setSoundcloudUrl(e.target.value)}
-                placeholder="https://soundcloud.com/username/track-name"
+                placeholder="https://soundcloud.com/…"
                 required
-                className="w-full px-4 py-3 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words transition-all duration-200 text-base"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-all text-sm sm:text-base min-h-[44px]"
                 disabled={loading || (!submissionsOpen && !isEditing)}
               />
-              <p className="mt-1.5 text-xs text-text-secondary">
-                Only SoundCloud track URLs are accepted
-              </p>
-              
-              {/* SoundCloud Embed Preview */}
+              <p className="mt-1 text-[11px] sm:text-xs text-text-secondary">SoundCloud track URLs only</p>
               {isValidSoundCloudUrl(soundcloudUrl) && (
-                <div className="mt-3 p-3 bg-background-lighter rounded-lg border border-gray-800/50">
-                  <p className="text-xs font-medium text-text-secondary mb-2">Preview:</p>
+                <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-background-lighter rounded-lg border border-gray-800/50">
+                  <p className="text-[11px] sm:text-xs font-medium text-text-secondary mb-1.5">Preview</p>
                   {embedLoading ? (
-                    <div className="w-full h-32 flex items-center justify-center">
-                      <p className="text-xs text-text-secondary">Loading preview...</p>
+                    <div className="w-full h-28 sm:h-32 flex items-center justify-center">
+                      <p className="text-[11px] sm:text-xs text-text-secondary">Loading…</p>
                     </div>
                   ) : embedHtml ? (
                     <div 
@@ -339,31 +328,24 @@ function SubmitPageContent() {
               )}
             </div>
 
-            {/* Primary Field: Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-semibold text-text-primary mb-2">
-                Description
-              </label>
+              <label htmlFor="description" className="block text-xs sm:text-sm font-semibold text-text-primary mb-1.5">Description</label>
               <textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Tell us about your track..."
-                rows={3}
-                className="w-full px-4 py-2.5 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary resize-none break-words transition-all duration-200"
+                rows={2}
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-background border border-gray-700 rounded-button text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary resize-none text-sm min-h-[72px]"
                 disabled={loading || (!submissionsOpen && !isEditing)}
               />
-              <p className="mt-1.5 text-xs text-text-secondary">
-                Optional: Add context about your submission
-              </p>
+              <p className="mt-1 text-[11px] sm:text-xs text-text-secondary">Optional</p>
             </div>
-
-            {/* Advanced Options Toggle */}
             <div className="pt-2 border-t border-gray-800/50">
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors duration-200 mb-3"
+                className="flex items-center gap-1.5 text-[11px] sm:text-sm text-text-secondary hover:text-text-primary transition-colors duration-200 mb-2 touch-manipulation"
               >
                 <svg
                   className={`w-4 h-4 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`}
@@ -438,18 +420,18 @@ function SubmitPageContent() {
               )}
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2 sm:gap-3 pt-2">
               <button
                 type="submit"
                 disabled={loading || !soundcloudUrl.trim() || (!submissionsOpen && !isEditing)}
-                className="flex-1 bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-medium py-3 px-4 rounded-button transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press"
+                className="flex-1 min-h-[44px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-medium py-2.5 sm:py-3 px-3 sm:px-4 rounded-button transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press text-sm touch-manipulation"
               >
-                {loading ? (isEditing ? 'Updating...' : 'Submitting...') : (isEditing ? 'Update Submission' : 'Submit Demo')}
+                {loading ? (isEditing ? 'Updating…' : 'Submitting…') : (isEditing ? 'Update' : 'Submit Demo')}
               </button>
               <button
                 type="button"
                 onClick={() => router.push('/dashboard')}
-                className="px-4 py-3 border border-gray-700 text-text-primary rounded-button hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press"
+                className="min-h-[44px] px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-700 text-text-primary rounded-button hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press text-sm touch-manipulation"
               >
                 Cancel
               </button>

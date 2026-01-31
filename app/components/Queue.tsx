@@ -156,82 +156,56 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded }: 
   }, [queue, metadataCache])
 
   return (
-    <div className="bg-background-light rounded-lg shadow-md p-3 animate-fade-in border border-gray-800/50 max-w-md w-full">
-      {/* Header - always visible */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-bold text-text-primary">Queue</h3>
+    <div className="bg-background-light rounded-lg shadow-md p-2 sm:p-3 animate-fade-in border border-gray-800/50 max-w-md w-full min-w-0">
+      <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <h3 className="text-xs sm:text-sm font-bold text-text-primary">Queue</h3>
           {processedQueue.length > 0 && (
-            <span className="text-xs text-text-secondary bg-background-lighter px-2 py-0.5 rounded-full">
+            <span className="text-[10px] sm:text-xs text-text-secondary bg-background-lighter px-1.5 sm:px-2 py-0.5 rounded-full">
               {processedQueue.length}
             </span>
           )}
         </div>
       </div>
-
-      {/* Content - always visible */}
-      <div className="mt-2">
+      <div className="mt-1 sm:mt-2">
         {loading && processedQueue.length === 0 ? (
-          <p className="text-xs text-text-secondary py-2">Loading...</p>
+          <p className="text-[11px] sm:text-xs text-text-secondary py-1.5 sm:py-2">Loading...</p>
         ) : processedQueue.length === 0 ? (
-          <p className="text-xs text-text-secondary py-2">There are currently no tracks in the queue.</p>
+          <p className="text-[11px] sm:text-xs text-text-secondary py-1.5 sm:py-2">No tracks in queue.</p>
         ) : (
-            <div className="space-y-1.5 max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-hide">
+            <div className="space-y-1 sm:space-y-1.5 max-h-[220px] sm:max-h-[280px] overflow-y-auto overflow-x-hidden scrollbar-hide">
               {processedQueue.map((item, index) => (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-2 p-2 rounded-lg border border-gray-800/50 hover:border-primary/30 hover:bg-background-lighter transition-all duration-200 ${
+                  className={`flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-md sm:rounded-lg border border-gray-800/50 hover:border-primary/30 hover:bg-background-lighter transition-all duration-200 min-h-[44px] ${
                     item._isNew ? 'animate-slide-in bg-primary/5 border-primary/30' : ''
                   } ${currentUserId && item.user_id === currentUserId ? 'ring-1 ring-primary/40 bg-primary/5' : ''}`}
-                  style={{
-                    animationDelay: item._isNew ? `${Math.min(index * 30, 200)}ms` : '0ms'
-                  }}
+                  style={{ animationDelay: item._isNew ? `${Math.min(index * 30, 200)}ms` : '0ms' }}
                 >
-                  {/* Queue Number */}
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-primary">{item.queueNumber}</span>
+                  <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                    <span className="text-[9px] sm:text-[10px] font-bold text-primary">{item.queueNumber}</span>
                   </div>
                   {currentUserId && item.user_id === currentUserId && (
-                    <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-bold bg-primary/20 text-primary rounded border border-primary/30">You</span>
+                    <span className="flex-shrink-0 px-1 sm:px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold bg-primary/20 text-primary rounded border border-primary/30">You</span>
                   )}
-
-                  {/* Artwork */}
                   {item.artwork ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={item.artwork}
                       alt={item.displayTitle}
-                      className="w-10 h-10 rounded object-cover flex-shrink-0"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none'
-                      }}
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded object-cover flex-shrink-0"
+                      onError={(e) => { e.currentTarget.style.display = 'none' }}
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded bg-background-lighter border border-gray-800/50 flex-shrink-0 flex items-center justify-center">
-                      <svg
-                        className="w-5 h-5 text-text-muted"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
-                        />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded bg-background-lighter border border-gray-800/50 flex-shrink-0 flex items-center justify-center">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                       </svg>
                     </div>
                   )}
-
-                  {/* Song Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-text-primary truncate">
-                      {item.displayTitle}
-                    </p>
-                    <p className="text-[10px] text-text-secondary truncate mt-0.5">
-                      {item.displayArtist}
-                    </p>
+                    <p className="text-[11px] sm:text-xs font-semibold text-text-primary truncate">{item.displayTitle}</p>
+                    <p className="text-[9px] sm:text-[10px] text-text-secondary truncate mt-0.5">{item.displayArtist}</p>
                   </div>
                 </div>
               ))}

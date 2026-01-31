@@ -27,7 +27,7 @@ interface DashboardFooterProps {
   onShowIndicatorsHelp?: () => void
 }
 
-const INDICATOR_STYLE = 'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border'
+const INDICATOR_STYLE = 'inline-flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-medium border touch-manipulation'
 
 function IndicatorRow({
   timeXpActive,
@@ -108,9 +108,9 @@ export default function DashboardFooter({
 
   if (compactTop) {
     return (
-      <div className="flex flex-wrap items-center gap-1.5 py-1.5 px-2 rounded-lg bg-background-lighter/60 border border-gray-800/40">
-        <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider mr-0.5">
-          Live indicators
+      <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 py-1 sm:py-1.5 px-2 rounded-md sm:rounded-lg bg-background-lighter/60 border border-gray-800/40">
+        <span className="text-[9px] sm:text-[10px] font-medium text-text-muted uppercase tracking-wider mr-0.5 shrink-0">
+          Live
         </span>
         <IndicatorRow
           timeXpActive={timeXpActive}
@@ -125,10 +125,9 @@ export default function DashboardFooter({
   }
 
   return (
-    <footer className="max-w-2xl mx-auto mt-6 pt-4 border-t border-gray-800/50">
-      <div className="space-y-3">
-        {/* XP summary */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-text-muted">
+    <footer className="max-w-2xl mx-auto mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-800/50">
+      <div className="space-y-2 sm:space-y-3">
+        <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-0.5 text-[10px] sm:text-[11px] text-text-muted">
           <span>Used <span className="font-semibold text-text-primary tabular-nums">{xpUsedThisSession}</span>/300</span>
           <span>·</span>
           <span>Stored <span className="font-semibold text-primary tabular-nums">{xp}</span></span>

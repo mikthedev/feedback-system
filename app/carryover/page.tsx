@@ -103,58 +103,56 @@ export default function CarryoverPage() {
 
   return (
     <div className="min-h-screen bg-background animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="pt-10 sm:pt-12 md:pt-14 px-2 sm:px-3 md:p-4">
-        <div className="max-w-6xl mx-auto space-y-3">
-          <div className="flex items-center justify-between">
-            <Link href="/dashboard" className="text-primary hover:text-primary-hover text-[11px] sm:text-sm font-medium underline underline-offset-2 touch-manipulation">
-              ← Dashboard
-            </Link>
-          </div>
-          <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 md:p-5 animate-fade-in border border-gray-800/50">
-            <div className="flex items-start gap-2 sm:gap-3 mb-3">
-              <div className="p-1.5 sm:p-2 bg-amber-500/10 rounded-md sm:rounded-lg shrink-0">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="pt-11 sm:pt-12 md:pt-14 px-4 sm:px-3 md:p-4">
+        <div className="max-w-6xl mx-auto space-y-4">
+          <Link href="/dashboard" className="inline-flex items-center min-h-[44px] text-sm font-semibold text-primary hover:text-primary-hover underline underline-offset-2 touch-manipulation sm:min-h-0 sm:text-sm sm:font-medium">
+            ← Dashboard
+          </Link>
+          <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-4 md:p-5 animate-fade-in border border-gray-800/50">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2 bg-amber-500/10 rounded-lg shrink-0">
+                <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
               <div className="min-w-0">
-                <h1 className="text-sm sm:text-base md:text-lg font-bold text-text-primary">Carryover</h1>
-                <p className="text-[11px] sm:text-xs text-amber-400/90 mt-0.5">
+                <h1 className="text-base font-bold text-text-primary sm:text-base md:text-lg">Carryover</h1>
+                <p className="text-sm text-amber-400/90 mt-1 leading-relaxed">
                   Track skipped or session ended. You cannot submit again until 60 min after transfer.
                 </p>
               </div>
             </div>
             {loading ? (
-              <p className="text-text-secondary text-xs sm:text-sm">Loading…</p>
+              <p className="text-sm text-text-secondary">Loading…</p>
             ) : myCarryover.length === 0 ? (
-              <div className="text-center py-6 sm:py-8">
-                <p className="text-text-secondary text-xs sm:text-sm">No tracks in carryover.</p>
-                <Link href="/dashboard" className="inline-block mt-2 text-primary hover:text-primary-hover font-medium text-[11px] sm:text-sm touch-manipulation">
+              <div className="text-center py-8">
+                <p className="text-sm text-text-secondary">No tracks in carryover.</p>
+                <Link href="/dashboard" className="inline-flex items-center min-h-[48px] mt-4 px-4 py-3 rounded-xl bg-primary text-background font-semibold text-base hover:bg-primary-hover transition-colors touch-manipulation sm:min-h-[44px] sm:rounded-button sm:py-2 sm:text-sm">
                   Back to Dashboard
                 </Link>
               </div>
             ) : (
-              <div className="space-y-2 sm:space-y-3">
+              <div className="space-y-4">
                 {myCarryover.map((item, index) => (
                   <div
                     key={item.id}
-                    className="border rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 bg-background-lighter border-amber-500/30 animate-slide-in"
+                    className="border rounded-xl p-4 sm:p-3 md:p-4 bg-background-lighter border-amber-500/30 animate-slide-in"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className="flex justify-between items-start gap-2 mb-1.5 sm:mb-2">
+                    <div className="flex justify-between items-start gap-3 mb-2">
                       <div className="min-w-0">
-                        <h3 className="text-xs sm:text-sm md:text-base font-semibold text-text-primary line-clamp-1">
+                        <h3 className="text-sm font-semibold text-text-primary line-clamp-2 sm:text-sm md:text-base">
                           {item.song_title || 'Untitled Track'}
                         </h3>
-                        <p className="text-[11px] sm:text-xs text-text-secondary mt-0.5 line-clamp-1">
+                        <p className="text-sm text-text-secondary mt-0.5 line-clamp-1">
                           by {item.artist_name || item.users?.display_name || '—'}
                           {item.session_number != null && ` · #${item.session_number}`}
                         </p>
-                        <p className="text-[10px] sm:text-[11px] text-amber-400 mt-1.5">
+                        <p className="text-xs text-amber-400 mt-2">
                           {item.carryover_type === 'curator_skip' ? 'Skipped by curator' : 'Session ended before review'}
                         </p>
                       </div>
-                      <span className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-button text-[10px] sm:text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 whitespace-nowrap shrink-0">
+                      <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 whitespace-nowrap shrink-0 sm:rounded-button sm:px-2 sm:py-1">
                         Carryover
                       </span>
                     </div>

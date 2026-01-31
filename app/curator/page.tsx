@@ -525,21 +525,21 @@ export default function CuratorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background px-2 sm:px-3 md:p-4 py-4 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div className="min-h-screen bg-background px-4 sm:px-3 md:p-4 py-4 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-7xl mx-auto w-full min-w-0">
-        <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 mb-3 animate-fade-in border border-gray-800/50">
-          <div className="flex justify-between items-center gap-2">
-            <h1 className="text-base sm:text-xl md:text-2xl font-bold text-text-primary truncate min-w-0">MikeGTC Panel</h1>
-            <div className="flex gap-1.5 sm:gap-2 shrink-0">
+        <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-4 mb-4 animate-fade-in border border-gray-800/50 sm:rounded-xl">
+          <div className="flex justify-between items-center gap-3">
+            <h1 className="text-lg font-bold text-text-primary truncate min-w-0 sm:text-xl md:text-2xl">MikeGTC Panel</h1>
+            <div className="flex gap-2 shrink-0">
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="min-h-[36px] px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-sm bg-background-lighter hover:bg-gray-800 text-text-primary rounded-button transition-all duration-200 font-medium border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
+                className="min-h-[44px] px-3 py-2.5 text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-xl transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation sm:min-h-[36px] sm:rounded-button sm:py-1.5 sm:text-xs sm:font-medium"
               >
                 {showSettings ? 'Hide' : 'Settings'}
               </button>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="min-h-[36px] px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-sm bg-background-lighter hover:bg-gray-800 text-text-primary rounded-button transition-all duration-200 font-medium border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
+                className="min-h-[44px] px-3 py-2.5 text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-xl transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation sm:min-h-[36px] sm:rounded-button sm:py-1.5 sm:text-xs sm:font-medium"
               >
                 Dashboard
               </button>

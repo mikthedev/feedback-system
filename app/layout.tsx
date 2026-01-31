@@ -21,8 +21,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="min-h-screen flex flex-col min-h-[100dvh] safe-area-padding">
-        <main className="flex-1 relative z-10 w-full max-w-full overflow-x-hidden">
+      <body className="flex flex-col safe-area-padding">
+        <main className="relative z-10 w-full max-w-full overflow-x-hidden">
           {children}
         </main>
         <Footer />

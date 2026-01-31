@@ -242,7 +242,7 @@ function SubmitPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 sm:px-3 md:p-4 py-4 sm:py-6 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div className="bg-background px-4 sm:px-3 md:p-4 py-4 sm:py-6 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-2xl mx-auto w-full min-w-0">
         <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-4 md:p-6 animate-fade-in border border-gray-800/50">
           <div className="flex items-center justify-between gap-3 mb-4">

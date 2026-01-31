@@ -1,8 +1,16 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 export default function Footer() {
+  const pathname = usePathname()
+  
+  // Hide footer on login page
+  if (pathname === '/') {
+    return null
+  }
+  
   return (
     <footer className="relative w-full mt-auto bg-background pb-[env(safe-area-inset-bottom)]">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-700/50 to-transparent" />

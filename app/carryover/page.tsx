@@ -102,7 +102,7 @@ export default function CarryoverPage() {
   const myCarryover = carryover.filter((s) => s.user_id === user.id)
 
   return (
-    <div className="min-h-screen bg-background animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div className="bg-background animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="pt-11 sm:pt-12 md:pt-14 px-4 sm:px-3 md:p-4">
         <div className="max-w-6xl mx-auto space-y-4">
           <Link href="/dashboard" className="inline-flex items-center min-h-[44px] text-sm font-semibold text-primary hover:text-primary-hover underline underline-offset-2 touch-manipulation sm:min-h-0 sm:text-sm sm:font-medium">

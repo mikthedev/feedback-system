@@ -557,7 +557,7 @@ export default function CuratorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 sm:px-3 md:p-4 py-4 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div className="bg-background px-4 sm:px-3 md:p-4 py-4 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-7xl mx-auto w-full min-w-0">
         <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-4 mb-4 animate-fade-in border border-gray-800/50 sm:rounded-xl">
           <div className="flex justify-between items-center gap-3">

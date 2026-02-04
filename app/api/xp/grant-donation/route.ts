@@ -6,7 +6,7 @@ import { cookies } from 'next/headers'
 
 /**
  * POST - Grant +20 donation XP to a user (curator only). Body: { user_id: string }.
- * Once per session per user. XP stored in Supabase (users.xp).
+ * Can be granted multiple times per session per user. XP stored in Supabase (users.xp).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -55,28 +55,20 @@ export async function POST(request: NextRequest) {
     const sn = currentSession.session_number
     const { data: usx } = await supabase
       .from('user_session_xp')
-      .select('donation_xp_granted, external_xp_this_session')
+      .select('external_xp_this_session')
       .eq('user_id', userId)
       .eq('session_number', sn)
       .maybeSingle()
 
-    const u = usx as { donation_xp_granted?: boolean; external_xp_this_session?: number } | null
-    const granted = u?.donation_xp_granted ?? false
-    if (granted) {
-      return NextResponse.json(
-        { error: 'Donation XP already granted for this user this session' },
-        { status: 400 }
-      )
-    }
+    const u = usx as { external_xp_this_session?: number } | null
 
     await addXp(supabase, userId, SUB_OR_DONATION_XP)
-    await logXp(supabase, userId, SUB_OR_DONATION_XP, 'donation', 'Donation +20 XP (this session)')
+    await logXp(supabase, userId, SUB_OR_DONATION_XP, 'donation', 'Donation +20 XP (curator granted)')
     const prevExternal = Math.max(0, Math.floor(Number(u?.external_xp_this_session ?? 0)))
     await supabase.from('user_session_xp').upsert(
       {
         user_id: userId,
         session_number: sn,
-        donation_xp_granted: true,
         external_xp_this_session: prevExternal + SUB_OR_DONATION_XP,
         updated_at: new Date().toISOString(),
       },

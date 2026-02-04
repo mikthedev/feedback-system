@@ -161,7 +161,7 @@ export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
               </li>
               <li className="flex gap-2">
                 <span className="text-primary shrink-0">•</span>
-                <span>Up to 300 XP can be used per session via &quot;Use my XP&quot;</span>
+                <span>Each &quot;Use XP&quot; spends 100 XP to move up 1 position. Up to 3 moves (300 XP) per session.</span>
               </li>
             </ul>
           </div>

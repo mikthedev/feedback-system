@@ -98,73 +98,93 @@ export async function deductXp(
   return next
 }
 
-/** Input item for queue movement. */
-export interface QueueItem {
-  id: string
-  user_id: string
-  created_at: string
-  user_xp: number
-  moves_used_this_session: number
-  presence_minutes: number
+/**
+ * Single-swap "Use XP" validation.
+ * Use XP = spend 100 XP to move up exactly ONE position (swap with immediate neighbor above).
+ * Queue movement happens ONLY when user explicitly triggers it; no automatic reordering.
+ */
+export interface ValidateUseXpInput {
+  /** Ordered queue items (by queue_position, created_at). At least id and user_id. */
+  items: Array<{ id: string; user_id: string }>
+  userId: string
+  userXp: number
+  movesUsedThisSession: number
+  isTester: boolean
+  submissionsOpen: boolean
+  /** XP of the user whose submission is directly above the current user's (required if not first). */
+  aboveUserXp: number | null
 }
 
-/** Optional overrides for applyQueueMovement (e.g. tester: no session move cap). */
-export interface ApplyQueueMovementOptions {
-  /** Per-user cap on moves this session; if set, overrides MAX_MOVE_PER_SESSION for that user. */
-  maxMovesPerUser?: Record<string, number>
-}
+export type ValidateUseXpResult =
+  | { allowed: false; reason: string }
+  | {
+      allowed: true
+      myIndex: number
+      mySubmissionId: string
+      aboveSubmissionId: string
+    }
 
 /**
- * Apply XP-based upward movement to a list ordered by created_at.
- * Step-by-step, one position at a time; max MAX_MOVE_PER_SESSION per user (or maxMovesPerUser override);
- * never move down; respect XP gap (can't pass someone with ≥100 more XP).
- * Tie-break when |Δxp| < 100 using presence (higher may swap above).
- * Returns ordered list and per-user move deltas (to persist moves_used_this_session).
+ * Validates whether "Use XP" is allowed (single move: spend 100 XP, move up one position).
+ * Does NOT perform any state change. Caller must then swap the two submissions, deduct XP, and log.
  */
-export function applyQueueMovement(
-  items: QueueItem[],
-  options?: ApplyQueueMovementOptions
-): {
-  ordered: QueueItem[]
-  movesDelta: Record<string, number>
-} {
-  const movesDelta: Record<string, number> = {}
-  let list = items.slice()
-  const movesUsed: Record<string, number> = {}
-  for (const it of items) {
-    movesUsed[it.user_id] = it.moves_used_this_session
+export function validateUseXp(input: ValidateUseXpInput): ValidateUseXpResult {
+  const {
+    items,
+    userId,
+    userXp,
+    movesUsedThisSession,
+    isTester,
+    submissionsOpen,
+    aboveUserXp,
+  } = input
+
+  if (!submissionsOpen) {
+    return { allowed: false, reason: 'Submissions are closed.' }
   }
 
-  const potentialMoves = (u: QueueItem) => {
-    const cap = options?.maxMovesPerUser?.[u.user_id]
-    if (cap !== undefined) return Math.min(cap, Math.floor(u.user_xp / XP_PER_POSITION))
-    return Math.min(MAX_MOVE_PER_SESSION, Math.floor(u.user_xp / XP_PER_POSITION))
+  if (items.length === 0) {
+    return { allowed: false, reason: 'Queue is empty.' }
   }
-  const canMove = (u: QueueItem) => (movesUsed[u.user_id] ?? 0) < potentialMoves(u)
-  const xpGapOk = (above: QueueItem, below: QueueItem) =>
-    (above.user_xp - below.user_xp) < XP_PER_POSITION
-  const tieBreak = (above: QueueItem, below: QueueItem) =>
-    (below.presence_minutes ?? 0) > (above.presence_minutes ?? 0)
 
-  let changed = true
-  while (changed) {
-    changed = false
-    for (let i = 0; i < list.length - 1; i++) {
-      const above = list[i]
-      const below = list[i + 1]
-      if (!canMove(below)) continue
-      if (!xpGapOk(above, below)) continue
-      const gapSmall = Math.abs(above.user_xp - below.user_xp) < XP_PER_POSITION
-      if (gapSmall && !tieBreak(above, below)) continue
-      const uid = below.user_id
-      list[i] = below
-      list[i + 1] = above
-      movesUsed[uid] = (movesUsed[uid] ?? 0) + 1
-      movesDelta[uid] = (movesDelta[uid] ?? 0) + 1
-      changed = true
-      break
+  const myIndex = items.findIndex((i) => i.user_id === userId)
+  if (myIndex === -1) {
+    return { allowed: false, reason: "You don't have a submission in the queue." }
+  }
+
+  if (myIndex === 0) {
+    return { allowed: false, reason: "You're already first in the queue." }
+  }
+
+  if (userXp < XP_PER_POSITION) {
+    return { allowed: false, reason: 'Not enough XP (need 100).' }
+  }
+
+  const moveCap = isTester ? 999 : MAX_MOVE_PER_SESSION
+  if (movesUsedThisSession >= moveCap) {
+    return {
+      allowed: false,
+      reason:
+        moveCap === 999
+          ? 'Session move limit reached.'
+          : `Max moves this session (${MAX_MOVE_PER_SESSION}) reached.`,
     }
   }
 
-  return { ordered: list, movesDelta }
+  if (aboveUserXp != null && aboveUserXp >= userXp + XP_PER_POSITION) {
+    return {
+      allowed: false,
+      reason:
+        "Can't move up: the person above has 100+ more XP than you. You need more XP to overtake them.",
+    }
+  }
+
+  const mySubmissionId = items[myIndex]!.id
+  const aboveSubmissionId = items[myIndex - 1]!.id
+  return {
+    allowed: true,
+    myIndex,
+    mySubmissionId,
+    aboveSubmissionId,
+  }
 }

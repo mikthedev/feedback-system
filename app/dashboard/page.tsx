@@ -79,6 +79,8 @@ export default function Dashboard() {
   const [useXpMessage, setUseXpMessage] = useState<string | null>(null)
   const [useXpLoading, setUseXpLoading] = useState(false)
   const [useXpClicking, setUseXpClicking] = useState(false)
+  const [useXpAllowed, setUseXpAllowed] = useState(false)
+  const [useXpReason, setUseXpReason] = useState('')
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
   const [profileImageFailed, setProfileImageFailed] = useState(false)
   const profileImageRequestedRef = useRef(false)
@@ -246,6 +248,19 @@ export default function Dashboard() {
     }
   }
 
+  const fetchCanMove = async () => {
+    try {
+      const res = await fetch('/api/xp/can-move', { credentials: 'include' })
+      if (!res.ok) return
+      const data = await res.json()
+      setUseXpAllowed(!!data.allowed)
+      setUseXpReason(typeof data.reason === 'string' ? data.reason : '')
+    } catch {
+      setUseXpAllowed(false)
+      setUseXpReason('')
+    }
+  }
+
   const fetchSubmissions = async () => {
     try {
       const response = await fetch('/api/submissions')
@@ -395,6 +410,7 @@ export default function Dashboard() {
     fetchXpStatus()
     fetchXpLog()
     fetchCarryoverCount()
+    fetchCanMove()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only fetch
   }, [])
 
@@ -422,6 +438,7 @@ export default function Dashboard() {
       fetchXpStatus()
       fetchXpLog()
       fetchCarryoverCount()
+      fetchCanMove()
     }
     const handler = () => document.visibilityState === 'visible' && onFocus()
     window.addEventListener('visibilitychange', handler)
@@ -491,8 +508,9 @@ export default function Dashboard() {
       setXp(Math.max(0, next))
       setUser((u) => (u ? { ...u, xp: next } : null))
       setXpAdjustValue('')
-      setXpAdjustMessage('XP updated. Click "Use my XP" to apply and move up.')
+      setXpAdjustMessage('XP updated. Click "Use XP" to move up 1 position.')
       fetchXp()
+      fetchCanMove()
     } catch (e) {
       console.error('XP adjust error:', e)
       alert(e instanceof Error ? e.message : 'Failed to adjust XP')
@@ -516,6 +534,7 @@ export default function Dashboard() {
       setUseXpMessage(data.message ?? 'Done.')
       fetchXp()
       fetchXpLog()
+      fetchCanMove()
       setQueueRefetchTrigger((t) => t + 1)
     } catch (e) {
       setUseXpMessage('Something went wrong.')
@@ -683,7 +702,8 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap">
-                  {/* XP indicator + Use XP grouped together */}
+                  {/* XP indicator + Use XP; reason below when disabled */}
+                  <div className="flex flex-col items-end gap-1">
                   <div className="flex items-center gap-0 rounded-xl overflow-hidden border-2 border-primary/40 bg-primary/10 min-h-[44px] sm:min-h-[40px]">
                     <div
                       className="flex items-center gap-2 pl-3 pr-2 py-2 animate-xp-pulse"
@@ -700,15 +720,20 @@ export default function Dashboard() {
                         </div>
                       )}
                     </div>
-                    {xp >= 100 && (user?.role === 'tester' || xpUsedThisSession < 300) && (
-                      <button
-                        type="button"
-                        onClick={handleUseXp}
-                        disabled={useXpLoading}
-                        className={`h-full min-h-[44px] sm:min-h-[40px] px-4 rounded-r-lg bg-primary hover:bg-primary-hover hover:shadow-inner active:bg-primary-active text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed border-l-2 border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset touch-manipulation ${useXpClicking ? 'animate-use-xp-click' : 'transition-all button-press'}`}
-                      >
-                        {useXpLoading ? '…' : 'Use XP'}
-                      </button>
+                    <button
+                      type="button"
+                      onClick={handleUseXp}
+                      disabled={!useXpAllowed || useXpLoading}
+                      title={useXpReason || 'Spend 100 XP to move up 1 position'}
+                      className={`h-full min-h-[44px] sm:min-h-[40px] px-4 rounded-r-lg bg-primary hover:bg-primary-hover hover:shadow-inner active:bg-primary-active text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed border-l-2 border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset touch-manipulation ${useXpClicking ? 'animate-use-xp-click' : 'transition-all button-press'}`}
+                    >
+                      {useXpLoading ? '…' : 'Use XP'}
+                    </button>
+                    </div>
+                    {!useXpAllowed && useXpReason && (
+                      <p className="text-xs text-text-muted text-right w-full" title={useXpReason}>
+                        {useXpReason}
+                      </p>
                     )}
                   </div>
                   <button

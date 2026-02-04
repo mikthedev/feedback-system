@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import {
-  deductXp,
-  logXp,
-  validateUseXp,
-  XP_PER_POSITION,
-} from '@/lib/xp'
+import { validateUseXp } from '@/lib/xp'
 import { cookies } from 'next/headers'
 
 function parseXp(v: unknown): number {
@@ -18,11 +13,11 @@ function parseXp(v: unknown): number {
 }
 
 /**
- * POST - Use XP: spend exactly 100 XP to move the user's submission up exactly ONE position.
- * Movement happens ONLY when this action succeeds. No automatic queue reordering.
- * XP is deducted only on success.
+ * GET - Returns whether "Use XP" is currently allowed and the reason if not.
+ * Use for enabling/disabling the Use XP button and showing a clear reason when disabled.
+ * Same validation as POST /api/xp/use (single move: spend 100 XP, move up 1 position).
  */
-export async function POST(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const cookieStore = await cookies()
     const userId = cookieStore.get('session_user_id')?.value
@@ -59,9 +54,8 @@ export async function POST(_request: NextRequest) {
 
     if (!currentSession?.session_number) {
       return NextResponse.json({
-        success: true,
-        movesApplied: 0,
-        message: 'No open session.',
+        allowed: false,
+        reason: 'No open session.',
       })
     }
 
@@ -69,14 +63,13 @@ export async function POST(_request: NextRequest) {
 
     const { data: rows } = await supabase
       .from('submissions')
-      .select('id, user_id, queue_position')
+      .select('id, user_id')
       .eq('status', 'pending')
       .eq('session_number', sn)
       .order('queue_position', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true })
 
-    const submissions = (rows ?? []) as Array<{ id: string; user_id: string; queue_position: number | null }>
-    const items = submissions.map((s) => ({ id: s.id, user_id: s.user_id }))
+    const items = (rows ?? []).map((r: { id: string; user_id: string }) => ({ id: r.id, user_id: r.user_id }))
 
     let movesUsedThisSession = 0
     const { data: usx } = await supabase
@@ -89,7 +82,7 @@ export async function POST(_request: NextRequest) {
       movesUsedThisSession = Math.max(0, (usx as { moves_used_this_session: number }).moves_used_this_session)
     }
 
-    const myIndex = items.findIndex((i) => i.user_id === userId)
+    const myIndex = items.findIndex((i: { user_id: string }) => i.user_id === userId)
     let aboveUserXp: number | null = null
     if (myIndex > 0) {
       const aboveUserId = items[myIndex - 1]!.user_id
@@ -111,56 +104,18 @@ export async function POST(_request: NextRequest) {
       aboveUserXp,
     })
 
-    if (!validation.allowed) {
+    if (validation.allowed) {
       return NextResponse.json({
-        success: true,
-        movesApplied: 0,
-        message: validation.reason,
+        allowed: true,
+        reason: 'Spend 100 XP to move up 1 position.',
       })
     }
-
-    const { mySubmissionId, aboveSubmissionId } = validation
-    const myRow = submissions.find((s) => s.id === mySubmissionId)!
-    const aboveRow = submissions.find((s) => s.id === aboveSubmissionId)!
-    const myPos = myRow.queue_position ?? submissions.indexOf(myRow) + 1
-    const abovePos = aboveRow.queue_position ?? submissions.indexOf(aboveRow) + 1
-
-    await supabase
-      .from('submissions')
-      .update({ queue_position: abovePos })
-      .eq('id', mySubmissionId)
-    await supabase
-      .from('submissions')
-      .update({ queue_position: myPos })
-      .eq('id', aboveSubmissionId)
-
-    await deductXp(supabase, userId, XP_PER_POSITION)
-    await logXp(
-      supabase,
-      userId,
-      -XP_PER_POSITION,
-      'queue_move',
-      'Used 100 XP to move up 1 position'
-    )
-
-    await supabase.from('user_session_xp').upsert(
-      {
-        user_id: userId,
-        session_number: sn,
-        moves_used_this_session: movesUsedThisSession + 1,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id,session_number' }
-    )
-
     return NextResponse.json({
-      success: true,
-      movesApplied: 1,
-      xpUsed: XP_PER_POSITION,
-      message: 'Used 100 XP. Your track moved up 1 position.',
+      allowed: false,
+      reason: validation.reason,
     })
   } catch (e) {
-    console.error('POST /api/xp/use error:', e)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('GET /api/xp/can-move error:', e)
+    return NextResponse.json({ allowed: false, reason: 'Unable to check.' }, { status: 200 })
   }
 }

@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { applyQueueMovement, MAX_XP_USABLE_PER_SESSION, XP_PER_POSITION, type QueueItem } from '@/lib/xp'
+import {
+  applyQueueMovement,
+  deductXp,
+  logXp,
+  MAX_XP_USABLE_PER_SESSION,
+  XP_PER_POSITION,
+  type QueueItem,
+} from '@/lib/xp'
 import { cookies } from 'next/headers'
 
 function parseXp(v: unknown): number {
@@ -27,6 +34,13 @@ export async function POST(_request: NextRequest) {
     }
 
     const supabase = createAdminClient()
+
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single()
+    const isTester = (userRow as { role?: string } | null)?.role === 'tester'
 
     const { data: currentSession } = await supabase
       .from('submission_sessions')
@@ -98,13 +112,19 @@ export async function POST(_request: NextRequest) {
       }
     })
 
-    const { ordered, movesDelta } = applyQueueMovement(items)
+    const moveCapForTester = 999
+    const options = isTester
+      ? { maxMovesPerUser: { [userId]: moveCapForTester } as Record<string, number> }
+      : undefined
+    const { ordered, movesDelta } = applyQueueMovement(items, options)
     const myDelta = movesDelta[userId] ?? 0
 
     if (myDelta <= 0) {
       const used = (usxMap[userId]?.moves ?? 0) * XP_PER_POSITION
       const xp = xpByUser[userId] ?? 0
-      const potential = Math.min(3, Math.floor(xp / XP_PER_POSITION))
+      const potential = isTester
+        ? Math.floor(xp / XP_PER_POSITION)
+        : Math.min(3, Math.floor(xp / XP_PER_POSITION))
       if (potential <= 0 || xp < 100) {
         return NextResponse.json({
           success: true,
@@ -112,7 +132,7 @@ export async function POST(_request: NextRequest) {
           message: 'Not enough XP to move (need 100+).',
         })
       }
-      if (used >= MAX_XP_USABLE_PER_SESSION) {
+      if (!isTester && used >= MAX_XP_USABLE_PER_SESSION) {
         return NextResponse.json({
           success: true,
           movesApplied: 0,
@@ -128,12 +148,28 @@ export async function POST(_request: NextRequest) {
         })
       }
       const isFirstInQueue = items.length > 0 && items[0].user_id === userId
+      if (isFirstInQueue) {
+        return NextResponse.json({
+          success: true,
+          movesApplied: 0,
+          message: "You're already first in the queue. No position change needed.",
+        })
+      }
+      const firstInQueue = items[0]
+      const firstXp = firstInQueue?.user_xp ?? 0
+      const myXp = xpByUser[userId] ?? 0
+      if (firstXp >= myXp + XP_PER_POSITION) {
+        return NextResponse.json({
+          success: true,
+          movesApplied: 0,
+          message:
+            "It's impossible to get higher than 1st in queue. The first person has 100+ more XP than you. You need more XP to overtake them.",
+        })
+      }
       return NextResponse.json({
         success: true,
         movesApplied: 0,
-        message: isFirstInQueue
-          ? "You're already first in the queue. No position change needed."
-          : 'No position change possible (queue or XP gap).',
+        message: 'No position change possible (queue or XP gap).',
       })
     }
 
@@ -160,6 +196,22 @@ export async function POST(_request: NextRequest) {
         .from('submissions')
         .update({ queue_position: i + 1 })
         .eq('id', ordered[i].id)
+    }
+
+    for (const uid of Object.keys(movesDelta)) {
+      const delta = movesDelta[uid]!
+      if (delta <= 0) continue
+      const xpSpent = delta * XP_PER_POSITION
+      await deductXp(supabase, uid, xpSpent)
+      await logXp(
+        supabase,
+        uid,
+        -xpSpent,
+        'queue_move',
+        delta === 1
+          ? `Used ${xpSpent} XP to move up 1 position`
+          : `Used ${xpSpent} XP to move up ${delta} positions`
+      )
     }
 
     return NextResponse.json({

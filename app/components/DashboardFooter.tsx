@@ -15,7 +15,6 @@ interface DashboardFooterProps {
   xpUsedThisSession: number
   /** When null, user has no session cap (e.g. tester). */
   usedCap: number | null
-  unusedExternal: number
   externalXpThisSession: number
   timeXpActive: boolean | null
   followingMikegtcoff: boolean | null
@@ -123,7 +122,6 @@ export default function DashboardFooter({
   xp,
   xpUsedThisSession,
   usedCap,
-  unusedExternal,
   externalXpThisSession,
   timeXpActive,
   followingMikegtcoff,
@@ -155,8 +153,8 @@ export default function DashboardFooter({
 
   return (
     <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60 w-full">
-      {/* XP summary — 3 stat cards in a row */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      {/* XP summary — Used and Stored */}
+      <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="rounded-lg bg-background/80 border-2 border-gray-700/50 p-3 flex flex-col items-center justify-center min-h-[72px]">
           <span className="text-xs font-bold text-text-muted uppercase tracking-wider">
             Used
@@ -172,14 +170,6 @@ export default function DashboardFooter({
           </span>
           <span className="mt-1 text-lg font-extrabold text-primary tabular-nums">
             {xp}
-          </span>
-        </div>
-        <div className="rounded-lg bg-background/80 border-2 border-gray-700/50 p-3 flex flex-col items-center justify-center min-h-[72px]">
-          <span className="text-xs font-bold text-text-muted uppercase tracking-wider">
-            Unused
-          </span>
-          <span className="mt-1 text-lg font-extrabold text-primary tabular-nums">
-            {unusedExternal}
           </span>
         </div>
       </div>

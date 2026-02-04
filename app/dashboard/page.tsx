@@ -82,6 +82,17 @@ export default function Dashboard() {
   const [profileImageFailed, setProfileImageFailed] = useState(false)
   const profileImageRequestedRef = useRef(false)
   const lastMyPositionsRef = useRef<Record<string, number>>({})
+  const [expandedDescriptionIds, setExpandedDescriptionIds] = useState<Set<string>>(new Set())
+
+  const DESCRIPTION_COLLAPSE_THRESHOLD = 120
+  const toggleDescriptionExpanded = (id: string) => {
+    setExpandedDescriptionIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -599,27 +610,25 @@ export default function Dashboard() {
   return (
     <div className="bg-background animate-page-transition">{/* Floating Status Banner - compact */}
       <div
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out pt-[env(safe-area-inset-top)] ${getBannerClasses()} ${getBannerAnimation()}`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out pt-[env(safe-area-inset-top)] px-3 sm:px-4 md:px-5 ${getBannerClasses()} ${getBannerAnimation()}`}
       >
-        <div className="max-w-6xl mx-auto px-2 sm:px-3 pt-1.5 pb-1.5 sm:pt-1 sm:pb-1">
+        <div className="max-w-6xl mx-auto pt-1.5 pb-1.5 sm:pt-2 sm:pb-2">
           <div
-            className={`rounded-md px-2.5 py-1.5 shadow-md backdrop-blur-sm border ${
+            className={`rounded-lg px-3 py-1.5 sm:py-2 shadow-md backdrop-blur-sm border flex items-center justify-center ${
               submissionsOpen
                 ? 'bg-primary/20 backdrop-blur-md text-primary border-primary/30'
                 : 'bg-red-500/20 backdrop-blur-md text-red-400 border-red-500/30'
             }`}
           >
-            <div className="flex items-center justify-center">
-              <span className="text-[11px] font-semibold uppercase tracking-wider sm:text-xs">
-                {submissionsOpen ? 'Submission Open' : 'Submission Closed'}
-              </span>
-            </div>
+            <span className="text-xs font-bold uppercase tracking-wider sm:text-sm">
+              {submissionsOpen ? 'Submission Open' : 'Submission Closed'}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Main: even spacing (space-y-4); on lg, main column + sticky sidebar */}
-      <div className="pt-8 sm:pt-9 md:pt-10 px-3 sm:px-4 md:px-5 pb-4 sm:pb-5">
+      {/* Main: top padding clears fixed banner; same px so banner and content align in width */}
+      <div className="pt-11 sm:pt-12 md:pt-14 px-3 sm:px-4 md:px-5 pb-4 sm:pb-5">
         <div className="max-w-6xl mx-auto space-y-4">
           <DashboardFooter
             xp={xp}
@@ -871,11 +880,6 @@ export default function Dashboard() {
                           </p>
                         )}
                       </div>
-                      {submission.description && (
-                        <p className="text-xs text-text-secondary mb-2 break-words whitespace-pre-wrap line-clamp-2">
-                          {submission.description}
-                        </p>
-                      )}
                       <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted">
                         <span>{new Date(submission.created_at).toLocaleDateString()}</span>
                         {submission.session_number && <span>• #{submission.session_number}</span>}
@@ -890,6 +894,29 @@ export default function Dashboard() {
                       </Link>
                     </div>
                   </div>
+                  {submission.description && (() => {
+                    const isLong = submission.description.length > DESCRIPTION_COLLAPSE_THRESHOLD
+                    const isExpanded = expandedDescriptionIds.has(submission.id)
+                    const showToggle = isLong
+                    const showFull = !showToggle || isExpanded
+                    return (
+                      <div className="mb-3 p-3 bg-background rounded-xl border-2 border-gray-700/50">
+                        <div className="text-[8px] text-text-secondary font-bold uppercase tracking-wider mb-1.5 opacity-90">Description</div>
+                        <p className={`text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed ${showFull ? '' : 'line-clamp-2'}`}>
+                          {submission.description}
+                        </p>
+                        {showToggle && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); toggleDescriptionExpanded(submission.id) }}
+                            className="mt-2 text-xs font-bold text-primary hover:underline touch-manipulation"
+                          >
+                            {isExpanded ? 'Hide' : 'Show more'}
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })()}
                   <div className="mt-3">
                     <SoundCloudEmbed
                       id={submission.id}
@@ -957,16 +984,31 @@ export default function Dashboard() {
                       </div>
 
                       {/* Description - Special field like scores if text exists */}
-                      {submission.description && (
-                        <div className="mb-3 p-3 bg-background rounded-xl border-2 border-gray-700/50">
-                          <div className="mb-1.5">
-                            <div className="text-[8px] text-text-secondary font-bold uppercase tracking-wider mb-1 opacity-90">Description</div>
+                      {submission.description && (() => {
+                        const isLong = submission.description.length > DESCRIPTION_COLLAPSE_THRESHOLD
+                        const isExpanded = expandedDescriptionIds.has(submission.id)
+                        const showToggle = isLong
+                        const showFull = !showToggle || isExpanded
+                        return (
+                          <div className="mb-3 p-3 bg-background rounded-xl border-2 border-gray-700/50">
+                            <div className="mb-1.5">
+                              <div className="text-[8px] text-text-secondary font-bold uppercase tracking-wider mb-1 opacity-90">Description</div>
+                            </div>
+                            <p className={`text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed ${showFull ? '' : 'line-clamp-2'}`}>
+                              {submission.description}
+                            </p>
+                            {showToggle && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); toggleDescriptionExpanded(submission.id) }}
+                                className="mt-2 text-xs font-bold text-primary hover:underline touch-manipulation"
+                              >
+                                {isExpanded ? 'Hide' : 'Show more'}
+                              </button>
+                            )}
                           </div>
-                          <p className="text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed">
-                            {submission.description}
-                          </p>
-                        </div>
-                      )}
+                        )
+                      })()}
 
                       {/* Scores Display */}
                       {review && (
@@ -1065,25 +1107,29 @@ export default function Dashboard() {
 
             </div>
 
-          {/* Sidebar on lg: XP footer (above) + Queue */}
-          <aside className="lg:w-80 xl:w-96 lg:shrink-0 lg:sticky lg:top-16 space-y-4 mt-4 lg:mt-0">
-            <DashboardFooter
-              xp={xp}
-              xpUsedThisSession={xpUsedThisSession}
-              unusedExternal={unusedExternal}
-              externalXpThisSession={externalXpThisSession}
-              timeXpActive={xpStatus?.time_xp_active ?? null}
-              followingMikegtcoff={xpStatus?.following_mikegtcoff ?? null}
-              carryoverCount={carryoverCount}
-              xpLog={xpLog}
-              loadingLog={loadingXpLog}
-              onShowXpHelp={() => setShowXpHelpModal(true)}
-            />
-            <Queue
-              currentUserId={user?.id}
-              refetchTrigger={queueRefetchTrigger}
-              onQueueLoaded={handleQueueLoaded}
-            />
+          {/* Sidebar: on phone Queue above XP footer; on lg XP footer above Queue */}
+          <aside className="flex flex-col gap-4 mt-4 lg:mt-0 lg:w-80 xl:w-96 lg:shrink-0 lg:sticky lg:top-16">
+            <div className="order-1 lg:order-2">
+              <Queue
+                currentUserId={user?.id}
+                refetchTrigger={queueRefetchTrigger}
+                onQueueLoaded={handleQueueLoaded}
+              />
+            </div>
+            <div className="order-2 lg:order-1">
+              <DashboardFooter
+                xp={xp}
+                xpUsedThisSession={xpUsedThisSession}
+                unusedExternal={unusedExternal}
+                externalXpThisSession={externalXpThisSession}
+                timeXpActive={xpStatus?.time_xp_active ?? null}
+                followingMikegtcoff={xpStatus?.following_mikegtcoff ?? null}
+                carryoverCount={carryoverCount}
+                xpLog={xpLog}
+                loadingLog={loadingXpLog}
+                onShowXpHelp={() => setShowXpHelpModal(true)}
+              />
+            </div>
           </aside>
           </div>
         </div>

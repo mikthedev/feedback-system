@@ -75,6 +75,7 @@ export default function Dashboard() {
   const [loadingXpLog, setLoadingXpLog] = useState(false)
   const [carryoverCount, setCarryoverCount] = useState(0)
   const [queueRefetchTrigger, setQueueRefetchTrigger] = useState(0)
+  const [justMovedPosition, setJustMovedPosition] = useState<number | null>(null)
   const [xpAdjustMessage, setXpAdjustMessage] = useState<string | null>(null)
   const [useXpMessage, setUseXpMessage] = useState<string | null>(null)
   const [useXpLoading, setUseXpLoading] = useState(false)
@@ -86,6 +87,11 @@ export default function Dashboard() {
   const profileImageRequestedRef = useRef(false)
   const lastMyPositionsRef = useRef<Record<string, number>>({})
   const [expandedDescriptionIds, setExpandedDescriptionIds] = useState<Set<string>>(new Set())
+  const [grantUsers, setGrantUsers] = useState<Array<{ id: string; display_name: string }>>([])
+  const [grantTargetId, setGrantTargetId] = useState<string>('self')
+  const [grantAmount, setGrantAmount] = useState('')
+  const [grantLoading, setGrantLoading] = useState(false)
+  const [grantMessage, setGrantMessage] = useState<string | null>(null)
 
   const DESCRIPTION_COLLAPSE_THRESHOLD = 120
   const toggleDescriptionExpanded = (id: string) => {
@@ -258,6 +264,56 @@ export default function Dashboard() {
     } catch {
       setUseXpAllowed(false)
       setUseXpReason('')
+    }
+  }
+
+  const fetchGrantUsers = async () => {
+    try {
+      const res = await fetch('/api/users', { credentials: 'include' })
+      if (!res.ok) return
+      const data = await res.json()
+      setGrantUsers(data.users ?? [])
+    } catch {
+      setGrantUsers([])
+    }
+  }
+
+  const handleGrantXp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (user?.role !== 'curator') return
+    setGrantMessage(null)
+    setGrantLoading(true)
+    try {
+      const amount = parseInt(grantAmount, 10)
+      if (Number.isNaN(amount) || amount === 0) {
+        setGrantMessage('Enter an amount (e.g. 50 to add, -20 to decrease).')
+        return
+      }
+      const res = await fetch('/api/xp/grant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: grantTargetId === 'self' || !grantTargetId ? undefined : grantTargetId,
+          amount,
+        }),
+        credentials: 'include',
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setGrantMessage(data?.error ?? 'Failed to grant XP')
+        return
+      }
+      setGrantMessage(data.message ?? 'Done.')
+      setGrantAmount('')
+      if (grantTargetId === 'self' || !grantTargetId) {
+        fetchXp()
+        setUser((u) => (u ? { ...u, xp: data.new_total } : null))
+        setXp(data.new_total)
+      }
+    } catch (err) {
+      setGrantMessage('Something went wrong.')
+    } finally {
+      setGrantLoading(false)
     }
   }
 
@@ -446,6 +502,10 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
   }, [])
 
+  useEffect(() => {
+    if (user?.role === 'curator') fetchGrantUsers()
+  }, [user?.role])
+
   // Auto-show XP help modal on first dashboard visit after login (unless already dismissed)
   useEffect(() => {
     if (loading || !user || hasAutoShownXpHelpRef.current || getXpHelpDismissed()) return
@@ -536,6 +596,10 @@ export default function Dashboard() {
       fetchXpLog()
       fetchCanMove()
       setQueueRefetchTrigger((t) => t + 1)
+      if (data.movesApplied === 1 && typeof data.newPosition === 'number') {
+        setJustMovedPosition(data.newPosition)
+        setTimeout(() => setJustMovedPosition(null), 4000)
+      }
     } catch (e) {
       setUseXpMessage('Something went wrong.')
     } finally {
@@ -560,6 +624,12 @@ export default function Dashboard() {
     const t = setTimeout(() => setUseXpMessage(null), 6000)
     return () => clearTimeout(t)
   }, [useXpMessage])
+
+  useEffect(() => {
+    if (!grantMessage) return
+    const t = setTimeout(() => setGrantMessage(null), 5000)
+    return () => clearTimeout(t)
+  }, [grantMessage])
 
   const xpToNext = 100 - (xp % 100)
   const xpInBlock = xp % 100
@@ -657,7 +727,6 @@ export default function Dashboard() {
             xp={xp}
             xpUsedThisSession={xpUsedThisSession}
             usedCap={user?.role === 'tester' ? null : 300}
-            unusedExternal={unusedExternal}
             externalXpThisSession={externalXpThisSession}
             timeXpActive={xpStatus?.time_xp_active ?? null}
             followingMikegtcoff={xpStatus?.following_mikegtcoff ?? null}
@@ -672,111 +741,158 @@ export default function Dashboard() {
           <div className="lg:flex lg:gap-6 lg:items-start">
             {/* Main column: welcome, submissions, reviewed — even space-y-4 */}
             <div className="lg:flex-1 lg:min-w-0 space-y-4">
-          {/* Welcome card — redesigned: XP + Use XP grouped; actions rearranged */}
-          <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-5 animate-fade-in border-2 border-gray-700/60">
-            <div className="flex flex-col gap-4">
-              {/* Row 1: Welcome + profile on left; XP group + Use XP + Logout on right */}
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                  {(profileImageUrl ?? user.profile_image_url) && !profileImageFailed ? (
-                    <img
-                      src={profileImageUrl ?? user.profile_image_url ?? ''}
-                      alt=""
-                      referrerPolicy="no-referrer"
-                      crossOrigin="anonymous"
-                      className="h-12 w-12 shrink-0 rounded-full border-2 border-gray-600 bg-background-lighter object-cover"
-                      onError={() => setProfileImageFailed(true)}
-                    />
-                  ) : (
-                    <div className="h-12 w-12 shrink-0 rounded-full border-2 border-gray-600 bg-background-lighter flex items-center justify-center text-text-muted text-lg font-bold" aria-hidden>
-                      {(user.display_name || '?').charAt(0).toUpperCase()}
+          {/* Welcome card — greeting row; separate XP field and Use XP field; logout aligned; action buttons */}
+          <div className="bg-background-light rounded-2xl shadow-xl p-4 sm:p-5 animate-fade-in border-2 border-gray-700/60 overflow-hidden">
+            {/* Row 1: Avatar + Welcome text | Logout (aligned top-right) */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                {(profileImageUrl ?? user.profile_image_url) && !profileImageFailed ? (
+                  <img
+                    src={profileImageUrl ?? user.profile_image_url ?? ''}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                    className="h-12 w-12 shrink-0 rounded-full border-2 border-gray-600 bg-background-lighter object-cover ring-2 ring-primary/20"
+                    onError={() => setProfileImageFailed(true)}
+                  />
+                ) : (
+                  <div className="h-12 w-12 shrink-0 rounded-full border-2 border-gray-600 bg-background-lighter flex items-center justify-center text-text-muted text-lg font-bold ring-2 ring-primary/20" aria-hidden>
+                    {(user.display_name || '?').charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h1 className="text-lg font-extrabold text-text-primary truncate sm:text-xl md:text-2xl tracking-tight">
+                    Welcome, {user.display_name}!
+                  </h1>
+                  {user.role === 'curator' && (
+                    <p className="text-xs sm:text-sm text-text-secondary mt-0.5 font-medium">MikeGTC Dashboard</p>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={openLogoutConfirm}
+                className="shrink-0 h-11 w-11 sm:h-12 sm:w-12 flex items-center justify-center rounded-xl bg-background-lighter/80 hover:bg-gray-800 text-text-primary border-2 border-gray-600 hover:border-gray-500 transition-all duration-200 active:scale-[0.98] button-press touch-manipulation"
+                title="Log out"
+                aria-label="Log out"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+              </button>
+            </div>
+
+            {/* Seamless XP + Use XP — single block */}
+            <div className="mt-3 flex flex-col gap-1 min-w-0">
+              <div className="flex items-stretch rounded-2xl overflow-hidden border-2 border-primary/40 bg-gradient-to-r from-primary/15 via-primary/10 to-primary/20 shadow-inner min-h-[44px]">
+                <div className="flex items-center gap-2 pl-3 pr-2 py-2 min-w-0 flex-1">
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0">XP</span>
+                  <span
+                    className={`text-base font-black text-primary tabular-nums shrink-0 w-8 text-right ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}
+                    title="Your XP balance"
+                  >
+                    {xp}
+                  </span>
+                  {xpInBlock > 0 && xp < 9999 && (
+                    <div className="flex-1 min-w-[48px] max-w-[90px] h-1.5 rounded-full bg-background-lighter/80 border border-gray-600/40 overflow-hidden relative">
+                      <div
+                        className={`h-full bg-primary rounded-full transition-all duration-500 ${xpInBlock >= 80 ? 'animate-xp-block-glow xp-bar-energized' : 'animate-xp-block-glow'}`}
+                        style={{ width: `${xpInBlock}%` }}
+                      />
+                      <div className="absolute inset-0 pointer-events-none xp-bubbles-track">
+                        <span className="xp-bubble" aria-hidden />
+                        <span className="xp-bubble" aria-hidden />
+                        <span className="xp-bubble" aria-hidden />
+                        <span className="xp-bubble" aria-hidden />
+                        <span className="xp-bubble" aria-hidden />
+                      </div>
                     </div>
                   )}
-                  <div className="min-w-0">
-                    <h1 className="text-lg font-extrabold text-text-primary break-words sm:text-xl md:text-2xl sm:truncate tracking-tight">
-                      Welcome, {user.display_name}!
-                    </h1>
-                    {user.role === 'curator' && (
-                      <p className="text-sm text-text-secondary mt-0.5 font-medium">MikeGTC Dashboard</p>
-                    )}
-                  </div>
+                  {xpInBlock > 0 && xp < 9999 && (
+                    <span className="text-[10px] text-text-muted tabular-nums shrink-0">{xpToNext}→</span>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap">
-                  {/* XP indicator + Use XP; reason below when disabled */}
-                  <div className="flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-0 rounded-xl overflow-hidden border-2 border-primary/40 bg-primary/10 min-h-[44px] sm:min-h-[40px]">
-                    <div
-                      className="flex items-center gap-2 pl-3 pr-2 py-2 animate-xp-pulse"
-                      title="Your XP — use it to move up the queue"
-                    >
-                      <span className="text-xs font-bold text-text-muted uppercase tracking-wider">XP</span>
-                      <span className="text-base font-extrabold text-primary tabular-nums">{xp}</span>
-                      {xpInBlock > 0 && (
-                        <div className="hidden sm:flex items-center gap-2 ml-1">
-                          <div className="w-10 h-1.5 bg-background-lighter rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${xpInBlock}%` }} />
-                          </div>
-                          <span className="text-xs text-text-muted tabular-nums font-medium">{xpToNext} to +1</span>
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleUseXp}
-                      disabled={!useXpAllowed || useXpLoading}
-                      title={useXpReason || 'Spend 100 XP to move up 1 position'}
-                      className={`h-full min-h-[44px] sm:min-h-[40px] px-4 rounded-r-lg bg-primary hover:bg-primary-hover hover:shadow-inner active:bg-primary-active text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed border-l-2 border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset touch-manipulation ${useXpClicking ? 'animate-use-xp-click' : 'transition-all button-press'}`}
-                    >
-                      {useXpLoading ? '…' : 'Use XP'}
-                    </button>
-                    </div>
-                    {!useXpAllowed && useXpReason && (
-                      <p className="text-xs text-text-muted text-right w-full" title={useXpReason}>
-                        {useXpReason}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={openLogoutConfirm}
-                    className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-background-lighter hover:bg-gray-800 text-text-primary border-2 border-gray-600 transition-all duration-200 active:scale-[0.98] button-press touch-manipulation sm:min-h-[40px] sm:min-w-[40px] overflow-hidden"
-                    title="Log out"
-                    aria-label="Log out"
-                  >
-                    <svg className="w-4 h-4 shrink-0 block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                  </button>
-                </div>
+                <div className="w-px bg-primary/30 self-stretch shrink-0" aria-hidden />
+                <button
+                  type="button"
+                  onClick={handleUseXp}
+                  disabled={!useXpAllowed || useXpLoading}
+                  title={useXpReason || 'Spend 100 XP to move up 1 position'}
+                  className={`shrink-0 min-w-[80px] min-h-[44px] px-4 font-bold text-sm text-background bg-primary hover:bg-primary-hover active:bg-primary-active focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors ${useXpClicking ? 'animate-use-xp-click' : 'button-press'}`}
+                >
+                  {useXpLoading ? '…' : 'Use XP'}
+                </button>
               </div>
-              {useXpMessage && (
-                <p className="text-sm font-bold text-primary bg-primary/10 border-2 border-primary/40 rounded-lg px-4 py-2 animate-scale-in">
-                  {useXpMessage}
+              {!useXpAllowed && useXpReason && (
+                <p className="text-[10px] text-text-muted leading-tight px-1" title={useXpReason}>
+                  {useXpReason}
                 </p>
               )}
-              {/* Action buttons: Submit Demo, Carryover, MikeGTC — full width grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            </div>
+
+            {useXpMessage && (
+              <p className="text-sm font-bold text-primary bg-primary/10 border-2 border-primary/40 rounded-xl px-4 py-2 animate-scale-in mt-4">
+                {useXpMessage}
+              </p>
+            )}
+
+            {/* Action buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-5">
+              <Link
+                href="/submit"
+                className="min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30"
+              >
+                Submit Demo
+              </Link>
+              <Link
+                href="/carryover"
+                className="min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30"
+              >
+                Carryover {carryoverCount > 0 ? `(${carryoverCount})` : ''}
+              </Link>
+              {user.role === 'curator' && (
                 <Link
-                  href="/submit"
-                  className="min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30"
+                  href="/curator"
+                  className="min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30 sm:col-span-2 lg:col-span-1"
                 >
-                  Submit Demo
+                  MikeGTC
                 </Link>
-                <Link
-                  href="/carryover"
-                  className="min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30"
-                >
-                  Carryover {carryoverCount > 0 ? `(${carryoverCount})` : ''}
-                </Link>
-                {user.role === 'curator' && (
-                  <Link
-                    href="/curator"
-                    className="min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30 sm:col-span-2 lg:col-span-1"
-                  >
-                    MikeGTC
-                  </Link>
-                )}
-              </div>
+              )}
             </div>
           </div>
+
+          {/* Curator: Grant XP to any user or self */}
+          {user.role === 'curator' && (
+            <div className="bg-primary/5 rounded-xl shadow-lg p-4 border-2 border-primary/40 animate-fade-in">
+              <h2 className="text-base font-extrabold text-text-primary mb-1">Grant XP</h2>
+              <p className="text-sm text-text-secondary mb-4 font-medium">Add or decrease XP for any user (use a negative number to decrease).</p>
+              <form onSubmit={handleGrantXp} className="flex flex-wrap items-center gap-3 sm:gap-4">
+                <select
+                  value={grantTargetId}
+                  onChange={(e) => setGrantTargetId(e.target.value)}
+                  className="min-h-[48px] px-4 py-2 rounded-xl bg-background-lighter border-2 border-gray-600 text-text-primary text-sm font-medium focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none"
+                >
+                  <option value="self">Myself</option>
+                  {grantUsers.map((u) => (
+                    <option key={u.id} value={u.id}>{u.display_name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  value={grantAmount}
+                  onChange={(e) => setGrantAmount(e.target.value)}
+                  placeholder="e.g. 50 or -20"
+                  className="w-24 sm:w-28 px-4 py-3 rounded-xl bg-background-lighter border-2 border-gray-600 text-text-primary text-base font-semibold focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none min-h-[48px]"
+                />
+                <button type="submit" disabled={grantLoading || !grantAmount.trim()} className="min-h-[48px] px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation border-2 border-transparent">
+                  {grantLoading ? '…' : 'Grant XP'}
+                </button>
+              </form>
+              {grantMessage && (
+                <p className="mt-3 text-sm font-bold text-primary bg-primary/10 border-2 border-primary/40 rounded-lg px-4 py-2 animate-scale-in">
+                  {grantMessage}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Tester panel */}
           {user.role === 'tester' && (
@@ -1156,6 +1272,7 @@ export default function Dashboard() {
                 currentUserId={user?.id}
                 refetchTrigger={queueRefetchTrigger}
                 onQueueLoaded={handleQueueLoaded}
+                justMovedPosition={justMovedPosition}
               />
             </div>
             <div className="order-2 lg:order-1">
@@ -1163,7 +1280,6 @@ export default function Dashboard() {
                 xp={xp}
                 xpUsedThisSession={xpUsedThisSession}
                 usedCap={user?.role === 'tester' ? null : 300}
-                unusedExternal={unusedExternal}
                 externalXpThisSession={externalXpThisSession}
                 timeXpActive={xpStatus?.time_xp_active ?? null}
                 followingMikegtcoff={xpStatus?.following_mikegtcoff ?? null}

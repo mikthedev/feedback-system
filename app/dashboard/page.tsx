@@ -26,6 +26,7 @@ interface Submission {
   status: string
   session_number?: number
   created_at: string
+  audience_score?: number | null
   reviews?: Array<{
     sound_score: number
     structure_score: number
@@ -47,6 +48,7 @@ export default function Dashboard() {
   const [reviewedSubmissions, setReviewedSubmissions] = useState<Submission[]>([])
   const [showReviewed, setShowReviewed] = useState(false)
   const [loadingReviewed, setLoadingReviewed] = useState(false)
+  const [showAvgMetrics, setShowAvgMetrics] = useState(false)
   const [loading, setLoading] = useState(true)
   const [embedData, setEmbedData] = useState<Record<string, EmbedData>>({})
   const [reviewedEmbedData, setReviewedEmbedData] = useState<Record<string, EmbedData>>({})
@@ -384,7 +386,7 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only fetch
   }, [])
 
-  // Poll submission status; refetch submissions when open/closed changes (e.g. curator toggles)
+  // Poll submission status; refetch submissions when open/closed changes (e.g. MikeGTC toggles)
   useEffect(() => {
     const interval = setInterval(fetchSubmissionsStatus, 5000)
     return () => clearInterval(interval)
@@ -756,126 +758,139 @@ export default function Dashboard() {
             </div>
           )}
 
-          <div className="bg-background-light rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border-2 border-gray-700/60">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-              <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg shrink-0 border-2 border-primary/30">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <h2 className="text-base font-extrabold text-text-primary sm:text-lg tracking-tight">Your Submissions</h2>
-                  <p className="text-xs sm:text-sm text-text-secondary font-medium">
-                    {submissions.length === 0 ? 'No active submissions' : `${submissions.length} pending`}
-                  </p>
+          <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
+              <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                <div className="p-2 bg-primary/10 rounded-lg border-2 border-primary/30 shrink-0">
+                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                </div>
+                <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+                  <h2 className="text-base font-extrabold text-text-primary tracking-tight truncate">Your Submissions</h2>
+                  {submissions.length > 0 && (
+                    <span className="text-sm font-bold text-text-secondary bg-background-lighter px-3 py-1 rounded-full border-2 border-gray-600 shrink-0">
+                      {submissions.length}
+                    </span>
+                  )}
                 </div>
               </div>
-              {getAverageScores() && (
-                <details className="group/avg shrink-0">
-                  <summary className="list-none cursor-pointer inline-flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[#2D2F31] border border-[#6A707B] touch-manipulation hover:bg-[#323436] transition-all">
-                    <span className="text-[8px] sm:text-[9px] text-[#9EDD4F] font-bold uppercase tracking-wider">Avg</span>
-                    <span className="text-sm sm:text-base font-black text-[#9EDD4F] tabular-nums leading-none">
+              <div className="flex items-center gap-2 shrink-0">
+                {getAverageScores() && (
+                  <button
+                    onClick={() => setShowAvgMetrics(!showAvgMetrics)}
+                    className={`min-h-[40px] flex items-center justify-center gap-1 px-2 py-2 rounded-lg touch-manipulation active:scale-[0.98] transition-all duration-200 ${
+                      showAvgMetrics 
+                        ? 'bg-background-lighter hover:bg-primary/10 border-2 border-gray-600 hover:border-primary/40' 
+                        : 'bg-primary/10 hover:bg-primary/20 border-2 border-primary/40 hover:border-primary/60'
+                    }`}
+                  >
+                    <span className="text-xs text-primary font-bold uppercase tracking-wider">Avg</span>
+                    <span className="text-xs font-black text-primary tabular-nums">
                       {((Number(getAverageScores()!.sound) + Number(getAverageScores()!.structure) + Number(getAverageScores()!.mix) + Number(getAverageScores()!.vibe)) / 4).toFixed(1)}
                     </span>
-                    <svg className="w-3 h-3 text-[#9EDD4F] opacity-60 group-open/avg:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                  </summary>
-                  <div className="mt-2 pt-2 border-t border-[#6A707B]">
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {[
-                        { label: 'S', fullLabel: 'Sound', score: getAverageScores()!.sound, bg: 'bg-[#1E2A4A]', border: 'border-[#6A707B]', text: 'text-[#64B5F6]' },
-                        { label: 'St', fullLabel: 'Struct', score: getAverageScores()!.structure, bg: 'bg-[#1E4A2E]', border: 'border-[#6A707B]', text: 'text-[#66BB6A]' },
-                        { label: 'M', fullLabel: 'Mix', score: getAverageScores()!.mix, bg: 'bg-[#4A1E3A]', border: 'border-[#6A707B]', text: 'text-[#F48FB1]' },
-                        { label: 'V', fullLabel: 'Vibe', score: getAverageScores()!.vibe, bg: 'bg-[#4A3A1E]', border: 'border-[#6A707B]', text: 'text-[#FFD54F]' },
-                      ].map(({ label, fullLabel, score, bg, border, text }) => (
-                        <div key={label} className={`${bg} border ${border} rounded px-1.5 py-1 text-center`} title={fullLabel}>
-                          <div className={`text-[7px] sm:text-[8px] ${text} font-bold uppercase mb-0.5 opacity-80`}>{label}</div>
-                          <div className={`text-xs sm:text-sm font-black ${text} tabular-nums leading-none`}>
-                            {score}<span className="text-[9px] opacity-60">/10</span>
-                          </div>
-                        </div>
-                      ))}
+                  </button>
+                )}
+                <button
+                  onClick={fetchReviewedSubmissions}
+                  disabled={loadingReviewed}
+                  className="min-h-[40px] flex items-center justify-center gap-2 px-4 py-2 bg-background-lighter hover:bg-primary/10 border-2 border-gray-600 hover:border-primary/40 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation text-sm font-bold"
+                >
+                  {loadingReviewed ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="text-xs font-medium text-text-primary">Loading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg 
+                        className={`w-4 h-4 text-primary transition-transform duration-200 ${showReviewed ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                      <span className="text-xs font-medium text-text-primary group-hover:text-primary transition-colors duration-200">
+                        {showReviewed ? 'Hide' : 'Results'}
+                      </span>
+                      {reviewedSubmissions.length > 0 && (
+                        <span className="px-1.5 py-0.5 text-xs font-bold bg-primary/20 text-primary rounded-full min-w-[20px] text-center">
+                          {reviewedSubmissions.length}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+            {getAverageScores() && showAvgMetrics && (
+              <div className="mb-4 hidden md:grid grid-cols-4 gap-2">
+                {[
+                  { label: 'Sound', score: getAverageScores()!.sound, bg: 'bg-[#1E2A4A]', border: 'border-[#6A707B]', text: 'text-[#64B5F6]' },
+                  { label: 'Structure', score: getAverageScores()!.structure, bg: 'bg-[#1E4A2E]', border: 'border-[#6A707B]', text: 'text-[#66BB6A]' },
+                  { label: 'Mix', score: getAverageScores()!.mix, bg: 'bg-[#4A1E3A]', border: 'border-[#6A707B]', text: 'text-[#F48FB1]' },
+                  { label: 'Vibe', score: getAverageScores()!.vibe, bg: 'bg-[#4A3A1E]', border: 'border-[#6A707B]', text: 'text-[#FFD54F]' },
+                ].map(({ label, score, bg, border, text }) => (
+                  <div 
+                    key={label} 
+                    className={`${bg} border-2 ${border} rounded-lg px-2 py-2 text-center flex flex-col items-center justify-center min-h-[56px]`}
+                    title={label}
+                  >
+                    <div className={`text-[8px] ${text} font-bold uppercase mb-1 opacity-90 leading-none`}>{label}</div>
+                    <div className={`text-base font-black ${text} tabular-nums leading-none flex items-baseline justify-center gap-0.5`}>
+                      <span>{score}</span>
+                      <span className="text-xs opacity-70 leading-none">/10</span>
                     </div>
                   </div>
-                </details>
-              )}
-                <button
-                onClick={fetchReviewedSubmissions}
-                disabled={loadingReviewed}
-                className="min-h-[48px] w-full sm:w-auto group relative flex items-center justify-center gap-2 px-4 py-3 bg-background-lighter hover:bg-primary/10 border-2 border-gray-600 hover:border-primary/40 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation text-sm font-bold"
-              >
-                {loadingReviewed ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span className="text-xs md:text-sm font-medium text-text-primary">Loading...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg 
-                      className={`w-4 h-4 text-primary transition-transform duration-200 ${showReviewed ? 'rotate-180' : ''}`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                    <span className="text-[11px] sm:text-xs md:text-sm font-medium text-text-primary group-hover:text-primary transition-colors duration-200">
-                      {showReviewed ? 'Hide' : 'Results'}
-                    </span>
-                    {reviewedSubmissions.length > 0 && (
-                      <span className="px-1.5 py-0.5 text-xs font-bold bg-primary/20 text-primary rounded-full min-w-[20px] text-center">
-                        {reviewedSubmissions.length}
-                      </span>
-                    )}
-                  </>
-                )}
-              </button>
-            </div>
+                ))}
+              </div>
+            )}
           {submissions.length === 0 ? (
-            <p className="text-sm font-medium text-text-secondary">No submissions yet. Submit your first demo!</p>
+            <p className="text-sm font-medium text-text-secondary py-4">No submissions yet. Submit your first demo!</p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {submissions.map((submission, index) => (
                 <div
                   key={submission.id}
-                  className="border-2 rounded-xl p-4 hover:shadow-lg transition-all duration-200 animate-slide-in bg-background-lighter border-yellow-500/40"
+                  className="border-2 rounded-xl p-4 hover:shadow-lg hover:border-primary/40 transition-all duration-200 animate-slide-in bg-background-lighter border-gray-700/50"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="flex justify-between items-start gap-3 mb-2">
+                  <div className="flex justify-between items-start gap-3 mb-3">
                     <div className="flex-1 min-w-0">
                       <div className="mb-1">
                         {submission.song_title && (
-                          <h3 className="text-sm font-semibold text-text-primary break-words line-clamp-2 sm:text-sm md:text-base">
+                          <h3 className="text-sm font-bold text-text-primary break-words line-clamp-2">
                             {submission.song_title}
                           </h3>
                         )}
                         {submission.artist_name && (
-                          <p className="text-sm text-text-secondary break-words mt-0.5 line-clamp-1">
+                          <p className="text-xs text-text-secondary break-words mt-0.5 line-clamp-1 font-medium">
                             by {submission.artist_name}
                           </p>
                         )}
                       </div>
                       {submission.description && (
-                        <p className="text-sm text-text-secondary mb-1 break-words whitespace-pre-wrap line-clamp-2">
+                        <p className="text-xs text-text-secondary mb-2 break-words whitespace-pre-wrap line-clamp-2">
                           {submission.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-text-muted">
+                      <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted">
                         <span>{new Date(submission.created_at).toLocaleDateString()}</span>
                         {submission.session_number && <span>• #{submission.session_number}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 sm:rounded-button sm:px-2 sm:py-1 sm:text-xs">
-                        ⏳ Pending
+                      <span className="hidden sm:inline-block px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap bg-background border-2 border-gray-600 text-text-secondary">
+                        Pending
                       </span>
-                      <Link href={`/submit?edit=${submission.id}`} className="px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 sm:rounded-button sm:px-2 sm:py-1 sm:text-xs hover:bg-yellow-500/30 transition-colors touch-manipulation">
+                      <Link href={`/submit?edit=${submission.id}`} className="px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap bg-primary/10 hover:bg-primary/20 border-2 border-primary/40 hover:border-primary/60 text-primary transition-colors touch-manipulation">
                         Edit
                       </Link>
                     </div>
                   </div>
-                  <div className="mt-2 sm:mt-3">
+                  <div className="mt-3">
                     <SoundCloudEmbed
                       id={submission.id}
                       embedHtml={embedData[submission.id]?.html ?? null}
@@ -892,142 +907,159 @@ export default function Dashboard() {
 
           {/* Previous Reviewed Submissions Section */}
           {showReviewed && (
-            <div className="relative bg-background-light rounded-xl shadow-xl p-2.5 sm:p-3 md:p-4 mt-4 border-2 border-primary/30 animate-fade-in overflow-hidden">
-              <div className="relative z-10">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2.5 sm:mb-3 pb-2.5 sm:pb-3">
-                  <div className="flex items-center gap-2 sm:gap-2.5">
-                    <div className="relative p-1 sm:p-1.5 bg-gradient-to-br from-primary/30 to-primary/20 rounded-lg border-2 border-primary/50 shadow-lg shadow-primary/20">
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-lg animate-pulse opacity-50"></div>
-                      <svg className="relative w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h2 className="text-xs sm:text-sm md:text-base font-extrabold text-text-primary flex items-center gap-1.5 sm:gap-2 tracking-tight drop-shadow-sm">
-                        Results
-                        <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold bg-gradient-to-r from-primary/30 to-primary/20 text-primary rounded-full border border-primary/50 shadow-md shadow-primary/10 backdrop-blur-sm whitespace-nowrap">{reviewedSubmissions.length}</span>
-                      </h2>
-                      <p className="text-[10px] sm:text-xs text-text-secondary mt-0.5 font-medium">Reviewed from previous sessions</p>
-                    </div>
-                  </div>
+            <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-2 bg-primary/10 rounded-lg border-2 border-primary/30 shrink-0">
+                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
-                {reviewedSubmissions.length > 0 ? (
-                  <div className="space-y-2.5 sm:space-y-3">
-                    {reviewedSubmissions.map((submission, index) => {
-                      const review = submission.reviews?.[0]
-                      const avgScore = review ? ((Number(review.sound_score) + Number(review.structure_score) + Number(review.mix_score) + Number(review.vibe_score)) / 4).toFixed(1) : null
-                      
-                      return (
-                      <div
-                        key={submission.id}
-                        className="group relative border-2 rounded-xl p-2.5 sm:p-3 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 animate-slide-in bg-background-lighter border-primary/40 hover:border-primary/60 hover:-translate-y-0.5 overflow-hidden"
-                        style={{ animationDelay: `${index * 50}ms` }}
-                      >
-                        {/* Compact header with AVG, date, title and artist */}
-                        <div className="relative z-10 mb-2">
-                          <div className="flex items-center justify-between gap-2 sm:gap-3 mb-1">
-                            {review && (
-                              <div className="flex-shrink-0">
-                                <div className="flex items-center px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-[#2D2F31] border-2 border-[#6A707B]">
-                                  {/* AVG display */}
-                                  <div className="flex flex-col items-start leading-none">
-                                    <div className="text-[7px] sm:text-[8px] text-[#9EDD4F] font-bold uppercase tracking-widest mb-0.5">Avg</div>
-                                    <div className="text-base sm:text-lg md:text-xl font-black text-[#9EDD4F] tabular-nums leading-none">
-                                      {avgScore}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[8px] sm:text-[9px] md:text-[10px] text-text-muted ml-auto">
-                              <span className="flex items-center gap-0.5 sm:gap-1">
-                                <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                {new Date(submission.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                              </span>
-                              {submission.session_number && (
-                                <span className="px-1 sm:px-1.5 py-0.5 rounded bg-background border border-gray-700/50 text-[8px] sm:text-[9px]">
-                                  #{submission.session_number}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <h2 className="text-base font-extrabold text-text-primary tracking-tight">Results</h2>
+                  {reviewedSubmissions.length > 0 && (
+                    <span className="text-sm font-bold text-text-secondary bg-background-lighter px-3 py-1 rounded-full border-2 border-gray-600">
+                      {reviewedSubmissions.length}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {reviewedSubmissions.length > 0 ? (
+                <div className="space-y-3">
+                  {reviewedSubmissions.map((submission, index) => {
+                    const review = submission.reviews?.[0]
+                    const avgScore = review ? ((Number(review.sound_score) + Number(review.structure_score) + Number(review.mix_score) + Number(review.vibe_score)) / 4).toFixed(1) : null
+                    const audienceRating = submission.audience_score !== null && submission.audience_score !== undefined ? Number(submission.audience_score).toFixed(1) : '0.0'
+                    
+                    return (
+                    <div
+                      key={submission.id}
+                      className="border-2 rounded-xl p-4 hover:shadow-lg hover:border-primary/40 transition-all duration-200 animate-slide-in bg-background-lighter border-gray-700/50"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      {/* Header with title, artist, date */}
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="mb-1">
                             {submission.song_title && (
-                              <h3 className="text-xs sm:text-sm font-semibold text-text-primary break-words line-clamp-2 sm:line-clamp-1 group-hover:text-primary transition-all duration-300 drop-shadow-sm">
+                              <h3 className="text-sm font-bold text-text-primary break-words line-clamp-2">
                                 {submission.song_title}
                               </h3>
                             )}
                             {submission.artist_name && (
-                              <span className="text-[10px] sm:text-xs text-text-secondary opacity-80 group-hover:opacity-100 transition-opacity">
+                              <p className="text-xs text-text-secondary break-words mt-0.5 line-clamp-1 font-medium">
                                 by {submission.artist_name}
-                              </span>
+                              </p>
                             )}
                           </div>
-                        </div>
-
-                        {/* Prominent Scores Display */}
-                        {review && (
-                          <div className="relative z-10 mb-2 p-2 sm:p-2.5 md:p-3 bg-background-lighter rounded-xl border-2 border-primary/40 shadow-xl shadow-primary/5 group-hover:shadow-2xl group-hover:shadow-primary/10 transition-all duration-300">
-                            
-                            <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
-                              {[
-                                { label: 'Sound', score: review.sound_score, bg: 'bg-[#1E2A4A]', border: 'border-[#6A707B]', text: 'text-[#64B5F6]', icon: '🔊' },
-                                { label: 'Struct', score: review.structure_score, bg: 'bg-[#1E4A2E]', border: 'border-[#6A707B]', text: 'text-[#66BB6A]', icon: '🏗️' },
-                                { label: 'Mix', score: review.mix_score, bg: 'bg-[#4A1E3A]', border: 'border-[#6A707B]', text: 'text-[#F48FB1]', icon: '🎚️' },
-                                { label: 'Vibe', score: review.vibe_score, bg: 'bg-[#4A3A1E]', border: 'border-[#6A707B]', text: 'text-[#FFD54F]', icon: '✨' },
-                              ].map(({ label, score, bg, border, text, icon }) => (
-                                <div 
-                                  key={label} 
-                                  className={`relative ${bg} border-2 ${border} rounded-lg p-1.5 sm:p-2 md:p-2.5 text-center overflow-hidden group/score hover:scale-105 transition-all duration-300`}
-                                >
-                                  {/* Score content */}
-                                  <div className="relative z-10">
-                                    <div className="flex items-center justify-center gap-0.5 sm:gap-1 mb-0.5 sm:mb-1">
-                                      <span className="text-[9px] sm:text-[10px] opacity-70">{icon}</span>
-                                      <p className={`text-[8px] sm:text-[9px] ${text} font-bold uppercase tracking-wider opacity-90`}>{label}</p>
-                                    </div>
-                                    <p className={`text-lg sm:text-xl md:text-2xl lg:text-3xl font-black ${text} tabular-nums leading-none`}>
-                                      {score}<span className="text-xs sm:text-sm md:text-base lg:text-lg opacity-70">/10</span>
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                          <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted">
+                            <span>{new Date(submission.created_at).toLocaleDateString()}</span>
+                            {submission.session_number && <span>• #{submission.session_number}</span>}
                           </div>
-                        )}
-
-                        {/* Compact description */}
-                        {submission.description && (
-                          <div className="relative z-10 mb-2 pl-1.5 sm:pl-2 border-l-2 border-primary/20">
-                            <p className="text-[10px] sm:text-xs text-text-secondary break-words whitespace-pre-wrap line-clamp-2 italic opacity-80 group-hover:opacity-100 transition-opacity">
-                              {submission.description}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* SoundCloud embed */}
-                        <div className="relative z-10 mt-2 rounded-lg overflow-hidden border border-gray-700/30 group-hover:border-primary/30 transition-colors duration-300">
-                          <SoundCloudEmbed
-                            id={`reviewed-${submission.id}`}
-                            embedHtml={reviewedEmbedData[submission.id]?.html ?? null}
-                            embedError={!!reviewedEmbedData[submission.id]?.error}
-                            soundcloudUrl={submission.soundcloud_url}
-                            embedUrl={getEmbedUrl(submission.soundcloud_url)}
-                          />
                         </div>
                       </div>
-                    )})}
-                  </div>
-                ) : (
-                  <div className="relative z-10 text-center py-6 sm:py-8">
-                    <div className="inline-flex p-2.5 sm:p-3 bg-gradient-to-br from-background-lighter to-background rounded-full mb-2.5 sm:mb-3 border border-gray-700/50 shadow-lg">
-                      <svg className="w-8 h-8 sm:w-10 sm:h-10 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
+
+                      {/* Description - Special field like scores if text exists */}
+                      {submission.description && (
+                        <div className="mb-3 p-3 bg-background rounded-xl border-2 border-gray-700/50">
+                          <div className="mb-1.5">
+                            <div className="text-[8px] text-text-secondary font-bold uppercase tracking-wider mb-1 opacity-90">Description</div>
+                          </div>
+                          <p className="text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed">
+                            {submission.description}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Scores Display */}
+                      {review && (
+                        <div className="mb-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {[
+                              { label: 'Sound', score: review.sound_score, bg: 'bg-[#1E2A4A]', border: 'border-[#6A707B]', text: 'text-[#64B5F6]' },
+                              { label: 'Structure', score: review.structure_score, bg: 'bg-[#1E4A2E]', border: 'border-[#6A707B]', text: 'text-[#66BB6A]' },
+                              { label: 'Mix', score: review.mix_score, bg: 'bg-[#4A1E3A]', border: 'border-[#6A707B]', text: 'text-[#F48FB1]' },
+                              { label: 'Vibe', score: review.vibe_score, bg: 'bg-[#4A3A1E]', border: 'border-[#6A707B]', text: 'text-[#FFD54F]' },
+                            ].map(({ label, score, bg, border, text }) => (
+                              <div 
+                                key={label} 
+                                className={`${bg} border-2 ${border} rounded-lg px-2 py-2 text-center flex flex-col items-center justify-center min-h-[56px]`}
+                                title={label}
+                              >
+                                <div className={`text-[8px] ${text} font-bold uppercase mb-1 opacity-90 leading-none`}>{label}</div>
+                                <div className={`text-base font-black ${text} tabular-nums leading-none flex items-baseline justify-center gap-0.5`}>
+                                  <span>{score}</span>
+                                  <span className="text-xs opacity-70 leading-none">/10</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SoundCloud embed */}
+                      <div className="mt-3 rounded-lg overflow-hidden border border-gray-700/30">
+                        <SoundCloudEmbed
+                          id={`reviewed-${submission.id}`}
+                          embedHtml={reviewedEmbedData[submission.id]?.html ?? null}
+                          embedError={!!reviewedEmbedData[submission.id]?.error}
+                          soundcloudUrl={submission.soundcloud_url}
+                          embedUrl={getEmbedUrl(submission.soundcloud_url)}
+                        />
+                      </div>
+
+                      {/* Rating Display - Below embed */}
+                      {avgScore && (
+                        <div className="mt-3">
+                          <div className="flex flex-row gap-2">
+                            <div className="flex-1 min-w-0 bg-primary/5 rounded-lg p-2 border border-primary/20">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></div>
+                                    <span className="text-[9px] text-primary font-bold uppercase tracking-wider truncate">Average Rating</span>
+                                  </div>
+                                  <div className="flex items-baseline gap-1 mb-0.5">
+                                    <span className="text-lg font-black text-primary tabular-nums">{avgScore}</span>
+                                    <span className="text-[10px] text-text-secondary font-semibold opacity-60">/ 10</span>
+                                  </div>
+                                  <p className="text-[9px] text-text-secondary font-medium leading-tight">
+                                    MikeGTC's average score
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0 bg-[#FFD54F]/5 rounded-lg p-2 border border-[#FFD54F]/20">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 mb-1">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#FFD54F] flex-shrink-0"></div>
+                                    <span className="text-[9px] text-[#FFD54F] font-bold uppercase tracking-wider truncate">Audience Rating</span>
+                                  </div>
+                                  <div className="flex items-baseline gap-1 mb-0.5">
+                                    <span className="text-lg font-black text-[#FFD54F] tabular-nums">{audienceRating}</span>
+                                    <span className="text-[10px] text-text-secondary font-semibold opacity-60">/ 10</span>
+                                  </div>
+                                  <p className="text-[9px] text-text-secondary font-medium leading-tight">
+                                    Community's rating
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-text-secondary font-medium text-xs sm:text-sm">No reviewed submissions yet</p>
-                    <p className="text-[10px] sm:text-xs text-text-muted mt-1">Your reviewed submissions will appear here</p>
+                  )})}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="inline-flex p-3 bg-background-lighter rounded-full mb-3 border-2 border-gray-600">
+                    <svg className="w-10 h-10 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
-                )}
-              </div>
+                  <p className="text-text-secondary font-medium text-sm">No reviewed submissions yet</p>
+                  <p className="text-xs text-text-muted mt-1">Your reviewed submissions will appear here</p>
+                </div>
+              )}
             </div>
           )}
 

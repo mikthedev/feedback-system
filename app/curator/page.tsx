@@ -132,7 +132,6 @@ export default function CuratorPage() {
   const [submissionsOpen, setSubmissionsOpen] = useState(true)
   const [toggling, setToggling] = useState(false)
   const [clearingXp, setClearingXp] = useState(false)
-  const [grantingDonation, setGrantingDonation] = useState(false)
   const [embedData, setEmbedData] = useState<EmbedData | null>(null)
   const [submissionArtworks, setSubmissionArtworks] = useState<SubmissionArtwork>({})
   const [submissionSoundCloudMetadata, setSubmissionSoundCloudMetadata] = useState<Record<string, SoundCloudMetadata>>({})
@@ -145,6 +144,9 @@ export default function CuratorPage() {
   const [showXpHelpModal, setShowXpHelpModal] = useState(false)
   const [skipping, setSkipping] = useState(false)
   const [showRatingSliders, setShowRatingSliders] = useState(false)
+  const [showSubmitters, setShowSubmitters] = useState(false)
+  const [hoveredUserId, setHoveredUserId] = useState<string | null>(null)
+  const [grantingXpForUserId, setGrantingXpForUserId] = useState<string | null>(null)
 
   const fetchSubmissionsStatus = async () => {
     try {
@@ -379,6 +381,7 @@ export default function CuratorPage() {
 
       setSuccess('Review submitted successfully!')
       setSelectedSubmission(null)
+      setShowRatingSliders(false)
       setScores({
         sound_score: '0',
         structure_score: '0',
@@ -452,6 +455,7 @@ export default function CuratorPage() {
       }
       setSuccess('Track moved to carryover.')
       setSelectedSubmission(null)
+      setShowRatingSliders(false)
       setScores({
         sound_score: '0',
         structure_score: '0',
@@ -467,16 +471,16 @@ export default function CuratorPage() {
     }
   }
 
-  const handleGrantDonationXp = async () => {
-    if (!selectedSubmission?.user_id) return
-    setGrantingDonation(true)
+  const handleGrantDonationXp = async (userId: string) => {
+    if (!userId) return
+    setGrantingXpForUserId(userId)
     setError('')
     try {
       const res = await fetch('/api/xp/grant-donation', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: selectedSubmission.user_id }),
+        body: JSON.stringify({ user_id: userId }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -488,8 +492,41 @@ export default function CuratorPage() {
     } catch (e) {
       setError('An error occurred. Please try again.')
     } finally {
-      setGrantingDonation(false)
+      setGrantingXpForUserId(null)
     }
+  }
+
+  // Extract unique users from submissions in queue order
+  const getQueueSubmitters = () => {
+    const userMap = new Map<string, {
+      user_id: string
+      display_name: string
+      twitch_id: string
+      queue_position: number
+      submission_count: number
+    }>()
+
+    submissions.forEach((submission, index) => {
+      const userId = submission.user_id
+      if (!userMap.has(userId)) {
+        userMap.set(userId, {
+          user_id: userId,
+          display_name: submission.users.display_name,
+          twitch_id: submission.users.twitch_id,
+          queue_position: index + 1,
+          submission_count: 0
+        })
+      }
+      const userData = userMap.get(userId)!
+      userData.submission_count++
+      // Keep the earliest queue position
+      if (index + 1 < userData.queue_position) {
+        userData.queue_position = index + 1
+      }
+    })
+
+    // Return users in queue order (by their earliest appearance)
+    return Array.from(userMap.values()).sort((a, b) => a.queue_position - b.queue_position)
   }
 
   const handleClearAllXp = async () => {
@@ -672,7 +709,7 @@ export default function CuratorPage() {
         )}
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Pending submissions sidebar - compact, on the left */}
-          <div className={`${selectedSubmission ? 'hidden lg:block' : 'block'} lg:w-56 xl:w-64 lg:shrink-0`}>
+          <div className={`${selectedSubmission ? 'hidden lg:block' : 'block'} lg:w-56 xl:w-64 lg:shrink-0 space-y-4`}>
             <div className="bg-background-light rounded-xl shadow-lg p-3 animate-fade-in border-2 border-gray-700/60">
               <h2 className="text-sm font-extrabold text-text-primary mb-3 tracking-tight">
                 Queue ({submissions.length})
@@ -746,6 +783,68 @@ export default function CuratorPage() {
                 </div>
               )}
             </div>
+
+            {/* Submitters field - shows users in queue order */}
+            <div className="bg-background-light rounded-xl shadow-lg p-3 animate-fade-in border-2 border-gray-700/60">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-extrabold text-text-primary tracking-tight">
+                  Submitters ({getQueueSubmitters().length})
+                </h2>
+                <button
+                  onClick={() => setShowSubmitters(!showSubmitters)}
+                  className="text-xs text-text-secondary hover:text-primary transition-colors font-medium"
+                >
+                  {showSubmitters ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              {showSubmitters && (
+                <>
+                  {getQueueSubmitters().length === 0 ? (
+                    <p className="text-xs text-text-secondary font-medium">No submitters in queue</p>
+                  ) : (
+                    <div className="space-y-1.5 max-h-[500px] overflow-y-auto overflow-x-hidden scrollbar-hide">
+                      {getQueueSubmitters().map((submitter) => (
+                        <div
+                          key={submitter.user_id}
+                          className="flex items-center justify-between gap-2 border-2 rounded-lg p-2 transition-all duration-200 border-gray-700/50 hover:border-primary/50 hover:bg-background-lighter relative group"
+                          onMouseEnter={() => setHoveredUserId(submitter.user_id)}
+                          onMouseLeave={() => setHoveredUserId(null)}
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
+                            <div
+                              className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center"
+                              title={`${ordinal(submitter.queue_position)} in queue`}
+                            >
+                              <span className="text-[9px] font-extrabold text-primary">{submitter.queue_position}</span>
+                            </div>
+                            <div className="flex-1 min-w-0 overflow-hidden">
+                              <p className="text-xs truncate font-medium text-text-primary">
+                                {submitter.display_name}
+                              </p>
+                              {submitter.submission_count > 1 && (
+                                <p className="text-[10px] truncate text-text-secondary">
+                                  {submitter.submission_count} submissions
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {hoveredUserId === submitter.user_id && (
+                            <button
+                              type="button"
+                              onClick={() => handleGrantDonationXp(submitter.user_id)}
+                              disabled={grantingXpForUserId === submitter.user_id}
+                              className="px-2 py-1 text-xs rounded-lg font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation shrink-0"
+                            >
+                              {grantingXpForUserId === submitter.user_id ? '…' : '+20 XP'}
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* Review window - wider, focuses on embed */}
@@ -788,7 +887,7 @@ export default function CuratorPage() {
                   </div>
 
                   {/* Large SoundCloud embed */}
-                  <div className="soundcloud-embed-large bg-background rounded-xl border-2 border-gray-700/50 overflow-hidden p-3">
+                  <div className="soundcloud-embed-large bg-background rounded-xl border-2 border-gray-700/50 overflow-hidden p-3 relative">
                     <SoundCloudEmbed 
                       key={`embed-wrapper-${selectedSubmission.id}`}
                       submissionId={selectedSubmission.id}
@@ -796,6 +895,107 @@ export default function CuratorPage() {
                       soundcloudUrl={selectedSubmission.soundcloud_url}
                       getEmbedUrl={getEmbedUrl}
                     />
+                    
+                    {/* Floating rating sliders overlay */}
+                    {showRatingSliders && (
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl flex items-center justify-center z-10 animate-fade-in">
+                        <div className="bg-background-light rounded-xl p-4 sm:p-5 max-w-2xl w-full mx-4 max-h-[90%] overflow-y-auto border-2 border-gray-700/50 shadow-2xl">
+                          <form onSubmit={handleSubmitReview} className="space-y-4">
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-lg font-bold text-text-primary">Rate Song</h3>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowRatingSliders(false)
+                                  setScores({ sound_score: '0', structure_score: '0', mix_score: '0', vibe_score: '0' })
+                                }}
+                                className="text-text-secondary hover:text-primary transition-colors"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              {[
+                                { key: 'sound_score', label: 'Sound' },
+                                { key: 'structure_score', label: 'Structure' },
+                                { key: 'mix_score', label: 'Mix' },
+                                { key: 'vibe_score', label: 'Vibe' },
+                              ].map(({ key, label }) => {
+                                const score = parseFloat(scores[key as keyof typeof scores])
+                                
+                                return (
+                                  <div key={key} className="space-y-2 bg-background rounded-lg p-3 border border-gray-700/50">
+                                    <div className="flex justify-between items-center">
+                                      <label className="text-sm font-bold text-text-primary">
+                                        {label}
+                                      </label>
+                                      <span className="text-lg font-extrabold text-primary tabular-nums">
+                                        {scores[key as keyof typeof scores]}<span className="text-sm text-text-muted">/10</span>
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="relative">
+                                      <input
+                                        type="range"
+                                        min="0"
+                                        max="10"
+                                        step="0.5"
+                                        value={scores[key as keyof typeof scores]}
+                                        onChange={(e) => handleSliderChange(key, parseFloat(e.target.value))}
+                                        className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-gradient"
+                                        style={{
+                                          background: `linear-gradient(to right, 
+                                            #ef4444 0%, 
+                                            #f97316 25%, 
+                                            #eab308 50%, 
+                                            #84cc16 75%, 
+                                            #22c55e 100%)`,
+                                          boxShadow: `inset 0 1px 2px rgba(0,0,0,0.3)`,
+                                        }}
+                                      />
+                                      
+                                      {/* Score indicators - compact */}
+                                      <div className="flex justify-between mt-1.5">
+                                        {[0, 2, 4, 6, 8, 10].map((num) => (
+                                          <span key={num} className={`text-[9px] font-bold tabular-nums transition-colors ${
+                                            Math.abs(score - num) < 1 ? 'text-primary' : 'text-text-muted'
+                                          }`}>
+                                            {num}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+
+                            <div className="flex gap-3">
+                              <button
+                                type="submit"
+                                disabled={submitting}
+                                className="flex-1 min-h-[48px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-2.5 px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] button-press text-sm border-2 border-primary/50 touch-manipulation"
+                              >
+                                {submitting ? '…' : 'Submit Review'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowRatingSliders(false)
+                                  setScores({ sound_score: '0', structure_score: '0', mix_score: '0', vibe_score: '0' })
+                                }}
+                                className="min-h-[48px] px-4 py-2.5 border-2 border-gray-700 text-text-primary rounded-xl hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press text-sm font-bold touch-manipulation"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Main action buttons */}
@@ -820,99 +1020,6 @@ export default function CuratorPage() {
                       {skipping ? '…' : 'Skip'}
                     </button>
                   </div>
-
-                  {/* Extra actions - smaller */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleGrantDonationXp}
-                      disabled={grantingDonation}
-                      className="px-3 py-1.5 text-xs rounded-lg font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation"
-                    >
-                      {grantingDonation ? '…' : '+20 XP'}
-                    </button>
-                  </div>
-
-                  {/* Rating sliders - hidden by default */}
-                  {showRatingSliders && (
-                    <form onSubmit={handleSubmitReview} className="space-y-4 animate-fade-in">
-                      <div className="grid grid-cols-2 gap-3">
-                        {[
-                          { key: 'sound_score', label: 'Sound' },
-                          { key: 'structure_score', label: 'Structure' },
-                          { key: 'mix_score', label: 'Mix' },
-                          { key: 'vibe_score', label: 'Vibe' },
-                        ].map(({ key, label }) => {
-                          const score = parseFloat(scores[key as keyof typeof scores])
-                          
-                          return (
-                            <div key={key} className="space-y-2 bg-background rounded-lg p-3 border border-gray-700/50">
-                              <div className="flex justify-between items-center">
-                                <label className="text-sm font-bold text-text-primary">
-                                  {label}
-                                </label>
-                                <span className="text-lg font-extrabold text-primary tabular-nums">
-                                  {scores[key as keyof typeof scores]}<span className="text-sm text-text-muted">/10</span>
-                                </span>
-                              </div>
-                              
-                              <div className="relative">
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="10"
-                                  step="0.5"
-                                  value={scores[key as keyof typeof scores]}
-                                  onChange={(e) => handleSliderChange(key, parseFloat(e.target.value))}
-                                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-gradient"
-                                  style={{
-                                    background: `linear-gradient(to right, 
-                                      #ef4444 0%, 
-                                      #f97316 25%, 
-                                      #eab308 50%, 
-                                      #84cc16 75%, 
-                                      #22c55e 100%)`,
-                                    boxShadow: `inset 0 1px 2px rgba(0,0,0,0.3)`,
-                                  }}
-                                />
-                                
-                                {/* Score indicators - compact */}
-                                <div className="flex justify-between mt-1.5">
-                                  {[0, 2, 4, 6, 8, 10].map((num) => (
-                                    <span key={num} className={`text-[9px] font-bold tabular-nums transition-colors ${
-                                      Math.abs(score - num) < 1 ? 'text-primary' : 'text-text-muted'
-                                    }`}>
-                                      {num}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-
-                      <div className="flex gap-3">
-                        <button
-                          type="submit"
-                          disabled={submitting}
-                          className="flex-1 min-h-[48px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-2.5 px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] button-press text-sm border-2 border-primary/50 touch-manipulation"
-                        >
-                          {submitting ? '…' : 'Submit Review'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowRatingSliders(false)
-                            setScores({ sound_score: '0', structure_score: '0', mix_score: '0', vibe_score: '0' })
-                          }}
-                          className="min-h-[48px] px-4 py-2.5 border-2 border-gray-700 text-text-primary rounded-xl hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press text-sm font-bold touch-manipulation"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  )}
                 </div>
               ) : (
                 <div className="text-center text-text-muted py-16">

@@ -34,10 +34,14 @@ interface QueueProps {
   onQueueLoaded?: (items: QueueLoadedItem[]) => void
 }
 
+const QUEUE_COLLAPSED_THRESHOLD = 5
+const QUEUE_COLLAPSED_VISIBLE = 3
+
 export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded }: QueueProps) {
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [loading, setLoading] = useState(true)
   const [metadataCache, setMetadataCache] = useState<Record<string, { title: string; artwork?: string }>>({})
+  const [queueExpanded, setQueueExpanded] = useState(false)
   const previousQueueIdsRef = useRef<Set<string>>(new Set())
 
   const fetchQueue = useCallback(
@@ -155,6 +159,11 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded }: 
     })
   }, [queue, metadataCache])
 
+  const canCollapse = processedQueue.length > QUEUE_COLLAPSED_THRESHOLD
+  const isCollapsed = canCollapse && !queueExpanded
+  const visibleItems = isCollapsed ? processedQueue.slice(0, QUEUE_COLLAPSED_VISIBLE) : processedQueue
+  const hiddenCount = processedQueue.length - QUEUE_COLLAPSED_VISIBLE
+
   return (
     <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60 w-full">
       <div className="flex items-center gap-4 mb-4">
@@ -178,8 +187,9 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded }: 
         ) : processedQueue.length === 0 ? (
           <p className="text-sm font-medium text-text-secondary py-4">No tracks in queue.</p>
         ) : (
+            <>
             <div className="space-y-3 max-h-[240px] sm:max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-hide">
-              {processedQueue.map((item, index) => (
+              {visibleItems.map((item, index) => (
                 <div
                   key={item.id}
                   className={`flex items-center gap-3 p-3 rounded-xl border-2 border-gray-700/50 hover:border-primary/40 hover:bg-background-lighter transition-all duration-200 min-h-[56px] ${
@@ -215,6 +225,20 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded }: 
                 </div>
               ))}
             </div>
+            {canCollapse && (
+              <button
+                type="button"
+                onClick={() => setQueueExpanded((e) => !e)}
+                className="mt-3 w-full min-h-[40px] flex items-center justify-center gap-2 rounded-xl bg-background-lighter hover:bg-gray-700/50 border-2 border-gray-600 text-text-primary text-sm font-bold transition-colors touch-manipulation"
+              >
+                {isCollapsed ? (
+                  <>Show {hiddenCount} more</>
+                ) : (
+                  <>Show less</>
+                )}
+              </button>
+            )}
+            </>
         )}
       </div>
     </div>

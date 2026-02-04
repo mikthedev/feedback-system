@@ -144,6 +144,9 @@ export default function CuratorPage() {
   const [showXpHelpModal, setShowXpHelpModal] = useState(false)
   const [skipping, setSkipping] = useState(false)
   const [showRatingSliders, setShowRatingSliders] = useState(false)
+  const [showDescriptionOverlay, setShowDescriptionOverlay] = useState(false)
+  const [closingDescriptionOverlay, setClosingDescriptionOverlay] = useState(false)
+  const [closingRatingOverlay, setClosingRatingOverlay] = useState(false)
   const [showSubmitters, setShowSubmitters] = useState(false)
   const [hoveredUserId, setHoveredUserId] = useState<string | null>(null)
   const [grantingXpForUserId, setGrantingXpForUserId] = useState<string | null>(null)
@@ -734,6 +737,9 @@ export default function CuratorPage() {
                           vibe_score: '0',
                         })
                         setShowRatingSliders(false)
+                        setShowDescriptionOverlay(false)
+                        setClosingDescriptionOverlay(false)
+                        setClosingRatingOverlay(false)
                         setSelectedSubmission(submission)
                         setError('')
                         setSuccess(false)
@@ -858,6 +864,9 @@ export default function CuratorPage() {
                     onClick={() => {
                       setSelectedSubmission(null)
                       setShowRatingSliders(false)
+                      setShowDescriptionOverlay(false)
+                      setClosingDescriptionOverlay(false)
+                      setClosingRatingOverlay(false)
                     }}
                     className="lg:hidden flex items-center gap-2 text-text-secondary hover:text-primary transition-colors font-medium text-sm"
                   >
@@ -896,19 +905,45 @@ export default function CuratorPage() {
                       getEmbedUrl={getEmbedUrl}
                     />
                     
+                    {/* Description overlay (same style as sliders), hidden by default */}
+                    {selectedSubmission.description && showDescriptionOverlay && (
+                      <div
+                        className={`absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl flex items-center justify-center z-10 ${closingDescriptionOverlay ? 'animate-fade-out' : 'animate-fade-in'}`}
+                        onAnimationEnd={() => closingDescriptionOverlay && (setShowDescriptionOverlay(false), setClosingDescriptionOverlay(false))}
+                      >
+                        <div className={`bg-background-light rounded-xl p-4 sm:p-5 max-w-2xl w-full mx-4 max-h-[90%] overflow-y-auto border-2 border-gray-700/50 shadow-2xl ${closingDescriptionOverlay ? 'animate-scale-out' : 'animate-scale-in'}`}>
+                          <div className="flex justify-end mb-3">
+                            <button
+                              type="button"
+                              onClick={() => setClosingDescriptionOverlay(true)}
+                              className="text-text-secondary hover:text-primary transition-colors p-1"
+                              aria-label="Close"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                          <p className="text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed">
+                            {selectedSubmission.description}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Floating rating sliders overlay */}
                     {showRatingSliders && (
-                      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl flex items-center justify-center z-10 animate-fade-in">
-                        <div className="bg-background-light rounded-xl p-4 sm:p-5 max-w-2xl w-full mx-4 max-h-[90%] overflow-y-auto border-2 border-gray-700/50 shadow-2xl">
+                      <div
+                        className={`absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl flex items-center justify-center z-10 ${closingRatingOverlay ? 'animate-fade-out' : 'animate-fade-in'}`}
+                        onAnimationEnd={() => closingRatingOverlay && (setShowRatingSliders(false), setScores({ sound_score: '0', structure_score: '0', mix_score: '0', vibe_score: '0' }), setClosingRatingOverlay(false))}
+                      >
+                        <div className={`bg-background-light rounded-xl p-4 sm:p-5 max-w-2xl w-full mx-4 max-h-[90%] overflow-y-auto border-2 border-gray-700/50 shadow-2xl ${closingRatingOverlay ? 'animate-scale-out' : 'animate-scale-in'}`}>
                           <form onSubmit={handleSubmitReview} className="space-y-4">
                             <div className="flex items-center justify-between mb-4">
                               <h3 className="text-lg font-bold text-text-primary">Rate Song</h3>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setShowRatingSliders(false)
-                                  setScores({ sound_score: '0', structure_score: '0', mix_score: '0', vibe_score: '0' })
-                                }}
+                                onClick={() => setClosingRatingOverlay(true)}
                                 className="text-text-secondary hover:text-primary transition-colors"
                               >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -983,10 +1018,7 @@ export default function CuratorPage() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setShowRatingSliders(false)
-                                  setScores({ sound_score: '0', structure_score: '0', mix_score: '0', vibe_score: '0' })
-                                }}
+                                onClick={() => setClosingRatingOverlay(true)}
                                 className="min-h-[48px] px-4 py-2.5 border-2 border-gray-700 text-text-primary rounded-xl hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press text-sm font-bold touch-manipulation"
                               >
                                 Cancel
@@ -999,11 +1031,24 @@ export default function CuratorPage() {
                   </div>
 
                   {/* Main action buttons */}
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3">
+                    {selectedSubmission.description && (
+                      <button
+                        type="button"
+                        onClick={() => (showDescriptionOverlay ? setClosingDescriptionOverlay(true) : setShowDescriptionOverlay(true))}
+                        className={`min-h-[56px] px-4 py-3 text-base rounded-xl font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 ${
+                          showDescriptionOverlay
+                            ? 'bg-primary text-background border-primary/50 shadow-lg'
+                            : 'bg-background-lighter hover:bg-gray-700/50 text-text-primary border-gray-600'
+                        }`}
+                      >
+                        {showDescriptionOverlay ? 'Hide Description' : 'Description'}
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={() => setShowRatingSliders(!showRatingSliders)}
-                      className={`flex-1 min-h-[56px] px-6 py-3 text-base rounded-xl font-bold transition-all active:scale-[0.98] button-press touch-manipulation ${
+                      onClick={() => (showRatingSliders ? setClosingRatingOverlay(true) : setShowRatingSliders(true))}
+                      className={`flex-1 min-h-[56px] px-6 py-3 text-base rounded-xl font-bold transition-all active:scale-[0.98] button-press touch-manipulation min-w-0 ${
                         showRatingSliders
                           ? 'bg-primary text-background border-2 border-primary/50 shadow-lg'
                           : 'bg-primary/20 hover:bg-primary/30 text-primary border-2 border-primary/40'

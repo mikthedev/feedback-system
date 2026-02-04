@@ -28,7 +28,7 @@ interface DashboardFooterProps {
 }
 
 const INDICATOR_STYLE =
-  'inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold border-2 touch-manipulation min-h-[40px] sm:min-h-0 sm:gap-1.5 sm:px-2.5 sm:py-1 sm:rounded-md'
+  'inline-flex min-w-0 flex-1 items-center justify-center gap-0.5 overflow-hidden px-1 py-0.5 rounded text-[10px] font-bold border border-gray-600/40 touch-manipulation sm:gap-1 sm:px-2 sm:py-1 sm:text-xs sm:border-2 sm:rounded-md'
 
 function IndicatorRow({
   timeXpActive,
@@ -46,7 +46,7 @@ function IndicatorRow({
   onShowIndicatorsHelp?: () => void
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-4">
+    <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-0.5 sm:gap-2">
       <span
         className={`${INDICATOR_STYLE} ${
           timeXpActive
@@ -55,7 +55,8 @@ function IndicatorRow({
         }`}
         title={timeXpActive ? 'Time XP on' : 'Time XP off'}
       >
-        {timeXpActive ? '✓' : '○'} Time XP
+        <span className="shrink-0">{timeXpActive ? '✓' : '○'}</span>
+        <span className="min-w-0 truncate">Time</span>
       </span>
       <span
         className={`${INDICATOR_STYLE} ${
@@ -73,32 +74,39 @@ function IndicatorRow({
               : 'Unknown'
         }
       >
-        {followingMikegtcoff === true ? '✓' : followingMikegtcoff === false ? '✗' : '—'} MikeGTC
+        <span className="shrink-0">{followingMikegtcoff === true ? '✓' : followingMikegtcoff === false ? '✗' : '—'}</span>
+        <span className="min-w-0 truncate sm:hidden">Following</span>
+        <span className="min-w-0 truncate hidden sm:inline">
+          {followingMikegtcoff === true ? 'Following' : followingMikegtcoff === false ? 'Not following' : '—'}
+        </span>
       </span>
       <span
         className={`${INDICATOR_STYLE} bg-gray-500/10 text-text-muted border-gray-600/40`}
         title="Sub/Donation XP this session"
       >
-        Sub/Don: <span className="font-semibold text-text-primary tabular-nums">{externalXpThisSession}</span>
+        <span className="min-w-0 truncate">Sub</span>
+        <span className="shrink-0 font-semibold text-text-primary tabular-nums">{externalXpThisSession}</span>
       </span>
       <span
         className={`${INDICATOR_STYLE} ${hasReviewXp ? 'bg-primary/10 text-primary border-primary/30' : 'bg-gray-500/10 text-text-muted border-gray-600/40'}`}
         title="Review XP counted"
       >
-        {hasReviewXp ? '✓' : '○'} Ratings
+        <span className="shrink-0">{hasReviewXp ? '✓' : '○'}</span>
+        <span className="min-w-0 truncate">Rate</span>
       </span>
       <Link
         href="/carryover"
         className={`${INDICATOR_STYLE} bg-gray-500/10 text-text-muted border-gray-600/40 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/30 transition-colors`}
         title="Your tracks in carryover — view details"
       >
-        Carry: <span className="font-semibold text-text-primary tabular-nums">{carryoverCount}</span>
+        <span className="min-w-0 truncate">Carry</span>
+        <span className="shrink-0 font-semibold text-text-primary tabular-nums">{carryoverCount}</span>
       </Link>
       {onShowIndicatorsHelp && (
         <button
           type="button"
           onClick={onShowIndicatorsHelp}
-          className={`${INDICATOR_STYLE} bg-gray-500/20 text-text-muted hover:bg-primary/20 hover:text-primary border-gray-600/40 hover:border-primary/30 transition-colors cursor-pointer`}
+          className={`${INDICATOR_STYLE} flex-none bg-gray-500/20 text-text-muted hover:bg-primary/20 hover:text-primary border-gray-600/40 hover:border-primary/30 transition-colors cursor-pointer`}
           title="What do these indicators mean?"
           aria-label="Explain live indicators"
         >
@@ -129,10 +137,7 @@ export default function DashboardFooter({
 
   if (compactTop) {
     return (
-      <div className="flex flex-wrap items-center gap-4 py-3 px-4 rounded-xl bg-background-lighter/60 border-2 border-gray-700/50 sm:gap-3 sm:py-2.5 sm:px-3 sm:rounded-lg">
-        <span className="text-xs font-bold text-text-muted uppercase tracking-wider shrink-0">
-          Live
-        </span>
+      <div className="flex flex-nowrap items-center gap-1.5 py-1.5 px-2 rounded-lg bg-background-lighter/60 border-2 border-gray-700/50 sm:gap-3 sm:py-2.5 sm:px-3 sm:rounded-lg">
         <IndicatorRow
           timeXpActive={timeXpActive}
           followingMikegtcoff={followingMikegtcoff}

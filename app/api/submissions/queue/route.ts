@@ -164,6 +164,20 @@ export async function GET(_request: NextRequest) {
       }
     }
 
+    const userIds = [...new Set((submissions as { user_id: string }[]).map((s) => s.user_id))]
+    let movesByUser: Record<string, number> = {}
+    if (userIds.length > 0) {
+      const { data: usxRows } = await supabase
+        .from('user_session_xp')
+        .select('user_id, moves_used_this_session')
+        .eq('session_number', sn)
+        .in('user_id', userIds)
+      for (const row of usxRows ?? []) {
+        const r = row as { user_id: string; moves_used_this_session?: number }
+        movesByUser[r.user_id] = Math.max(0, Math.floor(Number(r.moves_used_this_session ?? 0)))
+      }
+    }
+
     const queue = (submissions as { id: string; user_id: string; soundcloud_url: string; song_title?: string; artist_name?: string; created_at: string; users: { display_name: string } }[]).map((s) => ({
       id: s.id,
       user_id: s.user_id,
@@ -172,6 +186,7 @@ export async function GET(_request: NextRequest) {
       artist_name: s.artist_name,
       created_at: s.created_at,
       users: s.users,
+      moves_used_this_session: movesByUser[s.user_id] ?? 0,
     }))
 
     return NextResponse.json({ queue })

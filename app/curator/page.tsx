@@ -332,7 +332,7 @@ export default function CuratorPage() {
   }, [])
 
   useEffect(() => {
-    const interval = setInterval(fetchPendingSubmissions, 8000)
+    const interval = setInterval(fetchPendingSubmissions, 6000)
     return () => clearInterval(interval)
   }, [])
 

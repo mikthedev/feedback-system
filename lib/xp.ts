@@ -156,10 +156,19 @@ export function validateUseXp(input: ValidateUseXpInput): ValidateUseXpResult {
     return { allowed: false, reason: "You're already first in the queue." }
   }
 
+  // First in queue is receiving feedback; second cannot move up into that slot (no XP is used)
+  if (myIndex === 1) {
+    return {
+      allowed: false,
+      reason: "The first in queue is receiving feedback. You can't move higher right now. No XP was used.",
+    }
+  }
+
   if (userXp < XP_PER_POSITION) {
     return { allowed: false, reason: 'Not enough XP (need 100).' }
   }
 
+  // Only tester role can move without limit; others are capped at MAX_MOVE_PER_SESSION
   const moveCap = isTester ? 999 : MAX_MOVE_PER_SESSION
   if (movesUsedThisSession >= moveCap) {
     return {

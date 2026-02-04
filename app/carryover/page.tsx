@@ -150,7 +150,7 @@ export default function CarryoverPage() {
                           {item.session_number != null && ` · #${item.session_number}`}
                         </p>
                         <p className="text-xs text-amber-400 mt-2">
-                          {item.carryover_type === 'curator_skip' ? 'Skipped by curator' : 'Session ended before review'}
+                          {item.carryover_type === 'curator_skip' ? 'Skipped by MikeGTC' : 'Session ended before review'}
                         </p>
                       </div>
                       <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 whitespace-nowrap shrink-0 sm:rounded-button sm:px-2 sm:py-1">

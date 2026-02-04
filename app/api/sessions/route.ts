@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (userError || !user || user.role !== 'curator') {
-      return NextResponse.json({ error: 'Forbidden: Curator access required' }, { status: 403 })
+      return NextResponse.json({ error: 'Forbidden: MikeGTC access required' }, { status: 403 })
     }
 
     // Get all sessions

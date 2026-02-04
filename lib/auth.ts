@@ -34,7 +34,7 @@ export async function requireAuth() {
 export async function requireCurator() {
   const user = await requireAuth()
   if (user.role !== 'curator') {
-    throw new Error('Forbidden: Curator access required')
+    throw new Error('Forbidden: MikeGTC access required')
   }
   return user
 }

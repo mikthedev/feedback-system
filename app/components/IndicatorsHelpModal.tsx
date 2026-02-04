@@ -115,7 +115,7 @@ export default function IndicatorsHelpModal({
             <div className="p-2 rounded-lg border border-gray-800/50 bg-background-lighter/50 sm:p-3">
               <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">Ratings</p>
               <p className="text-text-secondary text-[11px] leading-relaxed sm:text-xs">
-                <span className="text-text-muted">✓ / ○</span> — Whether your review scores from the curator have been counted toward your XP. After your track is reviewed, the ratings XP is added to your total.
+                <span className="text-text-muted">✓ / ○</span> — Whether your review scores from MikeGTC have been counted toward your XP. After your track is reviewed, the ratings XP is added to your total.
               </p>
             </div>
 

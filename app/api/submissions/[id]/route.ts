@@ -105,7 +105,7 @@ export async function PUT(
         return NextResponse.json(
           {
             error:
-              'This track has already been submitted by another account. Sharing the same link from multiple accounts is strictly prohibited and may result in a ban by the curator (MikeGTC on Twitch).',
+              'This track has already been submitted by another account. Sharing the same link from multiple accounts is strictly prohibited and may result in a ban by MikeGTC on Twitch.',
             code: 'DUPLICATE_LINK_OTHER_ACCOUNT',
           },
           { status: 400 }

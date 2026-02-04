@@ -26,7 +26,7 @@ export async function POST(
       .single()
 
     if (userError || !user || user.role !== 'curator') {
-      return NextResponse.json({ error: 'Forbidden: Curator access required' }, { status: 403 })
+      return NextResponse.json({ error: 'Forbidden: MikeGTC access required' }, { status: 403 })
     }
 
     const { id } = await params

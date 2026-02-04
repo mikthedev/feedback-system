@@ -49,7 +49,7 @@ const XP_BLOCKS = [
     hover: 'hover:bg-purple-500/30 hover:border-purple-500/60 hover:ring-2 hover:ring-purple-500/40',
   },
   {
-    label: 'Review (curator)',
+    label: 'Review (MikeGTC)',
     value: '10–60',
     sub: 'based on average score',
     color: 'bg-primary/20 border-primary/40 text-primary',
@@ -98,7 +98,7 @@ export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
       aria-labelledby="xp-help-title"
     >
       <div
-        className="relative w-full max-w-md max-h-[82vh] sm:max-h-[90vh] overflow-hidden rounded-xl bg-background-light border border-gray-800 shadow-xl animate-scale-in flex flex-col"
+        className="relative w-full max-w-md max-h-[82vh] sm:max-h-[90vh] overflow-hidden rounded-xl bg-background-light border-2 border-gray-700/60 shadow-xl animate-scale-in flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-800/50 shrink-0 sm:px-4 sm:py-3">
@@ -157,7 +157,7 @@ export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
               </li>
               <li className="flex gap-2">
                 <span className="text-primary shrink-0">•</span>
-                <span>After review, curator scores grant XP for future submissions only</span>
+                <span>After review, MikeGTC scores grant XP for future submissions only</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-primary shrink-0">•</span>

@@ -26,7 +26,7 @@ export async function POST(_request: NextRequest) {
 
     if (userError || !curator || curator.role !== 'curator') {
       return NextResponse.json(
-        { error: 'Forbidden: Curator access required' },
+        { error: 'Forbidden: MikeGTC access required' },
         { status: 403 }
       )
     }

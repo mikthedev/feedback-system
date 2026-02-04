@@ -13,7 +13,7 @@ export async function sendConfirmationEmail(to: string, displayName: string) {
           <h2>Demo Submission Confirmed</h2>
           <p>Hi ${displayName},</p>
           <p>Your demo was successfully submitted and is now in the review queue.</p>
-          <p>You'll be notified once a curator has reviewed your submission.</p>
+          <p>You'll be notified once MikeGTC has reviewed your submission.</p>
           <p>Thanks for sharing your music!</p>
         </div>
       `,

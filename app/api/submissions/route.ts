@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
           const minutesRemaining = Math.ceil(60 - minutesSinceTransfer)
           return NextResponse.json(
             {
-              error: `Your previous submission was moved to carryover. You must wait ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''} before submitting again. This happens when you miss the feedback livestream or the curator (MikeGTC) moves your track to another session.`,
+              error: `Your previous submission was moved to carryover. You must wait ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''} before submitting again. This happens when you miss the feedback livestream or MikeGTC moves your track to another session.`,
               warning: false,
             },
             { status: 400 }
@@ -308,7 +308,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            'This track has already been submitted by another account. Sharing the same link from multiple accounts is strictly prohibited and may result in a ban by the curator (MikeGTC on Twitch).',
+            'This track has already been submitted by another account. Sharing the same link from multiple accounts is strictly prohibited and may result in a ban by MikeGTC on Twitch.',
           code: 'DUPLICATE_LINK_OTHER_ACCOUNT',
         },
         { status: 400 }

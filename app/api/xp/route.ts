@@ -28,7 +28,7 @@ export async function GET(_request: NextRequest) {
     const supabase = createAdminClient()
     const { data, error } = await supabase
       .from('users')
-      .select('xp')
+      .select('xp, role')
       .eq('id', userId)
       .single()
 
@@ -39,7 +39,9 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ xp: 0, moves_used_this_session: 0, xp_used_this_session: 0, xp_stored: 0, external_xp_this_session: 0, unused_external: 0 })
     }
 
-    const xp = parseXp((data as { xp?: unknown })?.xp)
+    const user = data as { xp?: unknown; role?: string } | null
+    const xp = parseXp(user?.xp)
+    const isTester = user?.role === 'tester'
 
     const { data: session } = await supabase
       .from('submission_sessions')
@@ -63,7 +65,9 @@ export async function GET(_request: NextRequest) {
       externalXpThisSession = Math.max(0, Math.floor(Number(u?.external_xp_this_session ?? 0)))
     }
 
-    const xpUsedThisSession = Math.min(movesUsed * XP_PER_POSITION, MAX_XP_USABLE_PER_SESSION)
+    const xpUsedThisSession = isTester
+      ? movesUsed * XP_PER_POSITION
+      : Math.min(movesUsed * XP_PER_POSITION, MAX_XP_USABLE_PER_SESSION)
     const unusedExternal = Math.max(0, externalXpThisSession - xpUsedThisSession)
 
     return NextResponse.json({

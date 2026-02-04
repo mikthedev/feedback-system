@@ -13,6 +13,8 @@ interface XpLogEntry {
 interface DashboardFooterProps {
   xp: number
   xpUsedThisSession: number
+  /** When null, user has no session cap (e.g. tester). */
+  usedCap: number | null
   unusedExternal: number
   externalXpThisSession: number
   timeXpActive: boolean | null
@@ -120,6 +122,7 @@ function IndicatorRow({
 export default function DashboardFooter({
   xp,
   xpUsedThisSession,
+  usedCap,
   unusedExternal,
   externalXpThisSession,
   timeXpActive,
@@ -158,8 +161,9 @@ export default function DashboardFooter({
           <span className="text-xs font-bold text-text-muted uppercase tracking-wider">
             Used
           </span>
-          <span className="mt-1 text-lg font-extrabold text-text-primary tabular-nums">
-            {xpUsedThisSession}<span className="text-text-muted font-semibold">/300</span>
+          <span className="mt-1 text-lg font-extrabold text-text-primary tabular-nums" title={usedCap == null ? 'No limit for testers' : undefined}>
+            {xpUsedThisSession}
+            {usedCap != null ? <span className="text-text-muted font-semibold">/{usedCap}</span> : <span className="text-text-muted font-semibold text-xs ml-0.5">(no limit)</span>}
           </span>
         </div>
         <div className="rounded-lg bg-background/80 border-2 border-gray-700/50 p-3 flex flex-col items-center justify-center min-h-[72px]">

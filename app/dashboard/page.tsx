@@ -78,6 +78,7 @@ export default function Dashboard() {
   const [xpAdjustMessage, setXpAdjustMessage] = useState<string | null>(null)
   const [useXpMessage, setUseXpMessage] = useState<string | null>(null)
   const [useXpLoading, setUseXpLoading] = useState(false)
+  const [useXpClicking, setUseXpClicking] = useState(false)
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
   const [profileImageFailed, setProfileImageFailed] = useState(false)
   const profileImageRequestedRef = useRef(false)
@@ -502,6 +503,8 @@ export default function Dashboard() {
 
   const handleUseXp = async () => {
     setUseXpMessage(null)
+    setUseXpClicking(true)
+    const animDone = setTimeout(() => setUseXpClicking(false), 450)
     setUseXpLoading(true)
     try {
       const res = await fetch('/api/xp/use', { method: 'POST', credentials: 'include' })
@@ -512,6 +515,7 @@ export default function Dashboard() {
       }
       setUseXpMessage(data.message ?? 'Done.')
       fetchXp()
+      fetchXpLog()
       setQueueRefetchTrigger((t) => t + 1)
     } catch (e) {
       setUseXpMessage('Something went wrong.')
@@ -633,6 +637,7 @@ export default function Dashboard() {
           <DashboardFooter
             xp={xp}
             xpUsedThisSession={xpUsedThisSession}
+            usedCap={user?.role === 'tester' ? null : 300}
             unusedExternal={unusedExternal}
             externalXpThisSession={externalXpThisSession}
             timeXpActive={xpStatus?.time_xp_active ?? null}
@@ -648,51 +653,63 @@ export default function Dashboard() {
           <div className="lg:flex lg:gap-6 lg:items-start">
             {/* Main column: welcome, submissions, reviewed — even space-y-4 */}
             <div className="lg:flex-1 lg:min-w-0 space-y-4">
-          {/* Welcome card */}
-          <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60">
+          {/* Welcome card — redesigned: XP + Use XP grouped; actions rearranged */}
+          <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-5 animate-fade-in border-2 border-gray-700/60">
             <div className="flex flex-col gap-4">
+              {/* Row 1: Welcome + profile on left; XP group + Use XP + Logout on right */}
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto sm:flex-1">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                   {(profileImageUrl ?? user.profile_image_url) && !profileImageFailed ? (
                     <img
                       src={profileImageUrl ?? user.profile_image_url ?? ''}
                       alt=""
                       referrerPolicy="no-referrer"
                       crossOrigin="anonymous"
-                      className="h-11 w-11 shrink-0 rounded-full border-2 border-gray-600 bg-background-lighter object-cover"
+                      className="h-12 w-12 shrink-0 rounded-full border-2 border-gray-600 bg-background-lighter object-cover"
                       onError={() => setProfileImageFailed(true)}
                     />
                   ) : (
-                    <div className="h-11 w-11 shrink-0 rounded-full border-2 border-gray-600 bg-background-lighter flex items-center justify-center text-text-muted text-base font-bold" aria-hidden>
+                    <div className="h-12 w-12 shrink-0 rounded-full border-2 border-gray-600 bg-background-lighter flex items-center justify-center text-text-muted text-lg font-bold" aria-hidden>
                       {(user.display_name || '?').charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0">
                     <h1 className="text-lg font-extrabold text-text-primary break-words sm:text-xl md:text-2xl sm:truncate tracking-tight">
                       Welcome, {user.display_name}!
                     </h1>
                     {user.role === 'curator' && (
-                      <p className="text-sm text-text-secondary mt-1 font-medium">MikeGTC Dashboard</p>
+                      <p className="text-sm text-text-secondary mt-0.5 font-medium">MikeGTC Dashboard</p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-4 shrink-0">
-                  <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap">
+                  {/* XP indicator + Use XP grouped together */}
+                  <div className="flex items-center gap-0 rounded-xl overflow-hidden border-2 border-primary/40 bg-primary/10 min-h-[44px] sm:min-h-[40px]">
                     <div
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border-2 border-primary/40 animate-xp-pulse min-h-[44px] sm:min-h-[40px]"
+                      className="flex items-center gap-2 pl-3 pr-2 py-2 animate-xp-pulse"
                       title="Your XP — use it to move up the queue"
                     >
                       <span className="text-xs font-bold text-text-muted uppercase tracking-wider">XP</span>
                       <span className="text-base font-extrabold text-primary tabular-nums">{xp}</span>
                       {xpInBlock > 0 && (
                         <div className="hidden sm:flex items-center gap-2 ml-1">
-                          <div className="w-12 h-2 bg-background-lighter rounded-full overflow-hidden">
+                          <div className="w-10 h-1.5 bg-background-lighter rounded-full overflow-hidden">
                             <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${xpInBlock}%` }} />
                           </div>
                           <span className="text-xs text-text-muted tabular-nums font-medium">{xpToNext} to +1</span>
                         </div>
                       )}
                     </div>
+                    {xp >= 100 && (user?.role === 'tester' || xpUsedThisSession < 300) && (
+                      <button
+                        type="button"
+                        onClick={handleUseXp}
+                        disabled={useXpLoading}
+                        className={`h-full min-h-[44px] sm:min-h-[40px] px-4 rounded-r-lg bg-primary hover:bg-primary-hover hover:shadow-inner active:bg-primary-active text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed border-l-2 border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset touch-manipulation ${useXpClicking ? 'animate-use-xp-click' : 'transition-all button-press'}`}
+                      >
+                        {useXpLoading ? '…' : 'Use XP'}
+                      </button>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -710,27 +727,27 @@ export default function Dashboard() {
                   {useXpMessage}
                 </p>
               )}
-              <div className="grid grid-cols-2 gap-4 sm:flex sm:flex-wrap">
-                {user.role === 'curator' && (
-                  <Link href="/curator" className="min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30">
-                    MikeGTC
-                  </Link>
-                )}
-                <Link href="/submit" className="min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30">
+              {/* Action buttons: Submit Demo, Carryover, MikeGTC — full width grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <Link
+                  href="/submit"
+                  className="min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30"
+                >
                   Submit Demo
                 </Link>
-                <Link href="/carryover" className="min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30">
+                <Link
+                  href="/carryover"
+                  className="min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30"
+                >
                   Carryover {carryoverCount > 0 ? `(${carryoverCount})` : ''}
                 </Link>
-                {xp >= 100 && xpUsedThisSession < 300 && (
-                  <button
-                    type="button"
-                    onClick={handleUseXp}
-                    disabled={useXpLoading}
-                    className="min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover hover:shadow-lg hover:shadow-primary/25 active:bg-primary-active active:scale-[0.98] text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all button-press touch-manipulation border-2 border-transparent hover:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background-light"
+                {user.role === 'curator' && (
+                  <Link
+                    href="/curator"
+                    className="min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30 sm:col-span-2 lg:col-span-1"
                   >
-                    {useXpLoading ? '…' : 'Use XP'}
-                  </button>
+                    MikeGTC
+                  </Link>
                 )}
               </div>
             </div>
@@ -1120,6 +1137,7 @@ export default function Dashboard() {
               <DashboardFooter
                 xp={xp}
                 xpUsedThisSession={xpUsedThisSession}
+                usedCap={user?.role === 'tester' ? null : 300}
                 unusedExternal={unusedExternal}
                 externalXpThisSession={externalXpThisSession}
                 timeXpActive={xpStatus?.time_xp_active ?? null}

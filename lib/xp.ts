@@ -84,6 +84,20 @@ export async function getXp(supabase: SupabaseClient, userId: string): Promise<n
   return ((data as { xp?: number } | null)?.xp ?? 0) as number
 }
 
+/** Deduct user XP (for queue moves). Clamps to 0. Returns new total. */
+export async function deductXp(
+  supabase: SupabaseClient,
+  userId: string,
+  amount: number
+): Promise<number> {
+  if (amount <= 0) return getXp(supabase, userId)
+  const current = await getXp(supabase, userId)
+  const next = Math.max(0, current - amount)
+  const { error } = await supabase.from('users').update({ xp: next }).eq('id', userId)
+  if (error) throw error
+  return next
+}
+
 /** Input item for queue movement. */
 export interface QueueItem {
   id: string
@@ -94,14 +108,23 @@ export interface QueueItem {
   presence_minutes: number
 }
 
+/** Optional overrides for applyQueueMovement (e.g. tester: no session move cap). */
+export interface ApplyQueueMovementOptions {
+  /** Per-user cap on moves this session; if set, overrides MAX_MOVE_PER_SESSION for that user. */
+  maxMovesPerUser?: Record<string, number>
+}
+
 /**
  * Apply XP-based upward movement to a list ordered by created_at.
- * Step-by-step, one position at a time; max MAX_MOVE_PER_SESSION per user;
+ * Step-by-step, one position at a time; max MAX_MOVE_PER_SESSION per user (or maxMovesPerUser override);
  * never move down; respect XP gap (can't pass someone with ≥100 more XP).
  * Tie-break when |Δxp| < 100 using presence (higher may swap above).
  * Returns ordered list and per-user move deltas (to persist moves_used_this_session).
  */
-export function applyQueueMovement(items: QueueItem[]): {
+export function applyQueueMovement(
+  items: QueueItem[],
+  options?: ApplyQueueMovementOptions
+): {
   ordered: QueueItem[]
   movesDelta: Record<string, number>
 } {
@@ -112,8 +135,11 @@ export function applyQueueMovement(items: QueueItem[]): {
     movesUsed[it.user_id] = it.moves_used_this_session
   }
 
-  const potentialMoves = (u: QueueItem) =>
-    Math.min(MAX_MOVE_PER_SESSION, Math.floor(u.user_xp / XP_PER_POSITION))
+  const potentialMoves = (u: QueueItem) => {
+    const cap = options?.maxMovesPerUser?.[u.user_id]
+    if (cap !== undefined) return Math.min(cap, Math.floor(u.user_xp / XP_PER_POSITION))
+    return Math.min(MAX_MOVE_PER_SESSION, Math.floor(u.user_xp / XP_PER_POSITION))
+  }
   const canMove = (u: QueueItem) => (movesUsed[u.user_id] ?? 0) < potentialMoves(u)
   const xpGapOk = (above: QueueItem, below: QueueItem) =>
     (above.user_xp - below.user_xp) < XP_PER_POSITION

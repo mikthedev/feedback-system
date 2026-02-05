@@ -51,7 +51,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { soundcloud_url, description, artist_name, song_title } = body
+    const { soundcloud_url, description, artist_name, song_title, genre } = body
 
     const supabase = createAdminClient()
     
@@ -140,6 +140,7 @@ export async function PUT(
         description: description?.trim() || null,
         artist_name: artist_name?.trim() || null,
         song_title: song_title?.trim() || null,
+        genre: typeof genre === 'string' ? genre.trim() || null : undefined,
       })
       .eq('id', params.id)
       .select()

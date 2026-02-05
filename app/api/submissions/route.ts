@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { soundcloud_url, email, description, artist_name, song_title } = body
+    const { soundcloud_url, email, description, artist_name, song_title, genre } = body
 
     // Server-side validation - CRITICAL for security
     if (!soundcloud_url || typeof soundcloud_url !== 'string') {
@@ -329,6 +329,7 @@ export async function POST(request: NextRequest) {
         description: description?.trim() || null,
         artist_name: artist_name?.trim() || null,
         song_title: song_title?.trim() || null,
+        genre: typeof genre === 'string' ? genre.trim() || null : null,
         status: 'pending',
         session_number: currentSessionNumber,
       })

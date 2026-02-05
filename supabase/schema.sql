@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS submissions (
   description TEXT,
   artist_name TEXT,
   song_title TEXT,
+  genre TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'reviewed')),
   session_number INTEGER,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

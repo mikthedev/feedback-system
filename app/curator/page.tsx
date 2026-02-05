@@ -91,6 +91,7 @@ interface Submission {
   description?: string
   artist_name?: string
   song_title?: string
+  genre?: string | null
   status: string
   session_number?: number
   created_at: string
@@ -888,6 +889,9 @@ export default function CuratorPage() {
                         </p>
                         <p className="text-[10px] truncate text-text-secondary">
                           {submission.users.display_name}
+                          {submission.genre && (
+                            <span className="text-text-muted ml-1">• {submission.genre}</span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -993,6 +997,12 @@ export default function CuratorPage() {
                         <span className="text-text-muted mx-2">•</span>
                         <span className="text-text-muted">{selectedSubmission.users.display_name}</span>
                       </p>
+                      {selectedSubmission.genre && (
+                        <p className="text-xs text-text-muted font-semibold mt-1 flex items-center gap-1.5">
+                          <span className="text-primary">Genre:</span>
+                          <span className="text-text-secondary">{selectedSubmission.genre}</span>
+                        </p>
+                      )}
                     </div>
                     {selectedSubmission.session_number != null && (
                       <span className="shrink-0 px-2 py-1 rounded-lg bg-primary/20 text-primary text-xs font-bold border border-primary/40">

@@ -65,7 +65,6 @@ export default function Dashboard() {
   const [xpAdjusting, setXpAdjusting] = useState(false)
   const [xp, setXp] = useState<number>(0)
   const [xpUsedThisSession, setXpUsedThisSession] = useState<number>(0)
-  const [unusedExternal, setUnusedExternal] = useState<number>(0)
   const [externalXpThisSession, setExternalXpThisSession] = useState<number>(0)
   const [xpStatus, setXpStatus] = useState<{
     time_xp_active: boolean
@@ -75,9 +74,9 @@ export default function Dashboard() {
   const [loadingXpLog, setLoadingXpLog] = useState(false)
   const [carryoverCount, setCarryoverCount] = useState(0)
   const [queueRefetchTrigger, setQueueRefetchTrigger] = useState(0)
-  const [justMovedPosition, setJustMovedPosition] = useState<number | null>(null)
   const [xpAdjustMessage, setXpAdjustMessage] = useState<string | null>(null)
   const [useXpMessage, setUseXpMessage] = useState<string | null>(null)
+  const [useXpBlocked, setUseXpBlocked] = useState(false)
   const [useXpLoading, setUseXpLoading] = useState(false)
   const [useXpClicking, setUseXpClicking] = useState(false)
   const [useXpAllowed, setUseXpAllowed] = useState(false)
@@ -195,12 +194,6 @@ export default function Dashboard() {
         const n = parseInt(u, 10)
         if (!Number.isNaN(n)) setXpUsedThisSession(Math.max(0, n))
       }
-      const ue = data.unused_external
-      if (typeof ue === 'number' && !Number.isNaN(ue)) setUnusedExternal(Math.max(0, Math.floor(ue)))
-      else if (typeof ue === 'string') {
-        const n = parseInt(ue, 10)
-        if (!Number.isNaN(n)) setUnusedExternal(Math.max(0, n))
-      }
       const ext = data.external_xp_this_session
       if (typeof ext === 'number' && !Number.isNaN(ext)) setExternalXpThisSession(Math.max(0, Math.floor(ext)))
       else if (typeof ext === 'string') {
@@ -286,7 +279,7 @@ export default function Dashboard() {
     try {
       const amount = parseInt(grantAmount, 10)
       if (Number.isNaN(amount) || amount === 0) {
-        setGrantMessage('Enter an amount (e.g. 50 to add, -20 to decrease).')
+        setGrantMessage('Enter a non-zero amount (positive to add, negative to deduct).')
         return
       }
       const res = await fetch('/api/xp/grant', {
@@ -581,27 +574,28 @@ export default function Dashboard() {
 
   const handleUseXp = async () => {
     setUseXpMessage(null)
+    setUseXpBlocked(false)
     setUseXpClicking(true)
-    const animDone = setTimeout(() => setUseXpClicking(false), 450)
+    setTimeout(() => setUseXpClicking(false), 450)
     setUseXpLoading(true)
     try {
       const res = await fetch('/api/xp/use', { method: 'POST', credentials: 'include' })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         setUseXpMessage(data?.error || 'Failed to use XP')
+        setUseXpBlocked(true)
         return
       }
-      setUseXpMessage(data.message ?? 'Done.')
+      const moved = data.movesApplied > 0
+      setUseXpBlocked(!moved)
+      setUseXpMessage(data.message ?? (moved ? 'Done.' : ''))
       fetchXp()
       fetchXpLog()
       fetchCanMove()
-      setQueueRefetchTrigger((t) => t + 1)
-      if (data.movesApplied === 1 && typeof data.newPosition === 'number') {
-        setJustMovedPosition(data.newPosition)
-        setTimeout(() => setJustMovedPosition(null), 4000)
-      }
+      if (moved) setQueueRefetchTrigger((t) => t + 1)
     } catch (e) {
       setUseXpMessage('Something went wrong.')
+      setUseXpBlocked(true)
     } finally {
       setUseXpLoading(false)
     }
@@ -741,129 +735,124 @@ export default function Dashboard() {
           <div className="lg:flex lg:gap-6 lg:items-start">
             {/* Main column: welcome, submissions, reviewed — even space-y-4 */}
             <div className="lg:flex-1 lg:min-w-0 space-y-4">
-          {/* Welcome card — greeting row; separate XP field and Use XP field; logout aligned; action buttons */}
-          <div className="bg-background-light rounded-2xl shadow-xl p-4 sm:p-5 animate-fade-in border-2 border-gray-700/60 overflow-hidden">
-            {/* Row 1: Avatar + Welcome text | Logout (aligned top-right) */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                {(profileImageUrl ?? user.profile_image_url) && !profileImageFailed ? (
-                  <img
-                    src={profileImageUrl ?? user.profile_image_url ?? ''}
-                    alt=""
-                    referrerPolicy="no-referrer"
-                    crossOrigin="anonymous"
-                    className="h-12 w-12 shrink-0 rounded-full border-2 border-gray-600 bg-background-lighter object-cover ring-2 ring-primary/20"
-                    onError={() => setProfileImageFailed(true)}
-                  />
-                ) : (
-                  <div className="h-12 w-12 shrink-0 rounded-full border-2 border-gray-600 bg-background-lighter flex items-center justify-center text-text-muted text-lg font-bold ring-2 ring-primary/20" aria-hidden>
-                    {(user.display_name || '?').charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <h1 className="text-lg font-extrabold text-text-primary truncate sm:text-xl md:text-2xl tracking-tight">
-                    Welcome, {user.display_name}!
-                  </h1>
-                  {user.role === 'curator' && (
-                    <p className="text-xs sm:text-sm text-text-secondary mt-0.5 font-medium">MikeGTC Dashboard</p>
-                  )}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={openLogoutConfirm}
-                className="shrink-0 h-11 w-11 sm:h-12 sm:w-12 flex items-center justify-center rounded-xl bg-background-lighter/80 hover:bg-gray-800 text-text-primary border-2 border-gray-600 hover:border-gray-500 transition-all duration-200 active:scale-[0.98] button-press touch-manipulation"
-                title="Log out"
-                aria-label="Log out"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-              </button>
-            </div>
-
-            {/* Seamless XP + Use XP — single block */}
-            <div className="mt-3 flex flex-col gap-1 min-w-0">
-              <div className="flex items-stretch rounded-2xl overflow-hidden border-2 border-primary/40 bg-gradient-to-r from-primary/15 via-primary/10 to-primary/20 shadow-inner min-h-[44px]">
-                <div className="flex items-center gap-2 pl-3 pr-2 py-2 min-w-0 flex-1">
-                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0">XP</span>
-                  <span
-                    className={`text-base font-black text-primary tabular-nums shrink-0 w-8 text-right ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}
-                    title="Your XP balance"
-                  >
-                    {xp}
-                  </span>
-                  {xpInBlock > 0 && xp < 9999 && (
-                    <div className="flex-1 min-w-[48px] max-w-[90px] h-1.5 rounded-full bg-background-lighter/80 border border-gray-600/40 overflow-hidden relative">
-                      <div
-                        className={`h-full bg-primary rounded-full transition-all duration-500 ${xpInBlock >= 80 ? 'animate-xp-block-glow xp-bar-energized' : 'animate-xp-block-glow'}`}
-                        style={{ width: `${xpInBlock}%` }}
-                      />
-                      <div className="absolute inset-0 pointer-events-none xp-bubbles-track">
-                        <span className="xp-bubble" aria-hidden />
-                        <span className="xp-bubble" aria-hidden />
-                        <span className="xp-bubble" aria-hidden />
-                        <span className="xp-bubble" aria-hidden />
-                        <span className="xp-bubble" aria-hidden />
-                      </div>
+          {/* Welcome card */}
+          <div className="bg-background-light rounded-2xl shadow-lg p-5 sm:p-6 animate-fade-in border-2 border-gray-700/60 overflow-hidden relative">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" aria-hidden />
+            <div className="flex flex-col gap-5 sm:gap-6">
+              {/* Header: avatar, greeting, logout */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4 min-w-0">
+                  {(profileImageUrl ?? user.profile_image_url) && !profileImageFailed ? (
+                    <img
+                      src={profileImageUrl ?? user.profile_image_url ?? ''}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
+                      className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-full border-2 border-primary/30 bg-background object-cover shadow-lg"
+                      onError={() => setProfileImageFailed(true)}
+                    />
+                  ) : (
+                    <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-full border-2 border-primary/30 bg-background-lighter flex items-center justify-center text-primary text-xl sm:text-2xl font-black" aria-hidden>
+                      {(user.display_name || '?').charAt(0).toUpperCase()}
                     </div>
                   )}
-                  {xpInBlock > 0 && xp < 9999 && (
-                    <span className="text-[10px] text-text-muted tabular-nums shrink-0">{xpToNext}→</span>
-                  )}
+                  <div className="min-w-0">
+                    <h1 className="text-lg sm:text-xl font-extrabold text-text-primary tracking-tight">
+                      Welcome!{' '}
+                      <span className="text-primary">{user.display_name}</span>
+                    </h1>
+                    {user.role === 'curator' ? (
+                      <p className="text-sm text-primary font-semibold mt-0.5">MikeGTC Panel</p>
+                    ) : (
+                      <p className="text-sm text-text-secondary mt-0.5">Submit and track your demos</p>
+                    )}
+                  </div>
                 </div>
-                <div className="w-px bg-primary/30 self-stretch shrink-0" aria-hidden />
                 <button
                   type="button"
-                  onClick={handleUseXp}
-                  disabled={!useXpAllowed || useXpLoading}
-                  title={useXpReason || 'Spend 100 XP to move up 1 position'}
-                  className={`shrink-0 min-w-[80px] min-h-[44px] px-4 font-bold text-sm text-background bg-primary hover:bg-primary-hover active:bg-primary-active focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors ${useXpClicking ? 'animate-use-xp-click' : 'button-press'}`}
+                  onClick={openLogoutConfirm}
+                  className="shrink-0 h-10 w-10 sm:h-11 sm:w-11 flex items-center justify-center rounded-xl bg-background/80 hover:bg-gray-700/60 text-text-muted hover:text-text-primary border border-gray-600/60 transition-all duration-200 active:scale-[0.97]"
+                  title="Log out"
+                  aria-label="Log out"
                 >
-                  {useXpLoading ? '…' : 'Use XP'}
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </button>
               </div>
-              {!useXpAllowed && useXpReason && (
-                <p className="text-[10px] text-text-muted leading-tight px-1" title={useXpReason}>
-                  {useXpReason}
+
+              {useXpMessage && (
+                <p className={`text-sm font-semibold rounded-lg px-4 py-3 animate-scale-in border ${
+                  useXpBlocked ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' : 'text-primary bg-primary/10 border-primary/30'
+                }`}>
+                  {useXpMessage}
                 </p>
               )}
-            </div>
 
-            {useXpMessage && (
-              <p className="text-sm font-bold text-primary bg-primary/10 border-2 border-primary/40 rounded-xl px-4 py-2 animate-scale-in mt-4">
-                {useXpMessage}
-              </p>
-            )}
-
-            {/* Action buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-5">
-              <Link
-                href="/submit"
-                className="min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30"
-              >
-                Submit Demo
-              </Link>
-              <Link
-                href="/carryover"
-                className="min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30"
-              >
-                Carryover {carryoverCount > 0 ? `(${carryoverCount})` : ''}
-              </Link>
-              {user.role === 'curator' && (
-                <Link
-                  href="/curator"
-                  className="min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30 sm:col-span-2 lg:col-span-1"
-                >
-                  MikeGTC
-                </Link>
-              )}
+              {/* Quick actions + XP */}
+              <div>
+                <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">Quick actions</p>
+                {/* Mobile: Submit Demo | Carryover same length, XP full width below. Desktop: flex row */}
+                <div className="flex flex-col sm:flex-row flex-wrap items-stretch gap-3 w-full">
+                  {/* Row 1 on mobile: Submit Demo + Carryover (equal width). On desktop: inline with XP */}
+                  <div className="grid grid-cols-2 sm:contents gap-3">
+                    <Link
+                      href="/submit"
+                      className="flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-sm transition-all active:scale-[0.98] sm:shrink-0"
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                      Submit Demo
+                    </Link>
+                    <Link
+                      href="/carryover"
+                      className="flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-sm transition-all active:scale-[0.98] sm:shrink-0"
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                      Carryover {carryoverCount > 0 ? `(${carryoverCount})` : ''}
+                    </Link>
+                  </div>
+                  {user.role === 'curator' && (
+                    <Link
+                      href="/curator"
+                      className="flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-sm transition-all active:scale-[0.98] sm:shrink-0 w-full sm:w-auto"
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                      MikeGTC
+                    </Link>
+                  )}
+                  {/* XP bar — progress reaches to Use XP button; on mobile full width */}
+                  <div className="flex items-stretch rounded-xl overflow-hidden border-2 border-primary bg-primary/25 min-h-[48px] w-full sm:flex-1 sm:min-w-[200px]" title={!useXpAllowed && useXpReason ? useXpReason : 'Spend 100 XP to move up'}>
+                    <div className="flex items-center gap-2 pl-3 pr-2 py-2 min-w-0 flex-1 w-full">
+                      <span className="text-[10px] font-bold text-primary uppercase tracking-wider shrink-0">XP</span>
+                      <span className={`text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
+                      {xpInBlock > 0 && xp < 9999 && (
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <div className="h-1.5 bg-background/60 rounded-full overflow-hidden flex-1 min-w-0 border border-primary/40">
+                            <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${xpInBlock}%` }} />
+                          </div>
+                          <span className="text-[10px] text-primary/90 tabular-nums font-bold shrink-0">{xpToNext} to +1</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="w-px bg-primary/50 self-stretch shrink-0" aria-hidden />
+                    <button
+                      type="button"
+                      onClick={handleUseXp}
+                      disabled={!useXpAllowed || useXpLoading}
+                      title={useXpReason || 'Spend 100 XP to move up 1 position'}
+                      className={`shrink-0 min-w-[80px] min-h-[48px] px-3 font-bold text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors flex items-center justify-center ${useXpClicking ? 'animate-use-xp-click' : 'button-press'}`}
+                    >
+                      {useXpLoading ? '…' : 'Use XP'}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Curator: Grant XP to any user or self */}
           {user.role === 'curator' && (
             <div className="bg-primary/5 rounded-xl shadow-lg p-4 border-2 border-primary/40 animate-fade-in">
-              <h2 className="text-base font-extrabold text-text-primary mb-1">Grant XP</h2>
-              <p className="text-sm text-text-secondary mb-4 font-medium">Add or decrease XP for any user (use a negative number to decrease).</p>
+              <h2 className="text-base font-extrabold text-text-primary mb-1">Grant / Deduct XP</h2>
+              <p className="text-sm text-text-secondary mb-4 font-medium">Add or remove XP for any user or yourself. Use positive to add, negative to deduct.</p>
               <form onSubmit={handleGrantXp} className="flex flex-wrap items-center gap-3 sm:gap-4">
                 <select
                   value={grantTargetId}
@@ -879,11 +868,11 @@ export default function Dashboard() {
                   type="number"
                   value={grantAmount}
                   onChange={(e) => setGrantAmount(e.target.value)}
-                  placeholder="e.g. 50 or -20"
+                  placeholder="e.g. 50 or -25"
                   className="w-24 sm:w-28 px-4 py-3 rounded-xl bg-background-lighter border-2 border-gray-600 text-text-primary text-base font-semibold focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none min-h-[48px]"
                 />
                 <button type="submit" disabled={grantLoading || !grantAmount.trim()} className="min-h-[48px] px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation border-2 border-transparent">
-                  {grantLoading ? '…' : 'Grant XP'}
+                  {grantLoading ? '…' : 'Apply'}
                 </button>
               </form>
               {grantMessage && (
@@ -1272,7 +1261,6 @@ export default function Dashboard() {
                 currentUserId={user?.id}
                 refetchTrigger={queueRefetchTrigger}
                 onQueueLoaded={handleQueueLoaded}
-                justMovedPosition={justMovedPosition}
               />
             </div>
             <div className="order-2 lg:order-1">

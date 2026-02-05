@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import SoundCloudEmbed from '../components/SoundCloudEmbed'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 interface CarryoverItem {
   id: string
@@ -43,6 +44,7 @@ function getEmbedUrl(url: string): string {
 
 export default function CarryoverPage() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [user, setUser] = useState<{ id: string; display_name: string } | null>(null)
   const [carryover, setCarryover] = useState<CarryoverItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -107,7 +109,7 @@ export default function CarryoverPage() {
       <div className="pt-8 sm:pt-9 px-3 sm:px-4 md:px-5 pb-4">
         <div className="max-w-6xl mx-auto space-y-4">
           <Link href="/dashboard" className="inline-flex items-center min-h-[48px] text-sm font-bold text-primary hover:text-primary-hover underline underline-offset-2 touch-manipulation">
-            ← Dashboard
+            {t('carryover.backToDashboard')}
           </Link>
           <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border-2 border-gray-700/60">
             <div className="flex items-start gap-4 mb-4">
@@ -117,19 +119,19 @@ export default function CarryoverPage() {
                 </svg>
               </div>
               <div className="min-w-0">
-                <h1 className="text-lg font-extrabold text-text-primary sm:text-xl tracking-tight">Carryover</h1>
+                <h1 className="text-lg font-extrabold text-text-primary sm:text-xl tracking-tight">{t('carryover.title')}</h1>
                 <p className="text-sm text-amber-400/90 mt-1 font-medium leading-snug">
                   Track skipped or session ended. You cannot submit again until 60 min after transfer.
                 </p>
               </div>
             </div>
             {loading ? (
-              <p className="text-xs text-text-secondary">Loading…</p>
+              <p className="text-xs text-text-secondary">{t('common.loading')}</p>
             ) : myCarryover.length === 0 ? (
               <div className="text-center py-6">
-                <p className="text-xs text-text-secondary">No tracks in carryover.</p>
+                <p className="text-xs text-text-secondary">{t('carryover.noTracks')}</p>
                 <Link href="/dashboard" className="inline-flex items-center min-h-[40px] mt-3 px-3 py-2 rounded-lg bg-primary text-background font-semibold text-sm hover:bg-primary-hover transition-colors touch-manipulation sm:min-h-[36px] sm:rounded-md">
-                  Back to Dashboard
+                  {t('carryover.backToDashboard')}
                 </Link>
               </div>
             ) : (

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 interface XpLogEntry {
   id: string
@@ -38,6 +39,7 @@ function IndicatorRow({
   hasReviewXp,
   carryoverCount,
   onShowIndicatorsHelp,
+  t,
 }: {
   timeXpActive: boolean | null
   followingMikegtcoff: boolean | null
@@ -45,6 +47,7 @@ function IndicatorRow({
   hasReviewXp: boolean
   carryoverCount: number
   onShowIndicatorsHelp?: () => void
+  t: (key: string) => string
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-0.5 sm:gap-2">
@@ -57,7 +60,7 @@ function IndicatorRow({
         title={timeXpActive ? 'Time XP on' : 'Time XP off'}
       >
         <span className="shrink-0">{timeXpActive ? '✓' : '○'}</span>
-        <span className="min-w-0 truncate">Time</span>
+        <span className="min-w-0 truncate">{t('xp.time')}</span>
       </span>
       <span
         className={`${INDICATOR_STYLE} ${
@@ -69,16 +72,16 @@ function IndicatorRow({
         }`}
         title={
           followingMikegtcoff === true
-            ? 'Following'
+            ? t('xp.following')
             : followingMikegtcoff === false
-              ? 'Not following'
-              : 'Unknown'
+              ? t('xp.notFollowing')
+              : t('xp.unknown')
         }
       >
         <span className="shrink-0">{followingMikegtcoff === true ? '✓' : followingMikegtcoff === false ? '✗' : '—'}</span>
-        <span className="min-w-0 truncate sm:hidden">Following</span>
+        <span className="min-w-0 truncate sm:hidden">{t('xp.following')}</span>
         <span className="min-w-0 truncate hidden sm:inline">
-          {followingMikegtcoff === true ? 'Following' : followingMikegtcoff === false ? 'Not following' : '—'}
+          {followingMikegtcoff === true ? t('xp.following') : followingMikegtcoff === false ? t('xp.notFollowing') : '—'}
         </span>
       </span>
       <span
@@ -93,14 +96,14 @@ function IndicatorRow({
         title="Review XP counted"
       >
         <span className="shrink-0">{hasReviewXp ? '✓' : '○'}</span>
-        <span className="min-w-0 truncate">Rate</span>
+        <span className="min-w-0 truncate">{t('xp.rate')}</span>
       </span>
       <Link
         href="/carryover"
         className={`${INDICATOR_STYLE} bg-gray-500/10 text-text-muted border-gray-600/40 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/30 transition-colors`}
         title="Your tracks in carryover — view details"
       >
-        <span className="min-w-0 truncate">Carry</span>
+        <span className="min-w-0 truncate">{t('xp.carry')}</span>
         <span className="shrink-0 font-semibold text-text-primary tabular-nums">{carryoverCount}</span>
       </Link>
       {onShowIndicatorsHelp && (
@@ -132,6 +135,7 @@ export default function DashboardFooter({
   compactTop = false,
   onShowIndicatorsHelp,
 }: DashboardFooterProps) {
+  const { t } = useLanguage()
   const hasReviewXp = xpLog.some(
     (e) => e.source === 'curator_review' || e.source === 'audience_review'
   )
@@ -146,6 +150,7 @@ export default function DashboardFooter({
           hasReviewXp={hasReviewXp}
           carryoverCount={carryoverCount}
           onShowIndicatorsHelp={onShowIndicatorsHelp}
+          t={t}
         />
       </div>
     )
@@ -157,16 +162,16 @@ export default function DashboardFooter({
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="rounded-lg bg-background/80 border-2 border-gray-700/50 p-3 flex flex-col items-center justify-center min-h-[72px]">
           <span className="text-xs font-bold text-text-muted uppercase tracking-wider">
-            Used
+            {t('xp.used')}
           </span>
           <span className="mt-1 text-lg font-extrabold text-text-primary tabular-nums" title={usedCap == null ? 'No limit for testers' : undefined}>
             {xpUsedThisSession}
-            {usedCap != null ? <span className="text-text-muted font-semibold">/{usedCap}</span> : <span className="text-text-muted font-semibold text-xs ml-0.5">(no limit)</span>}
+            {usedCap != null ? <span className="text-text-muted font-semibold">/{usedCap}</span> : <span className="text-text-muted font-semibold text-xs ml-0.5">({t('common.noLimit')})</span>}
           </span>
         </div>
         <div className="rounded-lg bg-background/80 border-2 border-gray-700/50 p-3 flex flex-col items-center justify-center min-h-[72px]">
           <span className="text-xs font-bold text-text-muted uppercase tracking-wider">
-            Stored
+            {t('xp.stored')}
           </span>
           <span className="mt-1 text-lg font-extrabold text-primary tabular-nums">
             {xp}
@@ -179,7 +184,7 @@ export default function DashboardFooter({
         type="button"
         onClick={onShowXpHelp}
         className="w-full min-h-[48px] flex items-center justify-center gap-2 rounded-xl bg-primary/10 border-2 border-primary/40 text-primary font-bold text-sm hover:bg-primary/20 hover:border-primary/50 transition-colors touch-manipulation mb-4"
-        title="How XP works"
+        title={t('xp.howXpWorks')}
       >
         <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -189,17 +194,17 @@ export default function DashboardFooter({
             d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        How XP works
+        {t('xp.howXpWorks')}
       </button>
 
       {/* XP Log — expandable */}
       <details className="group border-t-2 border-gray-700/50 -mx-4 pt-0">
         <summary className="list-none flex items-center justify-between gap-2 px-4 py-3 cursor-pointer text-sm font-bold text-text-secondary hover:text-text-primary hover:bg-gray-800/20 active:bg-gray-800/30 min-h-[48px] touch-manipulation">
           <span className="flex items-center gap-2">
-            <span>XP log</span>
+            <span>{t('xp.xpLog')}</span>
             {xpLog.length > 0 && (
               <span className="text-xs text-text-muted font-medium tabular-nums">
-                {xpLog.length} {xpLog.length === 1 ? 'event' : 'events'}
+                {xpLog.length} {xpLog.length === 1 ? t('xp.event') : t('xp.events')}
               </span>
             )}
           </span>
@@ -214,9 +219,9 @@ export default function DashboardFooter({
         </summary>
         <div className="px-4 pb-4 pt-2 border-t border-gray-800/30 bg-background/30">
           {loadingLog ? (
-            <p className="text-sm text-text-muted py-4 font-medium">Loading…</p>
+            <p className="text-sm text-text-muted py-4 font-medium">{t('xp.loading')}</p>
           ) : xpLog.length === 0 ? (
-            <p className="text-sm text-text-muted py-4 font-medium">No events yet.</p>
+            <p className="text-sm text-text-muted py-4 font-medium">{t('xp.noEvents')}</p>
           ) : (
             <ul className="space-y-0 max-h-48 overflow-y-auto">
               {xpLog.map((entry) => (

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 interface IndicatorsHelpModalProps {
   isOpen: boolean
@@ -19,6 +20,8 @@ export default function IndicatorsHelpModal({
   timeXpActive,
   externalXpThisSession = 0,
 }: IndicatorsHelpModalProps) {
+  const { t } = useLanguage()
+
   useEffect(() => {
     if (!isOpen) return
     const onKey = (e: KeyboardEvent) => {
@@ -50,7 +53,7 @@ export default function IndicatorsHelpModal({
         <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-800/50 shrink-0 sm:px-4 sm:py-3">
           <h2 id="indicators-help-title" className="text-sm font-bold text-text-primary flex items-center gap-1.5 sm:text-base sm:gap-2">
             <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary/20 text-primary text-[10px] sm:text-xs font-bold">?</span>
-            Live indicators
+            {t('indicators.title')}
           </h2>
           <button
             type="button"
@@ -66,29 +69,29 @@ export default function IndicatorsHelpModal({
 
         <div className="overflow-y-auto flex-1 px-3 py-3 space-y-2.5 scrollbar-thin sm:px-4 sm:py-4 sm:space-y-4">
           <p className="text-text-secondary text-[11px] leading-snug sm:text-xs">
-            These indicators update in real time. They show your current XP-related status for this session.
+            {t('indicators.intro')}
           </p>
 
           <div className="space-y-2 sm:space-y-3">
             <div className="p-2 rounded-lg border border-gray-800/50 bg-background-lighter/50 sm:p-3">
-              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">Time XP</p>
+              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">{t('indicators.timeXp')}</p>
               <p className="text-text-secondary text-[11px] leading-relaxed mb-1.5 sm:text-xs sm:mb-2">
                 <span className={timeXpActive ? 'text-emerald-400' : 'text-text-muted'}>
-                  {timeXpActive ? '✓ On' : '○ Off'}
+                  {timeXpActive ? t('indicators.timeOn') : t('indicators.timeOff')}
                 </span>
-                — You earn <strong className="text-primary">+5 XP every 5 minutes</strong> while MikeGTC is live on Twitch and submissions are open. Tune in to the stream to earn Time XP.
+                — {t('indicators.timeXpDesc')}
               </p>
             </div>
 
             <div className="p-2 rounded-lg border border-gray-800/50 bg-background-lighter/50 sm:p-3">
-              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">MikeGTC (Follow)</p>
+              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">{t('indicators.follow')}</p>
               <p className="text-text-secondary text-[11px] leading-relaxed mb-1.5 sm:text-xs sm:mb-2">
                 <span className={
                   followingMikegtcoff === true ? 'text-emerald-400' : followingMikegtcoff === false ? 'text-amber-400' : 'text-text-muted'
                 }>
-                  {followingMikegtcoff === true ? '✓ Following' : followingMikegtcoff === false ? '✗ Not following' : '— Unknown'}
+                  {followingMikegtcoff === true ? t('indicators.following') : followingMikegtcoff === false ? t('indicators.notFollowing') : `— ${t('xp.unknown')}`}
                 </span>
-                — Follow MikeGTC on Twitch for a one-time <strong className="text-primary">+10 XP</strong> bonus.
+                — {t('indicators.followDesc')}
               </p>
               {followingMikegtcoff !== true && (
                 <a
@@ -97,7 +100,7 @@ export default function IndicatorsHelpModal({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-2 py-1 rounded-button bg-primary/20 hover:bg-primary/30 text-primary text-[11px] sm:text-xs font-medium border border-primary/30 transition-colors touch-manipulation sm:px-2.5 sm:py-1.5"
                 >
-                  Follow on Twitch
+                  {t('indicators.followBtn')}
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
@@ -106,23 +109,23 @@ export default function IndicatorsHelpModal({
             </div>
 
             <div className="p-2 rounded-lg border border-gray-800/50 bg-background-lighter/50 sm:p-3">
-              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">Sub / Donation</p>
+              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">{t('indicators.subDonation')}</p>
               <p className="text-text-secondary text-[11px] leading-relaxed sm:text-xs">
-                Shows <strong className="text-text-primary">{externalXpThisSession}</strong> XP from subscriptions or donations this session. Subscribe to MikeGTC on Twitch or donate during the stream to earn <strong className="text-primary">+20 XP</strong> (each once per session).
+                {t('indicators.subDonationDesc').replace('{n}', String(externalXpThisSession))}
               </p>
             </div>
 
             <div className="p-2 rounded-lg border border-gray-800/50 bg-background-lighter/50 sm:p-3">
-              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">Ratings</p>
+              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">{t('indicators.ratings')}</p>
               <p className="text-text-secondary text-[11px] leading-relaxed sm:text-xs">
-                <span className="text-text-muted">✓ / ○</span> — Whether your review scores from MikeGTC have been counted toward your XP. After your track is reviewed, the ratings XP is added to your total.
+                <span className="text-text-muted">✓ / ○</span> — {t('indicators.ratingsDesc')}
               </p>
             </div>
 
             <div className="p-2 rounded-lg border border-gray-800/50 bg-background-lighter/50 sm:p-3">
-              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">Carry</p>
+              <p className="font-semibold text-text-primary text-[10px] uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-2">{t('indicators.carry')}</p>
               <p className="text-text-secondary text-[11px] leading-relaxed sm:text-xs">
-                Number of your tracks in carryover (skipped or moved to another session). Click to view details.
+                {t('indicators.carryDesc')}
               </p>
             </div>
           </div>
@@ -134,7 +137,7 @@ export default function IndicatorsHelpModal({
             onClick={onClose}
             className="w-full py-2 rounded-lg bg-primary hover:bg-primary-hover text-background font-medium text-sm transition-colors touch-manipulation sm:py-2.5"
           >
-            Got it
+            {t('indicators.gotIt')}
           </button>
         </div>
       </div>

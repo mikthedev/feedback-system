@@ -90,7 +90,7 @@ export async function PUT(
       normalizedUrl = normalizeSoundCloudUrl(soundcloud_url)
     }
 
-    // If URL is being changed: block if another account has already submitted this link
+    // If URL is being changed: block if another account has already submitted this link, or if user submitted it in a previous session
     const urlChanged = normalizedUrl !== (existingSubmission.soundcloud_url ?? '')
     if (urlChanged) {
       const { data: otherAccountSubmission } = await supabase
@@ -107,6 +107,25 @@ export async function PUT(
             error:
               'This track has already been submitted by another account. Sharing the same link from multiple accounts is strictly prohibited and may result in a ban by MikeGTC on Twitch.',
             code: 'DUPLICATE_LINK_OTHER_ACCOUNT',
+          },
+          { status: 400 }
+        )
+      }
+
+      // Block if this user already submitted this URL in any other session (including previous)
+      const { data: previousSessionSubmission } = await supabase
+        .from('submissions')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('soundcloud_url', normalizedUrl)
+        .neq('id', params.id)
+        .limit(1)
+        .maybeSingle()
+
+      if (previousSessionSubmission) {
+        return NextResponse.json(
+          {
+            error: 'This track was already submitted in a previous session. You cannot submit the same song again.',
           },
           { status: 400 }
         )

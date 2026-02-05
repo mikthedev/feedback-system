@@ -3,11 +3,13 @@
 import { useState, useEffect, Suspense, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 function SubmitPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const submissionId = searchParams.get('edit')
+  const { t } = useLanguage()
   
   const [soundcloudUrl, setSoundcloudUrl] = useState('')
   const [email, setEmail] = useState('')
@@ -236,7 +238,7 @@ function SubmitPageContent() {
   if (!user || checkingStatus) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-xl text-text-primary">Loading...</div>
+        <div className="text-xl text-text-primary">{t('common.loading')}</div>
       </div>
     )
   }
@@ -247,22 +249,22 @@ function SubmitPageContent() {
         <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-5 md:p-6 animate-fade-in border-2 border-gray-700/60">
           <div className="flex items-center justify-between gap-4 mb-4">
             <h1 className="text-lg font-extrabold text-text-primary truncate min-w-0 sm:text-xl md:text-2xl tracking-tight">
-              {isEditing ? 'Edit' : 'Submit Demo'}
+              {isEditing ? t('submit.editDemo') : t('submit.title')}
             </h1>
             {isEditing && (
               <Link href="/dashboard" className="text-sm text-primary hover:text-primary-hover font-semibold underline underline-offset-2 shrink-0 touch-manipulation min-h-[44px] flex items-center sm:min-h-0 sm:text-xs sm:font-medium">
-                ← Dashboard
+                ← {t('common.dashboard')}
               </Link>
             )}
           </div>
           {!submissionsOpen && (
             <div className="mb-4 p-4 bg-yellow-500/10 border-2 border-yellow-500/40 text-yellow-400 rounded-xl text-sm font-bold">
-              ⚠️ Submissions closed. Check back later or contact MikeGTC.
+              ⚠️ {t('submit.submissionsClosed')}
             </div>
           )}
           {success && (
             <div className="mb-4 p-4 bg-primary/10 border-2 border-primary/40 text-primary rounded-xl animate-scale-in text-sm font-bold">
-              {isEditing ? 'Updated!' : 'Submitted!'} Redirecting…
+              {isEditing ? t('submit.updated') : t('submit.submitted')}
             </div>
           )}
           {error && (
@@ -282,7 +284,7 @@ function SubmitPageContent() {
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-4">
             <div>
               <label htmlFor="soundcloud_url" className="block text-sm font-bold text-text-primary mb-2">
-                SoundCloud URL <span className="text-primary">*</span>
+                {t('submit.soundcloudUrl')} <span className="text-primary">*</span>
               </label>
               <input
                 type="text"
@@ -329,7 +331,7 @@ function SubmitPageContent() {
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-bold text-text-primary mb-2">Description</label>
+              <label htmlFor="description" className="block text-sm font-bold text-text-primary mb-2">{t('common.description')}</label>
               <textarea
                 id="description"
                 value={description}
@@ -339,7 +341,7 @@ function SubmitPageContent() {
                 className="w-full px-4 py-3 bg-background border-2 border-gray-600 rounded-xl text-base font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary resize-none min-h-[88px]"
                 disabled={loading || (!submissionsOpen && !isEditing)}
               />
-              <p className="mt-2 text-sm text-text-secondary font-medium">Optional</p>
+              <p className="mt-2 text-sm text-text-secondary font-medium">{t('submit.optional')}</p>
             </div>
             <div className="pt-4 border-t-2 border-gray-700/60">
               <button
@@ -369,7 +371,7 @@ function SubmitPageContent() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                     <label htmlFor="artist_name" className="block text-sm font-bold text-text-secondary mb-2">
-                      Artist Name
+                      {t('submit.artistName')}
                     </label>
                     <input
                       type="text"
@@ -383,7 +385,7 @@ function SubmitPageContent() {
                     </div>
                     <div>
                     <label htmlFor="song_title" className="block text-sm font-bold text-text-secondary mb-2">
-                      Song Title
+                      {t('submit.songTitle')}
                     </label>
                     <input
                       type="text"
@@ -426,14 +428,14 @@ function SubmitPageContent() {
                 disabled={loading || !soundcloudUrl.trim() || (!submissionsOpen && !isEditing)}
                 className="w-full min-h-[52px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-3 px-5 rounded-xl text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press touch-manipulation sm:flex-[2] border-2 border-transparent hover:border-primary/30"
               >
-                {loading ? (isEditing ? 'Updating…' : 'Submitting…') : (isEditing ? 'Update' : 'Submit Demo')}
+                {loading ? (isEditing ? t('submit.updating') : t('submit.submitting')) : (isEditing ? t('submit.updateButton') : t('submit.title'))}
               </button>
               <button
                 type="button"
                 onClick={() => router.push('/dashboard')}
                 className="w-full min-h-[48px] px-4 py-3 border-2 border-gray-600 text-text-primary rounded-xl text-base font-bold hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press touch-manipulation sm:flex-1"
               >
-                Cancel
+                {t('submit.cancel')}
               </button>
             </div>
           </form>

@@ -4,6 +4,7 @@ import { useState, useEffect, memo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import XpHelpModal from '../components/XpHelpModal'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 // Memoized embed component to prevent re-renders when scores change
 const SoundCloudEmbed = memo(({ 
@@ -117,6 +118,7 @@ interface SoundCloudMetadata {
 
 export default function CuratorPage() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
@@ -801,7 +803,7 @@ export default function CuratorPage() {
           <div className={`${selectedSubmission ? 'hidden lg:block' : 'block'} lg:w-56 xl:w-64 lg:shrink-0 space-y-4`}>
             <div className="bg-background-light rounded-xl shadow-lg p-3 animate-fade-in border-2 border-gray-700/60">
               <h2 className="text-sm font-extrabold text-text-primary mb-3 tracking-tight">
-                Queue ({submissions.length})
+                {t('queue.title')} ({submissions.length})
               </h2>
               {submissions.length === 0 ? (
                 <p className="text-xs text-text-secondary font-medium">No pending submissions</p>
@@ -898,13 +900,13 @@ export default function CuratorPage() {
             <div className="bg-background-light rounded-xl shadow-lg p-3 animate-fade-in border-2 border-gray-700/60">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-extrabold text-text-primary tracking-tight">
-                  Submitters ({getQueueSubmitters().length})
+                  {t('curator.submitters')} ({getQueueSubmitters().length})
                 </h2>
                 <button
                   onClick={() => setShowSubmitters(!showSubmitters)}
                   className="text-xs text-text-secondary hover:text-primary transition-colors font-medium"
                 >
-                  {showSubmitters ? 'Hide' : 'Show'}
+                  {showSubmitters ? t('common.hide') : t('common.show')}
                 </button>
               </div>
               {showSubmitters && (
@@ -1189,13 +1191,13 @@ export default function CuratorPage() {
               onClick={() => setShowXpHelpModal(true)}
               className="text-primary hover:text-primary-hover underline underline-offset-2 font-medium"
             >
-              How XP works
+              {t('xp.howXpWorks')}
             </button>
             <Link
               href="/dashboard"
               className="text-text-secondary hover:text-primary underline underline-offset-2 font-medium"
             >
-              Dashboard
+              {t('common.dashboard')}
             </Link>
           </div>
         </div>

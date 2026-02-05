@@ -8,6 +8,7 @@ import XpHelpModal, { getXpHelpDismissed } from '../components/XpHelpModal'
 import IndicatorsHelpModal from '../components/IndicatorsHelpModal'
 import DashboardFooter from '../components/DashboardFooter'
 import SoundCloudEmbed from '../components/SoundCloudEmbed'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 interface User {
   id: string
@@ -43,6 +44,7 @@ interface EmbedData {
 
 export default function Dashboard() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [user, setUser] = useState<User | null>(null)
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [reviewedSubmissions, setReviewedSubmissions] = useState<Submission[]>([])
@@ -84,6 +86,7 @@ export default function Dashboard() {
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
   const [profileImageFailed, setProfileImageFailed] = useState(false)
   const profileImageRequestedRef = useRef(false)
+  const [accentColor, setAccentColor] = useState<string | null>(null)
   const lastMyPositionsRef = useRef<Record<string, number>>({})
   const [expandedDescriptionIds, setExpandedDescriptionIds] = useState<Set<string>>(new Set())
   const [grantUsers, setGrantUsers] = useState<Array<{ id: string; display_name: string }>>([])
@@ -450,6 +453,52 @@ export default function Dashboard() {
       .catch(() => setProfileImageFailed(true))
   }, [user, profileImageFailed])
 
+  // Extract accent color from profile picture
+  useEffect(() => {
+    const imgUrl = profileImageUrl ?? user?.profile_image_url
+    if (!imgUrl || typeof imgUrl !== 'string' || profileImageFailed) {
+      setAccentColor(null)
+      return
+    }
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        const size = 32
+        canvas.width = size
+        canvas.height = size
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+        ctx.drawImage(img, 0, 0, size, size)
+        const data = ctx.getImageData(size / 4, size / 4, size / 2, size / 2)
+        const pixels = data.data
+        let r = 0, g = 0, b = 0, n = 0
+        for (let i = 0; i < pixels.length; i += 4) {
+          r += pixels[i]!
+          g += pixels[i + 1]!
+          b += pixels[i + 2]!
+          n++
+        }
+        if (n > 0) {
+          r = Math.round(r / n)
+          g = Math.round(g / n)
+          b = Math.round(b / n)
+          const gray = (r + g + b) / 3
+          const boost = 1.4
+          r = Math.min(255, Math.round(gray + (r - gray) * boost))
+          g = Math.min(255, Math.round(gray + (g - gray) * boost))
+          b = Math.min(255, Math.round(gray + (b - gray) * boost))
+          setAccentColor(`rgb(${r},${g},${b})`)
+        }
+      } catch {
+        setAccentColor(null)
+      }
+    }
+    img.onerror = () => setAccentColor(null)
+    img.src = imgUrl
+  }, [profileImageUrl, user?.profile_image_url, profileImageFailed])
+
   useEffect(() => {
     fetchUser()
     fetchSubmissions()
@@ -668,7 +717,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-xl text-text-primary">Loading...</div>
+        <div className="text-xl text-text-primary">{t('common.loading')}</div>
       </div>
     )
   }
@@ -708,7 +757,7 @@ export default function Dashboard() {
             }`}
           >
             <span className="text-xs font-bold uppercase tracking-wider sm:text-sm">
-              {submissionsOpen ? 'Submission Open' : 'Submission Closed'}
+              {submissionsOpen ? t('dashboard.submissionOpen') : t('dashboard.submissionClosed')}
             </span>
           </div>
         </div>
@@ -737,7 +786,13 @@ export default function Dashboard() {
             <div className="lg:flex-1 lg:min-w-0 space-y-4">
           {/* Welcome card */}
           <div className="bg-background-light rounded-2xl shadow-lg p-5 sm:p-6 animate-fade-in border-2 border-gray-700/60 overflow-hidden relative">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" aria-hidden />
+            <div
+              className="absolute top-0 left-0 right-0 h-1 opacity-70"
+              style={{
+                background: `linear-gradient(to right, transparent, ${accentColor ?? 'rgba(202,247,111,0.5)'}, transparent)`,
+              }}
+              aria-hidden
+            />
             <div className="flex flex-col gap-5 sm:gap-6">
               {/* Header: avatar, greeting, logout */}
               <div className="flex items-center justify-between gap-4">
@@ -758,13 +813,13 @@ export default function Dashboard() {
                   )}
                   <div className="min-w-0">
                     <h1 className="text-lg sm:text-xl font-extrabold text-text-primary tracking-tight">
-                      Welcome!{' '}
+                      {t('dashboard.welcome')}{' '}
                       <span className="text-primary">{user.display_name}</span>
                     </h1>
                     {user.role === 'curator' ? (
-                      <p className="text-sm text-primary font-semibold mt-0.5">MikeGTC Panel</p>
+                      <p className="text-sm text-primary font-semibold mt-0.5">{t('dashboard.mikegtcPanel')}</p>
                     ) : (
-                      <p className="text-sm text-text-secondary mt-0.5">Submit and track your demos</p>
+                      <p className="text-sm text-text-secondary mt-0.5">{t('dashboard.submitAndTrack')}</p>
                     )}
                   </div>
                 </div>
@@ -789,7 +844,7 @@ export default function Dashboard() {
 
               {/* Quick actions + XP */}
               <div>
-                <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">Quick actions</p>
+                <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">{t('dashboard.quickActions')}</p>
                 {/* Mobile: Submit Demo | Carryover same length, XP full width below. Desktop: flex row */}
                 <div className="flex flex-col sm:flex-row flex-wrap items-stretch gap-3 w-full">
                   {/* Row 1 on mobile: Submit Demo + Carryover (equal width). On desktop: inline with XP */}
@@ -799,14 +854,14 @@ export default function Dashboard() {
                       className="flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-sm transition-all active:scale-[0.98] sm:shrink-0"
                     >
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                      Submit Demo
+                      {t('dashboard.submitDemo')}
                     </Link>
                     <Link
                       href="/carryover"
                       className="flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-sm transition-all active:scale-[0.98] sm:shrink-0"
                     >
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                      Carryover {carryoverCount > 0 ? `(${carryoverCount})` : ''}
+                      {t('dashboard.carryover')} {carryoverCount > 0 ? `(${carryoverCount})` : ''}
                     </Link>
                   </div>
                   {user.role === 'curator' && (
@@ -825,7 +880,7 @@ export default function Dashboard() {
                       <span className={`text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
                       {xpInBlock > 0 && xp < 9999 && (
                         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                          <div className="h-1.5 bg-background/60 rounded-full overflow-hidden flex-1 min-w-0 border border-primary/40">
+                          <div className="h-2.5 bg-background/60 rounded-full overflow-hidden flex-1 min-w-0 border-2 border-primary/40">
                             <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${xpInBlock}%` }} />
                           </div>
                           <span className="text-[10px] text-primary/90 tabular-nums font-bold shrink-0">{xpToNext} to +1</span>
@@ -840,7 +895,7 @@ export default function Dashboard() {
                       title={useXpReason || 'Spend 100 XP to move up 1 position'}
                       className={`shrink-0 min-w-[80px] min-h-[48px] px-3 font-bold text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors flex items-center justify-center ${useXpClicking ? 'animate-use-xp-click' : 'button-press'}`}
                     >
-                      {useXpLoading ? '…' : 'Use XP'}
+                      {useXpLoading ? '…' : t('dashboard.useXp')}
                     </button>
                   </div>
                 </div>
@@ -851,15 +906,15 @@ export default function Dashboard() {
           {/* Curator: Grant XP to any user or self */}
           {user.role === 'curator' && (
             <div className="bg-primary/5 rounded-xl shadow-lg p-4 border-2 border-primary/40 animate-fade-in">
-              <h2 className="text-base font-extrabold text-text-primary mb-1">Grant / Deduct XP</h2>
-              <p className="text-sm text-text-secondary mb-4 font-medium">Add or remove XP for any user or yourself. Use positive to add, negative to deduct.</p>
+              <h2 className="text-base font-extrabold text-text-primary mb-1">{t('dashboard.grantXp')}</h2>
+              <p className="text-sm text-text-secondary mb-4 font-medium">{t('dashboard.grantXpDesc')}</p>
               <form onSubmit={handleGrantXp} className="flex flex-wrap items-center gap-3 sm:gap-4">
                 <select
                   value={grantTargetId}
                   onChange={(e) => setGrantTargetId(e.target.value)}
                   className="min-h-[48px] px-4 py-2 rounded-xl bg-background-lighter border-2 border-gray-600 text-text-primary text-sm font-medium focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none"
                 >
-                  <option value="self">Myself</option>
+                  <option value="self">{t('dashboard.myself')}</option>
                   {grantUsers.map((u) => (
                     <option key={u.id} value={u.id}>{u.display_name}</option>
                   ))}
@@ -872,7 +927,7 @@ export default function Dashboard() {
                   className="w-24 sm:w-28 px-4 py-3 rounded-xl bg-background-lighter border-2 border-gray-600 text-text-primary text-base font-semibold focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none min-h-[48px]"
                 />
                 <button type="submit" disabled={grantLoading || !grantAmount.trim()} className="min-h-[48px] px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation border-2 border-transparent">
-                  {grantLoading ? '…' : 'Apply'}
+                  {grantLoading ? '…' : t('common.apply')}
                 </button>
               </form>
               {grantMessage && (
@@ -886,8 +941,8 @@ export default function Dashboard() {
           {/* Tester panel */}
           {user.role === 'tester' && (
             <div className="bg-amber-500/5 rounded-xl shadow-lg p-4 border-2 border-amber-500/40 animate-fade-in">
-              <h2 className="text-base font-extrabold text-text-primary mb-1">Adjust XP</h2>
-              <p className="text-sm text-text-secondary mb-4 font-medium">Add/remove XP, then &quot;Use XP&quot; to apply.</p>
+              <h2 className="text-base font-extrabold text-text-primary mb-1">{t('dashboard.adjustXp')}</h2>
+              <p className="text-sm text-text-secondary mb-4 font-medium">{t('dashboard.adjustXpDesc')}</p>
               <form onSubmit={handleXpAdjustSubmit} className="flex flex-wrap items-center gap-4">
                 <input
                   type="number"
@@ -897,7 +952,7 @@ export default function Dashboard() {
                   className="w-24 sm:w-28 px-4 py-3 rounded-xl bg-background-lighter border-2 border-gray-600 text-text-primary text-base font-semibold focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none min-h-[48px]"
                 />
                 <button type="submit" disabled={xpAdjusting || !xpAdjustValue.trim()} className="min-h-[48px] px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation border-2 border-transparent">
-                  {xpAdjusting ? '…' : 'Apply'}
+                  {xpAdjusting ? '…' : t('common.apply')}
                 </button>
                 <button type="button" onClick={() => handleXpAdjust(50)} disabled={xpAdjusting} className="min-h-[48px] px-4 py-3 rounded-xl bg-background-lighter hover:bg-gray-700 border-2 border-gray-600 text-text-primary text-sm font-bold disabled:opacity-50 touch-manipulation">
                   +50
@@ -921,7 +976,7 @@ export default function Dashboard() {
                   <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                  <h2 className="text-base font-extrabold text-text-primary tracking-tight truncate">Your Submissions</h2>
+                  <h2 className="text-base font-extrabold text-text-primary tracking-tight truncate">{t('dashboard.yourSubmissions')}</h2>
                   {submissions.length > 0 && (
                     <span className="text-sm font-bold text-text-secondary bg-background-lighter px-3 py-1 rounded-full border-2 border-gray-600 shrink-0">
                       {submissions.length}
@@ -956,7 +1011,7 @@ export default function Dashboard() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      <span className="text-xs font-medium text-text-primary">Loading...</span>
+                      <span className="text-xs font-medium text-text-primary">{t('dashboard.loading')}</span>
                     </>
                   ) : (
                     <>
@@ -969,7 +1024,7 @@ export default function Dashboard() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                       <span className="text-xs font-medium text-text-primary group-hover:text-primary transition-colors duration-200">
-                        {showReviewed ? 'Hide' : 'Results'}
+                        {showReviewed ? t('common.hide') : t('dashboard.results')}
                       </span>
                       {reviewedSubmissions.length > 0 && (
                         <span className="px-1.5 py-0.5 text-xs font-bold bg-primary/20 text-primary rounded-full min-w-[20px] text-center">
@@ -1004,7 +1059,7 @@ export default function Dashboard() {
               </div>
             )}
           {submissions.length === 0 ? (
-            <p className="text-sm font-medium text-text-secondary py-4">No submissions yet. Submit your first demo!</p>
+            <p className="text-sm font-medium text-text-secondary py-4">{t('dashboard.noSubmissions')}</p>
           ) : (
             <div className="space-y-3">
               {submissions.map((submission, index) => (
@@ -1023,7 +1078,7 @@ export default function Dashboard() {
                         )}
                         {submission.artist_name && (
                           <p className="text-xs text-text-secondary break-words mt-0.5 line-clamp-1 font-medium">
-                            by {submission.artist_name}
+                            {t('dashboard.by')} {submission.artist_name}
                           </p>
                         )}
                       </div>
@@ -1034,10 +1089,10 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="hidden sm:inline-block px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap bg-background border-2 border-gray-600 text-text-secondary">
-                        Pending
+                        {t('common.pending')}
                       </span>
                       <Link href={`/submit?edit=${submission.id}`} className="px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap bg-primary/10 hover:bg-primary/20 border-2 border-primary/40 hover:border-primary/60 text-primary transition-colors touch-manipulation">
-                        Edit
+                        {t('common.edit')}
                       </Link>
                     </div>
                   </div>
@@ -1048,7 +1103,7 @@ export default function Dashboard() {
                     const showFull = !showToggle || isExpanded
                     return (
                       <div className="mb-3 p-3 bg-background rounded-xl border-2 border-gray-700/50">
-                        <div className="text-[8px] text-text-secondary font-bold uppercase tracking-wider mb-1.5 opacity-90">Description</div>
+                        <div className="text-[8px] text-text-secondary font-bold uppercase tracking-wider mb-1.5 opacity-90">{t('common.description')}</div>
                         <p className={`text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed ${showFull ? '' : 'line-clamp-2'}`}>
                           {submission.description}
                         </p>
@@ -1058,7 +1113,7 @@ export default function Dashboard() {
                             onClick={(e) => { e.preventDefault(); toggleDescriptionExpanded(submission.id) }}
                             className="mt-2 text-xs font-bold text-primary hover:underline touch-manipulation"
                           >
-                            {isExpanded ? 'Hide' : 'Show more'}
+                            {isExpanded ? t('common.hide') : t('common.showMore')}
                           </button>
                         )}
                       </div>
@@ -1087,7 +1142,7 @@ export default function Dashboard() {
                   <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <h2 className="text-base font-extrabold text-text-primary tracking-tight">Results</h2>
+                  <h2 className="text-base font-extrabold text-text-primary tracking-tight">{t('dashboard.results')}</h2>
                   {reviewedSubmissions.length > 0 && (
                     <span className="text-sm font-bold text-text-secondary bg-background-lighter px-3 py-1 rounded-full border-2 border-gray-600">
                       {reviewedSubmissions.length}
@@ -1119,7 +1174,7 @@ export default function Dashboard() {
                             )}
                             {submission.artist_name && (
                               <p className="text-xs text-text-secondary break-words mt-0.5 line-clamp-1 font-medium">
-                                by {submission.artist_name}
+                                {t('dashboard.by')} {submission.artist_name}
                               </p>
                             )}
                           </div>
@@ -1139,7 +1194,7 @@ export default function Dashboard() {
                         return (
                           <div className="mb-3 p-3 bg-background rounded-xl border-2 border-gray-700/50">
                             <div className="mb-1.5">
-                              <div className="text-[8px] text-text-secondary font-bold uppercase tracking-wider mb-1 opacity-90">Description</div>
+                              <div className="text-[8px] text-text-secondary font-bold uppercase tracking-wider mb-1 opacity-90">{t('common.description')}</div>
                             </div>
                             <p className={`text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed ${showFull ? '' : 'line-clamp-2'}`}>
                               {submission.description}
@@ -1150,7 +1205,7 @@ export default function Dashboard() {
                                 onClick={(e) => { e.preventDefault(); toggleDescriptionExpanded(submission.id) }}
                                 className="mt-2 text-xs font-bold text-primary hover:underline touch-manipulation"
                               >
-                                {isExpanded ? 'Hide' : 'Show more'}
+                                {isExpanded ? t('common.hide') : t('common.showMore')}
                               </button>
                             )}
                           </div>
@@ -1203,14 +1258,14 @@ export default function Dashboard() {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5 mb-1">
                                     <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></div>
-                                    <span className="text-[9px] text-primary font-bold uppercase tracking-wider truncate">Average Rating</span>
+                                    <span className="text-[9px] text-primary font-bold uppercase tracking-wider truncate">{t('dashboard.averageRatingLabel')}</span>
                                   </div>
                                   <div className="flex items-baseline gap-1 mb-0.5">
                                     <span className="text-lg font-black text-primary tabular-nums">{avgScore}</span>
                                     <span className="text-[10px] text-text-secondary font-semibold opacity-60">/ 10</span>
                                   </div>
                                   <p className="text-[9px] text-text-secondary font-medium leading-tight">
-                                    MikeGTC's average score
+                                    {t('dashboard.averageRating')}
                                   </p>
                                 </div>
                               </div>
@@ -1220,14 +1275,14 @@ export default function Dashboard() {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5 mb-1">
                                     <div className="w-1.5 h-1.5 rounded-full bg-[#FFD54F] flex-shrink-0"></div>
-                                    <span className="text-[9px] text-[#FFD54F] font-bold uppercase tracking-wider truncate">Audience Rating</span>
+                                    <span className="text-[9px] text-[#FFD54F] font-bold uppercase tracking-wider truncate">{t('dashboard.audienceRatingLabel')}</span>
                                   </div>
                                   <div className="flex items-baseline gap-1 mb-0.5">
                                     <span className="text-lg font-black text-[#FFD54F] tabular-nums">{audienceRating}</span>
                                     <span className="text-[10px] text-text-secondary font-semibold opacity-60">/ 10</span>
                                   </div>
                                   <p className="text-[9px] text-text-secondary font-medium leading-tight">
-                                    Community's rating
+                                    {t('dashboard.audienceRating')}
                                   </p>
                                 </div>
                               </div>
@@ -1245,8 +1300,8 @@ export default function Dashboard() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <p className="text-text-secondary font-medium text-sm">No reviewed submissions yet</p>
-                  <p className="text-xs text-text-muted mt-1">Your reviewed submissions will appear here</p>
+                  <p className="text-text-secondary font-medium text-sm">{t('dashboard.noReviewedYet')}</p>
+                  <p className="text-xs text-text-muted mt-1">{t('dashboard.yourReviewedSubmissions')}</p>
                 </div>
               )}
             </div>
@@ -1294,9 +1349,9 @@ export default function Dashboard() {
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 safe-area-padding" aria-modal="true" role="dialog">
           <div className="bg-background-lighter border border-gray-700 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6 sm:rounded-lg">
-            <h3 className="text-lg font-semibold text-text-primary mb-2">Log out?</h3>
+            <h3 className="text-lg font-semibold text-text-primary mb-2">{t('common.logOutConfirm')}</h3>
             <p className="text-sm text-text-secondary mb-4 leading-relaxed">
-              You can sign in again with Twitch anytime.
+              {t('common.logOutConfirmDesc')}
             </p>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3 sm:justify-end">
               <button
@@ -1304,14 +1359,14 @@ export default function Dashboard() {
                 onClick={() => setShowLogoutConfirm(false)}
                 className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-background border border-gray-600 text-text-primary text-base font-semibold hover:bg-gray-700 transition-colors touch-manipulation sm:w-auto sm:min-h-[44px] sm:rounded-button sm:py-2 sm:text-sm sm:font-medium"
               >
-                Stay
+                {t('common.stay')}
               </button>
               <button
                 type="button"
                 onClick={performLogout}
                 className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-base font-semibold transition-colors touch-manipulation sm:w-auto sm:min-h-[44px] sm:rounded-button sm:py-2 sm:text-sm sm:font-medium"
               >
-                Log out
+                {t('common.logOut')}
               </button>
             </div>
           </div>

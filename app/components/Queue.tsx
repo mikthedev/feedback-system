@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 interface QueueItem {
   id: string
@@ -43,6 +44,7 @@ const QUEUE_COLLAPSED_THRESHOLD = 5
 const QUEUE_COLLAPSED_VISIBLE = 3
 
 export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, compact = false }: QueueProps) {
+  const { t } = useLanguage()
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [loading, setLoading] = useState(true)
   const [metadataCache, setMetadataCache] = useState<Record<string, { title: string; artwork?: string }>>({})
@@ -190,7 +192,7 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
           </svg>
         </div>
         <div className="flex items-center gap-4 flex-1 min-w-0">
-          <h3 className="text-base font-extrabold text-text-primary tracking-tight">Queue</h3>
+          <h3 className="text-base font-extrabold text-text-primary tracking-tight">{t('queue.title')}</h3>
           {processedQueue.length > 0 && (
             <span className="text-sm font-bold text-text-secondary bg-background-lighter px-3 py-1 rounded-full border-2 border-gray-600">
               {processedQueue.length}
@@ -200,9 +202,9 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
       </div>
       <div>
         {loading && processedQueue.length === 0 ? (
-          <p className="text-sm font-medium text-text-secondary py-4">Loading...</p>
+          <p className="text-sm font-medium text-text-secondary py-4">{t('queue.loading')}</p>
         ) : processedQueue.length === 0 ? (
-          <p className="text-sm font-medium text-text-secondary py-4">No tracks in queue.</p>
+          <p className="text-sm font-medium text-text-secondary py-4">{t('queue.empty')}</p>
         ) : (
             <>
             <div className="space-y-3 max-h-[240px] sm:max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-hide">
@@ -230,7 +232,7 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
                     <span className="text-[11px] font-extrabold text-primary">{item.queueNumber}</span>
                   </div>
                   {currentUserId && item.user_id === currentUserId && (
-                    <span className="flex-shrink-0 px-2 py-0.5 text-[11px] font-bold bg-primary/20 text-primary rounded-md border-2 border-primary/40">You</span>
+                    <span className="flex-shrink-0 px-2 py-0.5 text-[11px] font-bold bg-primary/20 text-primary rounded-md border-2 border-primary/40">{t('queue.you')}</span>
                   )}
                   {item.moves_used_this_session > 0 && (
                     <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded bg-amber-500/20 border border-amber-500/40" title="Used XP to move up">
@@ -268,9 +270,9 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
                 className="mt-3 w-full min-h-[40px] flex items-center justify-center gap-2 rounded-xl bg-background-lighter hover:bg-gray-700/50 border-2 border-gray-600 text-text-primary text-sm font-bold transition-colors touch-manipulation"
               >
                 {isCollapsed ? (
-                  <>Show {hiddenCount} more</>
+                  <>{t('queue.showMore').replace('{n}', String(hiddenCount))}</>
                 ) : (
-                  <>Show less</>
+                  <>{t('queue.showLess')}</>
                 )}
               </button>
             )}

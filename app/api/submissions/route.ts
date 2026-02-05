@@ -279,8 +279,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if this URL was submitted in a previous session (for warning)
-    let previousSessionWarning = false
+    // Block if this URL was already submitted by this user in any previous session
     const { data: previousSessionSubmission } = await supabase
       .from('submissions')
       .select('id, created_at, session_number')
@@ -289,10 +288,16 @@ export async function POST(request: NextRequest) {
       .neq('session_number', currentSessionNumber)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     if (previousSessionSubmission) {
-      previousSessionWarning = true
+      return NextResponse.json(
+        { 
+          error: 'This track was already submitted in a previous session. You cannot submit the same song again.',
+          warning: false
+        },
+        { status: 400 }
+      )
     }
 
     // Cross-account duplicate: same link must not be submitted by a different user
@@ -348,8 +353,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       submission,
-      message: 'Demo submitted successfully',
-      warning: previousSessionWarning ? 'This song has already been submitted in a previous session.' : undefined
+      message: 'Demo submitted successfully'
     })
   } catch (error) {
     console.error('Error creating submission:', error)

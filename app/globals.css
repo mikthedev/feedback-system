@@ -240,6 +240,38 @@ body {
   animation: scale-out 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Language dropdown */
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes dropdown-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-dropdown-in {
+  animation: dropdown-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: 50% 50%;
+}
+
+.animate-dropdown-item-in {
+  animation: dropdown-item-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 .animate-page-transition {
   animation: page-transition 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }

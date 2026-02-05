@@ -156,11 +156,11 @@ export function validateUseXp(input: ValidateUseXpInput): ValidateUseXpResult {
     return { allowed: false, reason: "You're already first in the queue." }
   }
 
-  // First in queue is receiving feedback; second cannot move up into that slot (no XP is used)
+  // First in queue is receiving feedback; second cannot move up into that slot
   if (myIndex === 1) {
     return {
       allowed: false,
-      reason: "The first in queue is receiving feedback. You can't move higher right now. No XP was used.",
+      reason: "The first in queue is receiving feedback. You can't move higher right now.",
     }
   }
 

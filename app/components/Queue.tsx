@@ -35,14 +35,14 @@ interface QueueProps {
   currentUserId?: string | null
   refetchTrigger?: number
   onQueueLoaded?: (items: QueueLoadedItem[]) => void
-  /** When set, the row at this 1-based position shows "moved up" animation and indicator for a few seconds */
-  justMovedPosition?: number | null
+  /** Optional: show compact styling (e.g. in curator panel) */
+  compact?: boolean
 }
 
 const QUEUE_COLLAPSED_THRESHOLD = 5
 const QUEUE_COLLAPSED_VISIBLE = 3
 
-export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, justMovedPosition }: QueueProps) {
+export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, compact = false }: QueueProps) {
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [loading, setLoading] = useState(true)
   const [metadataCache, setMetadataCache] = useState<Record<string, { title: string; artwork?: string }>>({})
@@ -206,30 +206,38 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, ju
         ) : (
             <>
             <div className="space-y-3 max-h-[240px] sm:max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-hide">
-              {visibleItems.map((item, index) => {
-                const isJustMoved = justMovedPosition != null && item.queueNumber === justMovedPosition
-                return (
+              {visibleItems.map((item, index) => (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-3 p-3 rounded-xl border-2 min-h-[56px] transition-all duration-300 relative overflow-hidden ${
+                  className={`flex items-center gap-3 p-3 rounded-xl border-2 min-h-[56px] transition-all duration-500 relative overflow-visible ${
                     item._isNew ? 'animate-slide-in bg-primary/5 border-primary/30' : 'border-gray-700/50 hover:border-primary/40 hover:bg-background-lighter'
                   } ${
-                    item._movedUp || isJustMoved ? 'animate-queue-moved-up border-primary/40 bg-primary/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]' : ''
+                    item._movedUp ? 'animate-queue-moved-up border-primary/40 bg-primary/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]' : ''
                   } ${currentUserId && item.user_id === currentUserId ? 'ring-1 ring-primary/40 bg-primary/5' : ''}`}
-                  style={{ animationDelay: item._isNew ? `${Math.min(index * 30, 200)}ms` : undefined }}
+                  style={{
+                    animationDelay: item._isNew ? `${Math.min(index * 30, 200)}ms` : undefined,
+                    transform: item._movedUp ? 'translateY(0)' : undefined,
+                  }}
                 >
-                  {isJustMoved && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <span className="animate-arrow-float-up text-primary/90" aria-hidden>
-                        <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-                      </span>
+                  {item._movedUp && (
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-10 animate-arrow-rise">
+                      <svg className="w-4 h-4 text-primary drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M7 14l5-5 5 5H7z" />
+                      </svg>
                     </div>
                   )}
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center relative z-10">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center">
                     <span className="text-[11px] font-extrabold text-primary">{item.queueNumber}</span>
                   </div>
                   {currentUserId && item.user_id === currentUserId && (
-                    <span className="flex-shrink-0 px-2 py-0.5 text-[11px] font-bold bg-primary/20 text-primary rounded-md border-2 border-primary/40 relative z-10">You</span>
+                    <span className="flex-shrink-0 px-2 py-0.5 text-[11px] font-bold bg-primary/20 text-primary rounded-md border-2 border-primary/40">You</span>
+                  )}
+                  {item.moves_used_this_session > 0 && (
+                    <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded bg-amber-500/20 border border-amber-500/40" title="Used XP to move up">
+                      <svg className="w-2.5 h-2.5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M7 14l5-5 5 5H7z" />
+                      </svg>
+                    </span>
                   )}
                   {item.artwork ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
@@ -246,13 +254,12 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, ju
                       </svg>
                     </div>
                   )}
-                  <div className="flex-1 min-w-0 relative z-10">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-text-primary truncate" title={item.displayTitle}>{item.displayTitle}</p>
                     <p className="text-xs text-text-secondary truncate mt-0.5 font-medium">{item.displayArtist}</p>
                   </div>
                 </div>
-              );
-              })}
+              ))}
             </div>
             {canCollapse && (
               <button

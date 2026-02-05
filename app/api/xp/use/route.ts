@@ -61,7 +61,6 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({
         success: true,
         movesApplied: 0,
-        xpDeducted: false,
         message: 'No open session.',
       })
     }
@@ -114,10 +113,9 @@ export async function POST(_request: NextRequest) {
 
     if (!validation.allowed) {
       return NextResponse.json({
-        success: true,
+        success: false,
         movesApplied: 0,
-        xpDeducted: false,
-        message: validation.reason,
+        message: `No XP was spent. ${validation.reason}`,
       })
     }
 
@@ -155,14 +153,11 @@ export async function POST(_request: NextRequest) {
       { onConflict: 'user_id,session_number' }
     )
 
-    const newPosition1Based = validation.myIndex
     return NextResponse.json({
       success: true,
       movesApplied: 1,
       xpUsed: XP_PER_POSITION,
-      xpDeducted: true,
-      newPosition: newPosition1Based,
-      message: `Used 100 XP. You're now #${newPosition1Based} in the queue.`,
+      message: 'Used 100 XP. Your track moved up 1 position.',
     })
   } catch (e) {
     console.error('POST /api/xp/use error:', e)

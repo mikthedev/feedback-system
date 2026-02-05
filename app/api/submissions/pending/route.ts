@@ -55,7 +55,27 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error
 
-    return NextResponse.json({ submissions: submissions ?? [] })
+    const subs = submissions ?? []
+    const userIds = [...new Set((subs as { user_id: string }[]).map((s) => s.user_id))]
+    let movesByUser: Record<string, number> = {}
+    if (userIds.length > 0) {
+      const { data: usxRows } = await supabase
+        .from('user_session_xp')
+        .select('user_id, moves_used_this_session')
+        .eq('session_number', sn)
+        .in('user_id', userIds)
+      for (const row of usxRows ?? []) {
+        const r = row as { user_id: string; moves_used_this_session?: number }
+        movesByUser[r.user_id] = Math.max(0, Math.floor(Number(r.moves_used_this_session ?? 0)))
+      }
+    }
+
+    const enriched = (subs as Array<{ user_id: string }>).map((s) => ({
+      ...s,
+      moves_used_this_session: movesByUser[s.user_id] ?? 0,
+    }))
+
+    return NextResponse.json({ submissions: enriched })
   } catch (error) {
     console.error('Error fetching pending submissions:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

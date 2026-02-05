@@ -153,7 +153,7 @@ export default function DashboardFooter({
 
   return (
     <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60 w-full">
-      {/* XP summary — Used and Stored */}
+      {/* XP summary — 2 stat cards in a row */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="rounded-lg bg-background/80 border-2 border-gray-700/50 p-3 flex flex-col items-center justify-center min-h-[72px]">
           <span className="text-xs font-bold text-text-muted uppercase tracking-wider">

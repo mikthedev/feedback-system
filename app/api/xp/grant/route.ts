@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const targetUserId = typeof body.user_id === 'string' && body.user_id.trim() ? body.user_id.trim() : curatorId
 
     if (amount === 0) {
-      return NextResponse.json({ error: 'Amount must be a non-zero number (positive to add, negative to decrease)' }, { status: 400 })
+      return NextResponse.json({ error: 'Amount must be a non-zero number' }, { status: 400 })
     }
 
     const { data: target } = await supabase
@@ -46,10 +46,10 @@ export async function POST(request: NextRequest) {
     }
 
     const isSelf = targetUserId === curatorId
-    const newTotal =
-      amount > 0
-        ? await addXp(supabase, targetUserId, amount)
-        : await deductXp(supabase, targetUserId, Math.abs(amount))
+    const newTotal = amount > 0
+      ? await addXp(supabase, targetUserId, amount)
+      : await deductXp(supabase, targetUserId, Math.abs(amount))
+
     await logXp(
       supabase,
       targetUserId,
@@ -57,14 +57,13 @@ export async function POST(request: NextRequest) {
       'curator_grant',
       amount > 0
         ? (isSelf ? `Curator granted +${amount} XP (self)` : `Curator granted +${amount} XP`)
-        : (isSelf ? `Curator decreased ${amount} XP (self)` : `Curator decreased ${amount} XP`)
+        : (isSelf ? `Curator deducted ${amount} XP (self)` : `Curator deducted ${Math.abs(amount)} XP`)
     )
 
     const absAmount = Math.abs(amount)
-    const message =
-      amount > 0
-        ? (isSelf ? `Granted ${absAmount} XP to yourself.` : `Granted ${absAmount} XP to ${(target as { display_name?: string }).display_name ?? 'user'}.`)
-        : (isSelf ? `Decreased ${absAmount} XP from yourself.` : `Decreased ${absAmount} XP from ${(target as { display_name?: string }).display_name ?? 'user'}.`)
+    const message = amount > 0
+      ? (isSelf ? `Granted ${absAmount} XP to yourself.` : `Granted ${absAmount} XP to ${(target as { display_name?: string }).display_name ?? 'user'}.`)
+      : (isSelf ? `Deducted ${absAmount} XP from yourself.` : `Deducted ${absAmount} XP from ${(target as { display_name?: string }).display_name ?? 'user'}.`)
 
     return NextResponse.json({
       success: true,

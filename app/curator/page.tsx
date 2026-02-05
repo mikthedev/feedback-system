@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, memo } from 'react'
+import { useState, useEffect, memo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import XpHelpModal from '../components/XpHelpModal'
@@ -97,6 +97,7 @@ interface Submission {
     display_name: string
     twitch_id: string
   }
+  moves_used_this_session?: number
 }
 
 interface EmbedData {
@@ -150,6 +151,55 @@ export default function CuratorPage() {
   const [showSubmitters, setShowSubmitters] = useState(false)
   const [hoveredUserId, setHoveredUserId] = useState<string | null>(null)
   const [grantingXpForUserId, setGrantingXpForUserId] = useState<string | null>(null)
+  const prevQueuePositionsRef = useRef<Record<string, number>>({})
+  const isFirstQueueRenderRef = useRef(true)
+  const [xp, setXp] = useState(0)
+  const [useXpAllowed, setUseXpAllowed] = useState(false)
+  const [useXpReason, setUseXpReason] = useState('')
+  const [useXpLoading, setUseXpLoading] = useState(false)
+
+  const fetchXp = async () => {
+    try {
+      const res = await fetch('/api/xp', { credentials: 'include' })
+      if (!res.ok) return
+      const data = await res.json()
+      const v = data.xp
+      if (typeof v === 'number' && !Number.isNaN(v)) setXp(Math.max(0, Math.floor(v)))
+      else if (typeof v === 'string') {
+        const n = parseInt(v, 10)
+        if (!Number.isNaN(n)) setXp(Math.max(0, n))
+      }
+    } catch { /* ignore */ }
+  }
+
+  const fetchCanMove = async () => {
+    try {
+      const res = await fetch('/api/xp/can-move', { credentials: 'include' })
+      if (!res.ok) return
+      const data = await res.json()
+      setUseXpAllowed(!!data.allowed)
+      setUseXpReason(typeof data.reason === 'string' ? data.reason : '')
+    } catch {
+      setUseXpAllowed(false)
+      setUseXpReason('')
+    }
+  }
+
+  const handleUseXp = async () => {
+    setUseXpLoading(true)
+    try {
+      const res = await fetch('/api/xp/use', { method: 'POST', credentials: 'include' })
+      const data = await res.json().catch(() => ({}))
+      if (data.movesApplied > 0) {
+        fetchXp()
+        fetchCanMove()
+        fetchPendingSubmissions()
+      }
+    } catch { /* ignore */ }
+    finally {
+      setUseXpLoading(false)
+    }
+  }
 
   const fetchSubmissionsStatus = async () => {
     try {
@@ -315,6 +365,8 @@ export default function CuratorPage() {
     fetchPendingSubmissions()
     fetchSubmissionsStatus()
     fetchSessions()
+    fetchXp()
+    fetchCanMove()
   }, [])
 
   useEffect(() => {
@@ -332,9 +384,18 @@ export default function CuratorPage() {
   }, [])
 
   useEffect(() => {
-    const interval = setInterval(fetchPendingSubmissions, 6000)
+    const interval = setInterval(fetchPendingSubmissions, 4000)
     return () => clearInterval(interval)
   }, [])
+
+  // Update queue position ref after render (for move-up detection)
+  useEffect(() => {
+    if (submissions.length === 0) return
+    prevQueuePositionsRef.current = Object.fromEntries(
+      submissions.map((s, i) => [s.id, i + 1])
+    )
+    isFirstQueueRenderRef.current = false
+  }, [submissions])
 
   const handleScoreChange = (field: string, value: string) => {
     const numValue = parseFloat(value)
@@ -601,21 +662,46 @@ export default function CuratorPage() {
     <div className="bg-background px-4 sm:px-3 md:p-4 py-4 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-7xl mx-auto w-full min-w-0">
         <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-4 mb-4 animate-fade-in border border-gray-800/50 sm:rounded-xl">
-          <div className="flex justify-between items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
             <h1 className="text-lg font-bold text-text-primary truncate min-w-0 sm:text-xl md:text-2xl">MikeGTC Panel</h1>
-            <div className="flex gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="min-h-[44px] px-3 py-2.5 text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-xl transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation sm:min-h-[36px] sm:rounded-button sm:py-1.5 sm:text-xs sm:font-medium"
+                className="min-h-[36px] px-3 py-1.5 text-xs font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
               >
                 {showSettings ? 'Hide' : 'Settings'}
               </button>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="min-h-[44px] px-3 py-2.5 text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-xl transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation sm:min-h-[36px] sm:rounded-button sm:py-1.5 sm:text-xs sm:font-medium"
+                className="min-h-[36px] px-3 py-1.5 text-xs font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
               >
                 Dashboard
               </button>
+              {/* XP bar — compact, fits header */}
+              <div className="flex items-stretch rounded-lg overflow-hidden border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 min-h-[32px] shadow-sm" title={!useXpAllowed && useXpReason ? useXpReason : 'Spend 100 XP to move up'}>
+                <div className="flex items-center gap-1 pl-2 pr-1.5 py-1 min-w-0">
+                  <span className="text-[8px] font-bold text-text-muted uppercase tracking-wider shrink-0">XP</span>
+                  <span className={`text-sm font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
+                  {xp % 100 > 0 && xp < 9999 && (
+                    <div className="hidden sm:flex items-center gap-0.5 min-w-0">
+                      <div className="w-4 h-1 bg-background-lighter/80 rounded-full overflow-hidden flex-1 min-w-0 max-w-[32px]">
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${xp % 100}%` }} />
+                      </div>
+                      <span className="text-[8px] text-text-muted tabular-nums font-semibold shrink-0">{100 - (xp % 100)}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="w-px bg-primary/30 self-stretch shrink-0" aria-hidden />
+                <button
+                  type="button"
+                  onClick={handleUseXp}
+                  disabled={!useXpAllowed || useXpLoading}
+                  title={useXpReason || 'Spend 100 XP to move up 1 position'}
+                  className="shrink-0 min-w-[56px] min-h-[32px] px-2 font-bold text-[10px] text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors button-press"
+                >
+                  {useXpLoading ? '…' : 'Use XP'}
+                </button>
+              </div>
             </div>
           </div>
           {showSettings && (
@@ -721,14 +807,13 @@ export default function CuratorPage() {
                 <p className="text-xs text-text-secondary font-medium">No pending submissions</p>
               ) : (
                 <div className="space-y-1.5 max-h-[500px] overflow-y-auto overflow-x-hidden scrollbar-hide">
-                  {submissions.map((submission, index) => (
+                  {submissions.map((submission, index) => {
+                    const position = index + 1
+                    const prevPos = prevQueuePositionsRef.current[submission.id]
+                    const movedUp = !isFirstQueueRenderRef.current && prevPos != null && position < prevPos
+                    return (
                     <div
                       key={submission.id}
-                      className={`flex items-center gap-2 border-2 rounded-lg p-2 cursor-pointer transition-all duration-200 ${
-                        selectedSubmission?.id === submission.id
-                          ? 'border-primary bg-primary/10 shadow-md'
-                          : 'border-gray-700/50 hover:border-primary/50 hover:bg-background-lighter'
-                      }`}
                       onClick={async () => {
                         setScores({
                           sound_score: '0',
@@ -756,13 +841,32 @@ export default function CuratorPage() {
                           setEmbedData({ error: 'Failed to load embed' })
                         }
                       }}
+                      className={`flex items-center gap-2 border-2 rounded-lg p-2 cursor-pointer transition-all duration-500 relative overflow-visible ${
+                        selectedSubmission?.id === submission.id
+                          ? 'border-primary bg-primary/10 shadow-md'
+                          : 'border-gray-700/50 hover:border-primary/50 hover:bg-background-lighter'
+                      } ${movedUp ? 'animate-queue-moved-up border-primary/40 bg-primary/10' : ''}`}
                     >
+                      {movedUp && (
+                        <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 z-10 animate-arrow-rise">
+                          <svg className="w-3 h-3 text-primary drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M7 14l5-5 5 5H7z" />
+                          </svg>
+                        </div>
+                      )}
                       <div
                         className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center"
-                        title={`${ordinal(index + 1)} in queue`}
+                        title={`${ordinal(position)} in queue`}
                       >
-                        <span className="text-[10px] font-extrabold text-primary">{index + 1}</span>
+                        <span className="text-[10px] font-extrabold text-primary">{position}</span>
                       </div>
+                      {(submission.moves_used_this_session ?? 0) > 0 && (
+                        <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded bg-amber-500/20 border border-amber-500/40" title="Used XP to move up">
+                          <svg className="w-2 h-2 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M7 14l5-5 5 5H7z" />
+                          </svg>
+                        </span>
+                      )}
                       {submissionArtworks[submission.id] ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
@@ -785,7 +889,7 @@ export default function CuratorPage() {
                         </p>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               )}
             </div>

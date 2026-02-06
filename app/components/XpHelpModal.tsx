@@ -21,17 +21,22 @@ interface XpHelpModalProps {
 }
 
 const XP_BLOCK_KEYS = [
-  { labelKey: 'xpHelp.timeXpLabel', subKey: 'xpHelp.timeXpSub', value: '+5', color: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400', hover: 'hover:bg-emerald-500/30 hover:border-emerald-500/60 hover:ring-2 hover:ring-emerald-500/40' },
-  { labelKey: 'xpHelp.carryoverLabel', subKey: 'xpHelp.carryoverSub', value: '+25', color: 'bg-amber-500/20 border-amber-500/40 text-amber-400', hover: 'hover:bg-amber-500/30 hover:border-amber-500/60 hover:ring-2 hover:ring-amber-500/40' },
-  { labelKey: 'xpHelp.followLabel', subKey: 'xpHelp.followSub', value: '+10', color: 'bg-blue-500/20 border-blue-500/40 text-blue-400', hover: 'hover:bg-blue-500/30 hover:border-blue-500/60 hover:ring-2 hover:ring-blue-500/40' },
-  { labelKey: 'xpHelp.subDonationLabel', subKey: 'xpHelp.subDonationSub', value: '+20', color: 'bg-purple-500/20 border-purple-500/40 text-purple-400', hover: 'hover:bg-purple-500/30 hover:border-purple-500/60 hover:ring-2 hover:ring-purple-500/40' },
-  { labelKey: 'xpHelp.reviewLabel', subKey: 'xpHelp.reviewSub', value: '10–60', color: 'bg-primary/20 border-primary/40 text-primary', hover: 'hover:bg-primary/30 hover:border-primary/60 hover:ring-2 hover:ring-primary/50' },
-  { labelKey: 'xpHelp.useXpLabel', subKey: 'xpHelp.useXpSub', value: '100 XP = 1 spot', color: 'bg-gray-600/30 border-gray-600/50 text-text-primary', hover: 'hover:bg-gray-600/40 hover:border-gray-600/70 hover:ring-2 hover:ring-gray-500/30' },
+  { labelKey: 'xpHelp.timeXpLabel', subKey: 'xpHelp.timeXpSub', valueKey: null as string | null, value: '+5', color: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400', hover: 'hover:bg-emerald-500/30 hover:border-emerald-500/60 hover:ring-2 hover:ring-emerald-500/40' },
+  { labelKey: 'xpHelp.carryoverLabel', subKey: 'xpHelp.carryoverSub', valueKey: null, value: '+25', color: 'bg-amber-500/20 border-amber-500/40 text-amber-400', hover: 'hover:bg-amber-500/30 hover:border-amber-500/60 hover:ring-2 hover:ring-amber-500/40' },
+  { labelKey: 'xpHelp.followLabel', subKey: 'xpHelp.followSub', valueKey: null, value: '+10', color: 'bg-blue-500/20 border-blue-500/40 text-blue-400', hover: 'hover:bg-blue-500/30 hover:border-blue-500/60 hover:ring-2 hover:ring-blue-500/40' },
+  { labelKey: 'xpHelp.subDonationLabel', subKey: 'xpHelp.subDonationSub', valueKey: null, value: '+20', color: 'bg-purple-500/20 border-purple-500/40 text-purple-400', hover: 'hover:bg-purple-500/30 hover:border-purple-500/60 hover:ring-2 hover:ring-purple-500/40' },
+  { labelKey: 'xpHelp.reviewLabel', subKey: 'xpHelp.reviewSub', valueKey: null, value: '10–60', color: 'bg-primary/20 border-primary/40 text-primary', hover: 'hover:bg-primary/30 hover:border-primary/60 hover:ring-2 hover:ring-primary/50' },
+  { labelKey: 'xpHelp.useXpLabel', subKey: 'xpHelp.useXpSub', valueKey: 'xpHelp.valueUseXp', value: '100 XP = 1 spot', color: 'bg-gray-600/30 border-gray-600/50 text-text-primary', hover: 'hover:bg-gray-600/40 hover:border-gray-600/70 hover:ring-2 hover:ring-gray-500/30' },
 ] as const
 
 export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
   const { t } = useLanguage()
-  const blocks = useMemo(() => XP_BLOCK_KEYS.map((b) => ({ ...b, label: t(b.labelKey), sub: t(b.subKey) })), [t])
+  const blocks = useMemo(() => XP_BLOCK_KEYS.map((b) => ({
+    ...b,
+    label: t(b.labelKey),
+    sub: t(b.subKey),
+    displayValue: b.valueKey ? t(b.valueKey) : b.value,
+  })), [t])
 
   const handleDismiss = () => {
     setXpHelpDismissed()
@@ -77,7 +82,7 @@ export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
             type="button"
             onClick={handleDismiss}
             className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-background-lighter transition-colors duration-200 touch-manipulation"
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -99,7 +104,7 @@ export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
                   key={b.labelKey}
                   className={`rounded-lg border p-2 transition-all duration-200 ease-out hover:scale-[1.03] hover:shadow-lg cursor-default sm:p-2.5 ${b.color} ${b.hover}`}
                 >
-                  <p className="font-bold text-sm leading-tight sm:text-base">{b.value}</p>
+                  <p className="font-bold text-sm leading-tight sm:text-base">{b.displayValue}</p>
                   <p className="font-medium opacity-95 text-[11px] mt-0.5 sm:text-xs">{b.label}</p>
                   {b.sub && <p className="text-[10px] opacity-85 mt-0.5 leading-snug sm:mt-1">{b.sub}</p>}
                 </div>

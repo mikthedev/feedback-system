@@ -137,7 +137,8 @@ export async function POST(_request: NextRequest) {
         .eq('id', u.id)
     }
 
-    const bumpedUserId = aboveRow.user_id
+    // After swap: reordered[myIndex] holds the submission we swapped with (the bumped user)
+    const bumpedUserId = reordered[myIndex]!.user_id
     await deductXp(supabase, userId, XP_PER_POSITION)
     await logXp(
       supabase,
@@ -151,7 +152,7 @@ export async function POST(_request: NextRequest) {
       bumpedUserId,
       0,
       'queue_bump',
-      'Moved down 1 position (someone used XP to pass you)',
+      'Moved down 1 spot (someone passed you)',
       { allowZero: true }
     )
 

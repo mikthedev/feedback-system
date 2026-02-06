@@ -82,9 +82,9 @@ export default function CarryoverPage() {
             try {
               const er = await fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(s.soundcloud_url)}`)
               const d = er.ok ? await er.json() : null
-              return { id: s.id, data: d?.html ? { html: d.html } : { error: 'Failed to load' } }
+              return { id: s.id, data: d?.html ? { html: d.html } : { error: 'failed' } }
             } catch {
-              return { id: s.id, data: { error: 'Failed to load' } }
+              return { id: s.id, data: { error: 'failed' } }
             }
           })
           const results = await Promise.all(embedPromises)
@@ -122,7 +122,7 @@ export default function CarryoverPage() {
               <div className="min-w-0">
                 <h1 className="text-lg font-extrabold text-text-primary sm:text-xl tracking-tight">{t('carryover.title')}</h1>
                 <p className="text-sm text-amber-400/90 mt-1 font-medium leading-snug">
-                  Track skipped or session ended. You cannot submit again until 60 min after transfer.
+                  {t('carryover.warningMessage')}
                 </p>
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function CarryoverPage() {
                       <div className="flex-1 min-w-0">
                         <div className="mb-1">
                           <h3 className="text-sm font-bold text-text-primary break-words line-clamp-2">
-                            {item.song_title || 'Untitled Track'}
+                            {item.song_title || t('carryover.untitledTrack')}
                           </h3>
                           <p className="text-xs text-text-secondary break-words mt-0.5 line-clamp-1 font-medium">
                             {t('dashboard.by')} {item.artist_name || item.users?.display_name || '—'}
@@ -155,12 +155,12 @@ export default function CarryoverPage() {
                         </div>
                         <div className="flex flex-wrap items-center gap-2 mt-2">
                           <div className="flex items-center gap-1.5 rounded-lg border border-gray-800/50 bg-background-lighter px-2.5 py-1">
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted">Date</span>
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted">{t('carryover.date')}</span>
                             <span className="text-xs font-semibold text-text-primary">{new Date(item.created_at).toLocaleDateString()}</span>
                           </div>
                           {item.session_number != null && (
                             <div className="flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/5 px-2.5 py-1">
-                              <span className="text-[9px] font-bold uppercase tracking-wider text-primary">Session</span>
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-primary">{t('carryover.sessionLabel')}</span>
                               <span className="text-xs font-bold text-primary tabular-nums">#{item.session_number}</span>
                             </div>
                           )}
@@ -170,12 +170,12 @@ export default function CarryoverPage() {
                             </span>
                           )}
                           <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                            {item.carryover_type === 'curator_skip' ? 'Skipped by MikeGTC' : 'Session ended'}
+                            {item.carryover_type === 'curator_skip' ? t('carryover.skippedByMikeGTC') : t('carryover.sessionEnded')}
                           </span>
                         </div>
                       </div>
                       <span className="px-2 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-400 border-2 border-amber-500/40 whitespace-nowrap shrink-0">
-                        Carryover
+                        {t('carryover.badge')}
                       </span>
                     </div>
                     <div className="mt-3">

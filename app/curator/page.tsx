@@ -681,7 +681,7 @@ export default function CuratorPage() {
                 Dashboard
               </button>
               {/* XP bar — same height as buttons, longer */}
-              <div className="flex items-stretch rounded-lg overflow-hidden border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 h-[42px] w-[220px] min-w-[200px] shrink-0 shadow-sm" title={!useXpAllowed && useXpReason ? useXpReason : 'Spend 100 XP to move up'}>
+              <div className="flex items-stretch rounded-lg overflow-hidden border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 h-[42px] w-[220px] min-w-[200px] shrink-0 shadow-sm" title={!useXpAllowed && useXpReason ? useXpReason : t('dashboard.spend100Xp')}>
                 <div className="flex items-center gap-2 pl-3 pr-2 py-2 min-w-0 flex-1">
                   <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0">XP</span>
                   <span className={`text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
@@ -699,7 +699,7 @@ export default function CuratorPage() {
                   type="button"
                   onClick={handleUseXp}
                   disabled={!useXpAllowed || useXpLoading}
-                  title={useXpReason || 'Spend 100 XP to move up 1 position'}
+                  title={useXpReason || t('dashboard.spend100XpPosition')}
                   className="shrink-0 min-w-[64px] h-[42px] px-3 font-bold text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors button-press"
                 >
                   {useXpLoading ? '…' : 'Use XP'}
@@ -807,7 +807,7 @@ export default function CuratorPage() {
                 {t('queue.title')} ({submissions.length})
               </h2>
               {submissions.length === 0 ? (
-                <p className="text-xs text-text-secondary font-medium">No pending submissions</p>
+                <p className="text-xs text-text-secondary font-medium">{t('curator.noPendingSubmissions')}</p>
               ) : (
                 <div className="space-y-1.5 max-h-[500px] overflow-y-auto overflow-x-hidden scrollbar-hide">
                   {submissions.map((submission, index) => {

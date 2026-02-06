@@ -1,6 +1,7 @@
 'use client'
 
 import { memo } from 'react'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 export interface SoundCloudEmbedProps {
   /** Stable id (e.g. submission.id) so React never remounts the embed on scroll */
@@ -26,6 +27,7 @@ const SoundCloudEmbed = memo(function SoundCloudEmbed({
   soundcloudUrl,
   embedUrl,
 }: SoundCloudEmbedProps) {
+  const { t } = useLanguage()
   return (
     <div
       className="soundcloud-embed w-full"
@@ -45,14 +47,14 @@ const SoundCloudEmbed = memo(function SoundCloudEmbed({
       ) : embedError ? (
         <div className="p-3 bg-background-lighter rounded-lg border border-gray-800/50">
           <p className="text-sm text-text-secondary mb-2">
-            Unable to embed this track.{' '}
+            {t('curator.unableToEmbed')}{' '}
             <a
               href={soundcloudUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:text-primary-hover underline underline-offset-2"
             >
-              Open in SoundCloud
+              {t('curator.openInSoundCloud')}
             </a>
           </p>
           <iframe

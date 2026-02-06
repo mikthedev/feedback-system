@@ -243,38 +243,59 @@ export default function DashboardFooter({
           ) : xpLog.length === 0 ? (
             <p className="text-sm text-text-muted py-4 font-medium">{t('xp.noEvents')}</p>
           ) : (
-            <ul className="space-y-0 max-h-48 overflow-y-auto">
-              {xpLog.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 py-2 border-b border-gray-800/20 last:border-0"
-                >
-                  <span className="text-xs text-text-muted shrink-0 tabular-nums font-medium">
-                    {new Date(entry.created_at).toLocaleString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                  {entry.amount !== 0 ? (
-                    <span
-                      className={
-                        entry.amount > 0
-                          ? 'text-primary font-bold tabular-nums'
-                          : 'text-red-400 font-bold tabular-nums'
-                      }
-                    >
-                      {entry.amount > 0 ? '+' : ''}{entry.amount}
+            <ul className="space-y-1.5 max-h-48 overflow-y-auto scrollbar-thin pr-1">
+              {xpLog.map((entry) => {
+                const isPositive = entry.amount > 0
+                const isNegative = entry.amount < 0
+                const isNeutral = entry.amount === 0
+                return (
+                  <li
+                    key={entry.id}
+                    className={`flex flex-wrap items-start gap-x-2 gap-y-1 px-3 py-2.5 rounded-lg border transition-colors ${
+                      isPositive
+                        ? 'bg-primary/5 border-primary/20 hover:bg-primary/10'
+                        : isNegative
+                          ? 'bg-red-500/5 border-red-500/20 hover:bg-red-500/10'
+                          : 'bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10'
+                    }`}
+                  >
+                    <span className="text-[11px] text-text-muted shrink-0 tabular-nums font-medium uppercase tracking-wider">
+                      {new Date(entry.created_at).toLocaleString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
-                  ) : (
-                    <span className="text-text-muted font-medium tabular-nums">—</span>
-                  )}
-                  <span className="text-text-secondary text-sm truncate font-medium">
-                    {entry.description || entry.source}
-                  </span>
-                </li>
-              ))}
+                    {entry.amount !== 0 ? (
+                      <span
+                        className={`shrink-0 font-bold tabular-nums ${
+                          isPositive ? 'text-primary' : 'text-red-400'
+                        }`}
+                      >
+                        {entry.amount > 0 ? '+' : ''}{entry.amount}
+                      </span>
+                    ) : (
+                      <span className="text-amber-400/80 font-medium tabular-nums shrink-0">—</span>
+                    )}
+                    <span
+                      className={`text-sm min-w-0 break-words ${
+                        isPositive
+                          ? 'text-text-secondary font-medium'
+                          : isNegative
+                            ? 'text-red-300/90 font-medium'
+                            : 'text-amber-200/90 font-medium'
+                      }`}
+                    >
+                      {(() => {
+                        const key = `xpLog.source.${entry.source}`
+                        const translated = t(key)
+                        return translated !== key ? translated : (entry.description || entry.source)
+                      })()}
+                    </span>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>

@@ -283,7 +283,7 @@ export default function Dashboard() {
     try {
       const amount = parseInt(grantAmount, 10)
       if (Number.isNaN(amount) || amount === 0) {
-        setGrantMessage('Enter a non-zero amount (positive to add, negative to deduct).')
+        setGrantMessage(t('dashboard.grantEnterAmount'))
         return
       }
       const res = await fetch('/api/xp/grant', {
@@ -297,10 +297,10 @@ export default function Dashboard() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setGrantMessage(data?.error ?? 'Failed to grant XP')
+        setGrantMessage(data?.error ?? t('dashboard.grantFailed'))
         return
       }
-      setGrantMessage(data.message ?? 'Done.')
+      setGrantMessage(data.message ?? t('dashboard.done'))
       setGrantAmount('')
       if (grantTargetId === 'self' || !grantTargetId) {
         fetchXp()
@@ -308,7 +308,7 @@ export default function Dashboard() {
         setXp(data.new_total)
       }
     } catch (err) {
-      setGrantMessage('Something went wrong.')
+      setGrantMessage(t('common.somethingWentWrong'))
     } finally {
       setGrantLoading(false)
     }
@@ -604,19 +604,19 @@ export default function Dashboard() {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data?.error || 'Failed to adjust XP')
+        throw new Error(data?.error || t('dashboard.adjustXpFailed'))
       }
       const data = await res.json()
       const next = typeof data.xp === 'number' ? data.xp : parseInt(String(data.xp || 0), 10) || 0
       setXp(Math.max(0, next))
       setUser((u) => (u ? { ...u, xp: next } : null))
       setXpAdjustValue('')
-      setXpAdjustMessage('XP updated. Click "Use XP" to move up 1 position.')
+      setXpAdjustMessage(t('dashboard.xpUpdatedUseXp'))
       fetchXp()
       fetchCanMove()
     } catch (e) {
       console.error('XP adjust error:', e)
-      alert(e instanceof Error ? e.message : 'Failed to adjust XP')
+      alert(e instanceof Error ? e.message : t('dashboard.adjustXpFailed'))
     } finally {
       setXpAdjusting(false)
     }
@@ -632,19 +632,19 @@ export default function Dashboard() {
       const res = await fetch('/api/xp/use', { method: 'POST', credentials: 'include' })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setUseXpMessage(data?.error || 'Failed to use XP')
+        setUseXpMessage(data?.error || t('dashboard.useXpFailed'))
         setUseXpBlocked(true)
         return
       }
       const moved = data.movesApplied > 0
       setUseXpBlocked(!moved)
-      setUseXpMessage(data.message ?? (moved ? 'Done.' : ''))
+      setUseXpMessage(data.message ?? (moved ? t('dashboard.done') : ''))
       fetchXp()
       fetchXpLog()
       fetchCanMove()
       if (moved) setQueueRefetchTrigger((t) => t + 1)
     } catch (e) {
-      setUseXpMessage('Something went wrong.')
+      setUseXpMessage(t('common.somethingWentWrong'))
       setUseXpBlocked(true)
     } finally {
       setUseXpLoading(false)
@@ -828,8 +828,8 @@ export default function Dashboard() {
                   type="button"
                   onClick={openLogoutConfirm}
                   className="shrink-0 h-10 w-10 sm:h-11 sm:w-11 flex items-center justify-center rounded-xl bg-background/80 hover:bg-gray-700/60 text-text-muted hover:text-text-primary border border-gray-600/60 transition-all duration-200 active:scale-[0.97]"
-                  title="Log out"
-                  aria-label="Log out"
+                  title={t('common.logOut')}
+                  aria-label={t('common.logOut')}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </button>
@@ -875,7 +875,7 @@ export default function Dashboard() {
                     </Link>
                   )}
                   {/* XP bar — progress reaches to Use XP button; on mobile full width */}
-                  <div className="flex items-stretch rounded-xl overflow-hidden border-2 border-primary bg-primary/25 min-h-[48px] w-full sm:flex-1 sm:min-w-[200px]" title={!useXpAllowed && useXpReason ? useXpReason : 'Spend 100 XP to move up'}>
+                  <div className="flex items-stretch rounded-xl overflow-hidden border-2 border-primary bg-primary/25 min-h-[48px] w-full sm:flex-1 sm:min-w-[200px]" title={!useXpAllowed && useXpReason ? useXpReason : t('dashboard.spend100Xp')}>
                     <div className="flex items-center gap-2 pl-3 pr-2 py-2 min-w-0 flex-1 w-full">
                       <span className="text-[10px] font-bold text-primary uppercase tracking-wider shrink-0">XP</span>
                       <span className={`text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
@@ -893,7 +893,7 @@ export default function Dashboard() {
                       type="button"
                       onClick={handleUseXp}
                       disabled={!useXpAllowed || useXpLoading}
-                      title={useXpReason || 'Spend 100 XP to move up 1 position'}
+                      title={useXpReason || t('dashboard.spend100XpPosition')}
                       className={`shrink-0 min-w-[80px] min-h-[48px] px-3 font-bold text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors flex items-center justify-center ${useXpClicking ? 'animate-use-xp-click' : 'button-press'}`}
                     >
                       {useXpLoading ? '…' : t('dashboard.useXp')}

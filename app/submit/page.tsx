@@ -12,20 +12,24 @@ const SoundCloudPreview = memo(function SoundCloudPreview({
   embedLoading,
   embedUrl,
   isValid,
+  previewLabel,
+  loadingLabel,
 }: {
   soundcloudUrl: string
   embedHtml: string | null
   embedLoading: boolean
   embedUrl: string
   isValid: boolean
+  previewLabel: string
+  loadingLabel: string
 }) {
   if (!isValid) return null
   return (
     <div className="mt-4 p-4 bg-background-lighter rounded-xl border-2 border-gray-700/60 soundcloud-embed-inner" style={{ contain: 'layout style paint' }}>
-      <p className="text-sm font-bold text-text-secondary mb-2">Preview</p>
+      <p className="text-sm font-bold text-text-secondary mb-2">{previewLabel}</p>
       {embedLoading ? (
         <div className="w-full h-28 sm:h-32 flex items-center justify-center">
-          <p className="text-[11px] sm:text-xs text-text-secondary">Loading…</p>
+          <p className="text-[11px] sm:text-xs text-text-secondary">{loadingLabel}</p>
         </div>
       ) : embedHtml ? (
         <div
@@ -53,35 +57,66 @@ const SoundCloudPreview = memo(function SoundCloudPreview({
   )
 })
 
-// Genre options: main selectable list (alphabetical); Other at end; sub-genres only for Future House and Drum & Bass
+// Main genres that have sub-genre options (shown in a separate section)
+const GENRES_WITH_SUB = ['House', 'Future House', 'Drum & Bass', 'Dubstep'] as const
+
+// Genre options: main selectable list (alphabetical); Other at end; sub-genres for House, Future House, Drum & Bass, Dubstep
 const GENRE_MAIN_OPTIONS = [
+  { value: 'Ambient', label: 'Ambient' },
   { value: 'Bass House', label: 'Bass House' },
+  { value: 'Chill', label: 'Chill' },
+  { value: 'Complextro', label: 'Complextro' },
+  { value: 'Country', label: 'Country' },
   { value: 'Drum & Bass', label: 'Drum & Bass' },
   { value: 'Dubstep', label: 'Dubstep' },
   { value: 'Future Bass', label: 'Future Bass' },
   { value: 'Future House', label: 'Future House' },
   { value: 'Hip-Hop', label: 'Hip-Hop' },
   { value: 'House', label: 'House' },
+  { value: 'Lo-Fi', label: 'Lo-Fi' },
+  { value: 'Midtempo', label: 'Midtempo' },
+  { value: 'Phonk', label: 'Phonk' },
   { value: 'Pop', label: 'Pop' },
+  { value: 'Synthwave', label: 'Synthwave' },
+  { value: 'Rock', label: 'Rock' },
   { value: 'Other', label: 'Other' },
 ] as const
 
 const GENRE_SUB_BY_MAIN: Record<string, readonly { value: string; label: string }[]> = {
+  'House': [
+    { value: 'Melodic House', label: 'Melodic House' },
+    { value: 'Progressive House', label: 'Progressive House' },
+    { value: 'Afro House', label: 'Afro House' },
+    { value: 'Tropical House', label: 'Tropical House' },
+  ],
   'Future House': [
     { value: 'Future Bounce', label: 'Future Bounce' },
     { value: 'Future Room', label: 'Future Room' },
   ],
   'Drum & Bass': [
+    { value: 'Liquid', label: 'Liquid' },
+    { value: 'Jungle', label: 'Jungle' },
+    { value: 'Breakbeat', label: 'Breakbeat' },
     { value: 'Dancefloor', label: 'Dancefloor' },
     { value: 'Jump Up', label: 'Jump Up' },
     { value: 'UK Garage', label: 'UK Garage' },
+  ],
+  'Dubstep': [
+    { value: 'Melodic Dubstep', label: 'Melodic Dubstep' },
+    { value: 'Color Bass', label: 'Color Bass' },
+    { value: 'Brostep', label: 'Brostep' },
+    { value: 'Riddim', label: 'Riddim' },
+    { value: 'Tearout', label: 'Tearout' },
   ],
 }
 
 // Names that cannot be used when "Other" is selected (case-insensitive)
 const GENRE_RESERVED_NAMES = [
-  'House', 'Future House', 'Future Bounce', 'Future Room', 'Future Bass', 'Bass House',
-  'Drum & Bass', 'Jump Up', 'UK Garage', 'Dancefloor', 'Dubstep', 'Pop', 'Hip-Hop', 'Other',
+  'Ambient', 'Bass House', 'Chill', 'Complextro', 'Country', 'Drum & Bass', 'Dubstep', 'Future Bass', 'Future House',
+  'Hip-Hop', 'House', 'Lo-Fi', 'Midtempo', 'Phonk', 'Pop', 'Synthwave', 'Rock', 'Other',
+  'Future Bounce', 'Future Room', 'Melodic House', 'Progressive House', 'Afro House', 'Tropical House',
+  'Liquid', 'Jungle', 'Breakbeat', 'Dancefloor', 'Jump Up', 'UK Garage',
+  'Melodic Dubstep', 'Color Bass', 'Brostep', 'Riddim', 'Tearout',
 ]
 
 /** Extract first hashtag from text (e.g. description) and return title-cased label, or null */
@@ -166,14 +201,22 @@ function SubmitPageContent() {
           // Parse stored genre for edit: "Main (Sub)" or "Main" or custom (Other)
           const g = (submission.genre || '').trim()
           if (g) {
+            const houseMatch = g.match(/^House\s*\((.*)\)\s*$/)
             const futureHouseMatch = g.match(/^Future House\s*\((.*)\)\s*$/)
             const drumBassMatch = g.match(/^Drum & Bass\s*\((.*)\)\s*$/)
-            if (futureHouseMatch) {
+            const dubstepMatch = g.match(/^Dubstep\s*\((.*)\)\s*$/)
+            if (houseMatch) {
+              setGenreMain('House')
+              setGenreSub(houseMatch[1].trim() || '')
+            } else if (futureHouseMatch) {
               setGenreMain('Future House')
               setGenreSub(futureHouseMatch[1].trim() || '')
             } else if (drumBassMatch) {
               setGenreMain('Drum & Bass')
               setGenreSub(drumBassMatch[1].trim() || '')
+            } else if (dubstepMatch) {
+              setGenreMain('Dubstep')
+              setGenreSub(dubstepMatch[1].trim() || '')
             } else if (GENRE_MAIN_OPTIONS.some((o) => o.value === g)) {
               setGenreMain(g)
               setGenreSub('')
@@ -340,7 +383,7 @@ function SubmitPageContent() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || `Failed to ${isEditing ? 'update' : 'submit'} demo`)
+        setError(data.error || (isEditing ? t('submit.failedUpdate') : t('submit.failedSubmit')))
         setLoading(false)
         return
       }
@@ -364,7 +407,7 @@ function SubmitPageContent() {
       }
       setTimeout(() => router.push('/dashboard'), 2000)
     } catch (err) {
-      setError('An error occurred. Please try again.')
+      setError(t('common.errorTryAgain'))
       setLoading(false)
     }
   }
@@ -375,7 +418,7 @@ function SubmitPageContent() {
 
     if (genreMain === 'Other' && genreOther.trim()) {
       if (isGenreOtherDuplicate(genreOther)) {
-        setError('This genre name is already in the list. Please choose it from the list or enter a different name.')
+        setError(t('submit.genreAlreadyInList'))
         return
       }
     }
@@ -503,14 +546,14 @@ function SubmitPageContent() {
                   disabled={loading}
                   className="px-4 py-2 rounded-xl bg-background-lighter hover:bg-gray-700 text-text-primary font-bold text-sm border-2 border-gray-600 transition-all active:scale-[0.98]"
                 >
-                  Submit without genre
+                  {t('submit.submitWithoutGenre')}
                 </button>
                 <button
                   type="button"
                   onClick={handleGenrePromptClose}
                   className="px-4 py-2 rounded-xl text-text-muted hover:text-text-primary font-medium text-sm transition-colors"
                 >
-                  Cancel
+                  {t('submit.cancel')}
                 </button>
               </div>
             </div>
@@ -531,13 +574,15 @@ function SubmitPageContent() {
                 className="w-full px-4 py-3 bg-background border-2 border-gray-600 rounded-xl text-base font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-all min-h-[48px]"
                 disabled={loading || (!submissionsOpen && !isEditing)}
               />
-              <p className="mt-2 text-sm text-text-secondary font-medium">SoundCloud track URLs only</p>
+              <p className="mt-2 text-sm text-text-secondary font-medium">{t('submit.soundcloudUrlsOnly')}</p>
               <SoundCloudPreview
                 soundcloudUrl={soundcloudUrl}
                 embedHtml={embedHtml}
                 embedLoading={embedLoading}
                 embedUrl={embedUrl}
                 isValid={isValidSoundCloudUrl(soundcloudUrl)}
+                previewLabel={t('submit.preview')}
+                loadingLabel={t('xp.loading')}
               />
             </div>
 
@@ -547,7 +592,7 @@ function SubmitPageContent() {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Tell us about your track..."
+                placeholder={t('submit.descriptionPlaceholder')}
                 rows={3}
                 className="w-full px-4 py-3 bg-background border-2 border-gray-600 rounded-xl text-base font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary resize-none min-h-[88px]"
                 disabled={loading || (!submissionsOpen && !isEditing)}
@@ -555,12 +600,12 @@ function SubmitPageContent() {
               <p className="mt-2 text-sm text-text-secondary font-medium">{t('submit.optional')}</p>
             </div>
 
-            {/* Genre — styled to match app theme */}
+            {/* Genre — matches form theme: border-2 gray-700/60, rounded-xl, bg-background-lighter */}
             <fieldset className="rounded-xl overflow-hidden border-2 border-gray-700/60 bg-background-lighter/50">
-              <legend className="sr-only">Genre</legend>
+              <legend className="sr-only">{t('submit.genre')}</legend>
               <div className="p-4 sm:p-5">
-                <div className="flex flex-wrap items-center gap-2 mb-4">
-                  <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">Genre</span>
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <label className="block text-sm font-bold text-text-primary">{t('submit.genre')}</label>
                   {suggestedGenreFromSoundCloud && !genreMain && (
                     <button
                       type="button"
@@ -587,95 +632,131 @@ function SubmitPageContent() {
                         }
                       }}
                       disabled={loading || (!submissionsOpen && !isEditing)}
-                      className="text-[10px] font-bold uppercase tracking-wider text-background px-2.5 py-1 rounded-full bg-primary/90 border border-primary hover:bg-primary transition-colors"
+                      className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-background font-bold text-sm border-2 border-primary/50 transition-all active:scale-[0.98]"
                     >
-                      From track: {suggestedGenreFromSoundCloud}
+                      {t('submit.fromTrack')}: {suggestedGenreFromSoundCloud}
                     </button>
                   )}
                   {genreMain && (
-                    <span className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider">
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-primary/10 text-primary border-2 border-primary/40">
                       {genreMain}
-                      {genreSub && ` · ${genreSub}`}
-                      {genreMain === 'Other' && genreOther && ` · ${genreOther}`}
+                      {genreSub && <span className="text-text-secondary font-medium"> → {genreSub}</span>}
+                      {genreMain === 'Other' && genreOther && <span className="text-text-secondary font-medium"> → {genreOther}</span>}
                     </span>
                   )}
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {GENRE_MAIN_OPTIONS.filter((o) => o.value !== 'Other').map((opt) => (
+                {/* Genres with sub-options */}
+                <div className="mb-4 p-4 rounded-xl border-2 border-gray-700/60 bg-background/50">
+                  <p className="text-sm font-bold text-text-secondary mb-3">{t('submit.genreWithSub')}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {GENRES_WITH_SUB.map((value) => {
+                      const opt = { value, label: value }
+                      const selected = genreMain === opt.value
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setGenreMain(opt.value)
+                            setGenreSub('')
+                            setGenreOther('')
+                          }}
+                          disabled={loading || (!submissionsOpen && !isEditing)}
+                          className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all duration-200 touch-manipulation border-2 ${
+                            selected
+                              ? 'bg-primary text-background border-primary'
+                              : 'bg-background border-gray-600 text-text-secondary hover:border-primary/50 hover:text-text-primary focus:ring-2 focus:ring-primary'
+                          }`}
+                        >
+                          <span className="block truncate">{opt.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {GENRES_WITH_SUB.includes(genreMain as (typeof GENRES_WITH_SUB)[number]) && GENRE_SUB_BY_MAIN[genreMain] && (
+                    <div className="mt-4 pt-4 border-t-2 border-gray-700/60 animate-fade-in">
+                      <p className="text-sm font-bold text-text-secondary mb-2">{t('submit.subGenreOptional')}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {GENRE_SUB_BY_MAIN[genreMain].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setGenreSub(genreSub === opt.value ? '' : opt.value)}
+                            disabled={loading || (!submissionsOpen && !isEditing)}
+                            className={`px-3.5 py-2 rounded-xl text-[11px] font-semibold transition-all border-2 ${
+                              genreSub === opt.value
+                                ? 'bg-primary text-background border-primary'
+                                : 'bg-background border-gray-600 text-text-secondary hover:border-primary/50 hover:text-text-primary'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Other genres */}
+                <div className="p-4 rounded-xl border-2 border-gray-700/60 bg-background/50">
+                  <p className="text-sm font-bold text-text-secondary mb-3">{t('submit.genreOtherMain')}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {GENRE_MAIN_OPTIONS.filter((o) => o.value !== 'Other' && !GENRES_WITH_SUB.includes(o.value as typeof GENRES_WITH_SUB[number])).map((opt) => {
+                      const selected = genreMain === opt.value
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setGenreMain(opt.value)
+                            setGenreSub('')
+                            setGenreOther('')
+                          }}
+                          disabled={loading || (!submissionsOpen && !isEditing)}
+                          className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all duration-200 touch-manipulation border-2 ${
+                            selected
+                              ? 'bg-primary text-background border-primary'
+                              : 'bg-background border-gray-600 text-text-secondary hover:border-primary/50 hover:text-text-primary focus:ring-2 focus:ring-primary'
+                          }`}
+                        >
+                          <span className="block truncate">{opt.label}</span>
+                        </button>
+                      )
+                    })}
                     <button
-                      key={opt.value}
+                      key="Other"
                       type="button"
                       onClick={() => {
-                        setGenreMain(opt.value)
+                        setGenreMain('Other')
                         setGenreSub('')
                         setGenreOther('')
                       }}
                       disabled={loading || (!submissionsOpen && !isEditing)}
-                      className={`relative py-2.5 px-2 rounded-button text-xs font-bold transition-all duration-200 touch-manipulation overflow-hidden ${
-                        genreMain === opt.value
-                          ? 'bg-primary text-background shadow-md shadow-primary/20 ring-2 ring-primary/60 ring-offset-2 ring-offset-background-light scale-[1.02]'
-                          : 'bg-background border-2 border-gray-700/60 text-text-secondary hover:border-primary/40 hover:text-text-primary hover:bg-primary/5'
+                      className={`py-2.5 px-4 rounded-xl text-xs font-medium transition-all duration-200 touch-manipulation border-2 border-dashed ${
+                        genreMain === 'Other'
+                          ? 'bg-primary text-background border-primary'
+                          : 'bg-background border-gray-600 text-text-muted hover:border-gray-500 hover:text-text-secondary'
                       }`}
                     >
-                      <span className="block truncate">{opt.label}</span>
+                      <span className="block truncate">{t('submit.genreOther')}</span>
                     </button>
-                  ))}
-                  <button
-                    key="Other"
-                    type="button"
-                    onClick={() => {
-                      setGenreMain('Other')
-                      setGenreSub('')
-                      setGenreOther('')
-                    }}
-                    disabled={loading || (!submissionsOpen && !isEditing)}
-                    className={`relative py-2.5 px-2 rounded-button text-xs font-medium transition-all duration-200 touch-manipulation overflow-hidden border border-dashed ${
-                      genreMain === 'Other'
-                        ? 'bg-primary/80 text-background border-primary shadow-md ring-2 ring-primary/50 ring-offset-2 ring-offset-background-light scale-[1.02]'
-                        : 'bg-background/80 border-gray-600 text-text-muted hover:border-gray-500 hover:text-text-secondary'
-                    }`}
-                  >
-                    <span className="block truncate">Other</span>
-                  </button>
+                  </div>
                 </div>
 
-                {(genreMain === 'Future House' || genreMain === 'Drum & Bass') && GENRE_SUB_BY_MAIN[genreMain] && (
-                  <div className="mt-4 pt-4 border-t-2 border-gray-700/60 animate-fade-in">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2">Sub-genre (optional)</p>
-                    <div className="flex flex-wrap gap-2">
-                      {GENRE_SUB_BY_MAIN[genreMain].map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setGenreSub(genreSub === opt.value ? '' : opt.value)}
-                          disabled={loading || (!submissionsOpen && !isEditing)}
-                          className={`px-3 py-1.5 rounded-button text-[11px] font-semibold transition-all border-2 ${
-                            genreSub === opt.value
-                              ? 'bg-primary text-background border-primary'
-                              : 'bg-background border-gray-700/60 text-text-secondary hover:border-primary/50 hover:text-text-primary hover:bg-primary/5'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {genreMain === 'Other' && (
-                  <div className="mt-4 pt-4 border-t-2 border-gray-700/60 animate-fade-in">
-                    <label htmlFor="genre_other" className="block text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2">Custom genre</label>
+                  <div className="mt-4 p-4 rounded-xl border-2 border-gray-700/60 bg-background/50 animate-fade-in">
+                    <label htmlFor="genre_other" className="block text-sm font-bold text-text-secondary mb-2">{t('submit.customGenre')}</label>
                     <input
                       type="text"
                       id="genre_other"
                       value={genreOther}
                       onChange={(e) => setGenreOther(e.target.value)}
-                      placeholder="e.g. Techno, Trance…"
-                      className="w-full px-4 py-2.5 rounded-button bg-background border-2 border-gray-600 text-sm font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary"
+                      placeholder={t('submit.customGenrePlaceholder')}
+                      className="w-full px-4 py-3 bg-background border-2 border-gray-600 rounded-xl text-sm font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary"
                       disabled={loading || (!submissionsOpen && !isEditing)}
                     />
-                    <p className="mt-1.5 text-[10px] text-text-muted">Must differ from genres in the list above.</p>
+                    <p className="mt-2 text-sm text-text-secondary font-medium">{t('submit.customGenreHint')}</p>
                   </div>
                 )}
               </div>
@@ -700,7 +781,7 @@ function SubmitPageContent() {
                     d="M19 9l-7 7-7-7"
                   />
                 </svg>
-                <span>Advanced Options</span>
+                <span>{t('submit.advancedOptions')}</span>
               </button>
 
               {/* Advanced Options Content */}
@@ -716,7 +797,7 @@ function SubmitPageContent() {
                       id="artist_name"
                       value={artistName}
                       onChange={(e) => setArtistName(e.target.value)}
-                      placeholder="Override artist name"
+                      placeholder={t('submit.overrideArtist')}
                       className="w-full px-4 py-3 text-base font-medium bg-background border-2 border-gray-600 rounded-xl text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words min-h-[48px]"
                         disabled={loading || (!submissionsOpen && !isEditing)}
                       />
@@ -730,7 +811,7 @@ function SubmitPageContent() {
                       id="song_title"
                       value={songTitle}
                       onChange={(e) => setSongTitle(e.target.value)}
-                      placeholder="Override song title"
+                      placeholder={t('submit.overrideSongTitle')}
                       className="w-full px-4 py-3 text-base font-medium bg-background border-2 border-gray-600 rounded-xl text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words min-h-[48px]"
                         disabled={loading || (!submissionsOpen && !isEditing)}
                       />
@@ -740,7 +821,7 @@ function SubmitPageContent() {
                   {!isEditing && (
                     <div>
                       <label htmlFor="email" className="block text-sm font-bold text-text-secondary mb-2">
-                        Email
+                        {t('submit.email')}
                       </label>
                       <input
                         type="email"
@@ -752,7 +833,7 @@ function SubmitPageContent() {
                         disabled={loading || !submissionsOpen}
                       />
                       <p className="mt-2 text-sm text-text-muted font-medium">
-                        Optional: Receive confirmation email
+                        {t('submit.emailOptional')}
                       </p>
                     </div>
                   )}

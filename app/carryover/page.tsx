@@ -12,6 +12,7 @@ interface CarryoverItem {
   soundcloud_url: string
   song_title?: string
   artist_name?: string
+  genre?: string | null
   session_number?: number
   created_at: string
   carryover_type: 'session_ended' | 'curator_skip'
@@ -135,31 +136,49 @@ export default function CarryoverPage() {
                 </Link>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {myCarryover.map((item, index) => (
                   <div
                     key={item.id}
-                    className="border-2 rounded-xl p-4 bg-background-lighter border-amber-500/40 animate-slide-in"
+                    className="border-2 rounded-xl p-4 hover:shadow-lg hover:border-primary/40 transition-all duration-200 animate-slide-in bg-background-lighter border-gray-700/50"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className="flex justify-between items-start gap-3 mb-2">
-                      <div className="min-w-0">
-                        <h3 className="text-sm font-semibold text-text-primary line-clamp-2 sm:text-sm md:text-base">
-                          {item.song_title || 'Untitled Track'}
-                        </h3>
-                        <p className="text-sm text-text-secondary mt-0.5 line-clamp-1">
-                          by {item.artist_name || item.users?.display_name || '—'}
-                          {item.session_number != null && ` · #${item.session_number}`}
-                        </p>
-                        <p className="text-xs text-amber-400 mt-2">
-                          {item.carryover_type === 'curator_skip' ? 'Skipped by MikeGTC' : 'Session ended before review'}
-                        </p>
+                    <div className="flex justify-between items-start gap-3 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="mb-1">
+                          <h3 className="text-sm font-bold text-text-primary break-words line-clamp-2">
+                            {item.song_title || 'Untitled Track'}
+                          </h3>
+                          <p className="text-xs text-text-secondary break-words mt-0.5 line-clamp-1 font-medium">
+                            {t('dashboard.by')} {item.artist_name || item.users?.display_name || '—'}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <div className="flex items-center gap-1.5 rounded-lg border border-gray-800/50 bg-background-lighter px-2.5 py-1">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted">Date</span>
+                            <span className="text-xs font-semibold text-text-primary">{new Date(item.created_at).toLocaleDateString()}</span>
+                          </div>
+                          {item.session_number != null && (
+                            <div className="flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/5 px-2.5 py-1">
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-primary">Session</span>
+                              <span className="text-xs font-bold text-primary tabular-nums">#{item.session_number}</span>
+                            </div>
+                          )}
+                          {item.genre && (
+                            <span className="px-2 py-1 rounded-lg bg-primary/15 text-primary text-[10px] font-bold border border-primary/30">
+                              {(item.genre?.match(/\(([^)]+)\)\s*$/) ?? [null, item.genre])[1]}
+                            </span>
+                          )}
+                          <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            {item.carryover_type === 'curator_skip' ? 'Skipped by MikeGTC' : 'Session ended'}
+                          </span>
+                        </div>
                       </div>
-                      <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 whitespace-nowrap shrink-0 sm:rounded-button sm:px-2 sm:py-1">
+                      <span className="px-2 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-400 border-2 border-amber-500/40 whitespace-nowrap shrink-0">
                         Carryover
                       </span>
                     </div>
-                    <div className="mt-2 sm:mt-3">
+                    <div className="mt-3">
                       <SoundCloudEmbed
                         id={item.id}
                         embedHtml={embedData[item.id]?.html ?? null}

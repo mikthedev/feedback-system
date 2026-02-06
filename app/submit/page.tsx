@@ -1,11 +1,59 @@
 'use client'
 
-import { useState, useEffect, Suspense, useMemo } from 'react'
+import { useState, useEffect, Suspense, useMemo, memo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useLanguage } from '@/app/context/LanguageContext'
 
-// Genre options: main selectable list (alphabetical); sub-genres only for Future House and Drum & Bass
+/** Memoized SoundCloud preview — only re-renders when embed-related props change, so typing in description or selecting genre won't restart the player */
+const SoundCloudPreview = memo(function SoundCloudPreview({
+  soundcloudUrl,
+  embedHtml,
+  embedLoading,
+  embedUrl,
+  isValid,
+}: {
+  soundcloudUrl: string
+  embedHtml: string | null
+  embedLoading: boolean
+  embedUrl: string
+  isValid: boolean
+}) {
+  if (!isValid) return null
+  return (
+    <div className="mt-4 p-4 bg-background-lighter rounded-xl border-2 border-gray-700/60 soundcloud-embed-inner" style={{ contain: 'layout style paint' }}>
+      <p className="text-sm font-bold text-text-secondary mb-2">Preview</p>
+      {embedLoading ? (
+        <div className="w-full h-28 sm:h-32 flex items-center justify-center">
+          <p className="text-[11px] sm:text-xs text-text-secondary">Loading…</p>
+        </div>
+      ) : embedHtml ? (
+        <div
+          key={`embed-html-${soundcloudUrl}`}
+          className="soundcloud-embed w-full"
+          style={{ maxWidth: '100%', overflow: 'hidden' }}
+          dangerouslySetInnerHTML={{ __html: embedHtml }}
+        />
+      ) : (
+        <div className="w-full">
+          <iframe
+            key={`embed-iframe-${soundcloudUrl}`}
+            width="100%"
+            height="166"
+            scrolling="no"
+            frameBorder="no"
+            allow="autoplay"
+            src={embedUrl}
+            className="rounded"
+            title="SoundCloud Player"
+          />
+        </div>
+      )}
+    </div>
+  )
+})
+
+// Genre options: main selectable list (alphabetical); Other at end; sub-genres only for Future House and Drum & Bass
 const GENRE_MAIN_OPTIONS = [
   { value: 'Bass House', label: 'Bass House' },
   { value: 'Drum & Bass', label: 'Drum & Bass' },
@@ -14,8 +62,8 @@ const GENRE_MAIN_OPTIONS = [
   { value: 'Future House', label: 'Future House' },
   { value: 'Hip-Hop', label: 'Hip-Hop' },
   { value: 'House', label: 'House' },
-  { value: 'Other', label: 'Other' },
   { value: 'Pop', label: 'Pop' },
+  { value: 'Other', label: 'Other' },
 ] as const
 
 const GENRE_SUB_BY_MAIN: Record<string, readonly { value: string; label: string }[]> = {
@@ -353,7 +401,16 @@ function SubmitPageContent() {
     if (!suggestedGenreFromSoundCloud) return
     const s = suggestedGenreFromSoundCloud.trim()
     const mainMatch = GENRE_MAIN_OPTIONS.find((o) => o.value.toLowerCase() === s.toLowerCase())
-    const payload = mainMatch ? mainMatch.value : s
+    if (mainMatch) {
+      setShowGenrePrompt(false)
+      setPendingSubmit(false)
+      doSubmit(mainMatch.value)
+      return
+    }
+    const subMatch = Object.entries(GENRE_SUB_BY_MAIN).find(([, subs]) =>
+      subs.some((sub) => sub.value.toLowerCase() === s.toLowerCase())
+    )
+    const payload = subMatch ? `${subMatch[0]} (${subMatch[1].find((sub) => sub.value.toLowerCase() === s.toLowerCase())!.value})` : s
     setShowGenrePrompt(false)
     setPendingSubmit(false)
     doSubmit(payload)
@@ -475,37 +532,13 @@ function SubmitPageContent() {
                 disabled={loading || (!submissionsOpen && !isEditing)}
               />
               <p className="mt-2 text-sm text-text-secondary font-medium">SoundCloud track URLs only</p>
-              {isValidSoundCloudUrl(soundcloudUrl) && (
-                <div className="mt-4 p-4 bg-background-lighter rounded-xl border-2 border-gray-700/60">
-                  <p className="text-sm font-bold text-text-secondary mb-2">Preview</p>
-                  {embedLoading ? (
-                    <div className="w-full h-28 sm:h-32 flex items-center justify-center">
-                      <p className="text-[11px] sm:text-xs text-text-secondary">Loading…</p>
-                    </div>
-                  ) : embedHtml ? (
-                    <div 
-                      key={`embed-html-${soundcloudUrl}`}
-                      className="soundcloud-embed w-full"
-                      style={{ maxWidth: '100%', overflow: 'hidden' }}
-                      dangerouslySetInnerHTML={{ __html: embedHtml }}
-                    />
-                  ) : (
-                    <div className="w-full">
-                      <iframe
-                        key={`embed-iframe-${soundcloudUrl}`}
-                        width="100%"
-                        height="166"
-                        scrolling="no"
-                        frameBorder="no"
-                        allow="autoplay"
-                        src={embedUrl}
-                        className="rounded"
-                        title="SoundCloud Player"
-                      ></iframe>
-                    </div>
-                  )}
-                </div>
-              )}
+              <SoundCloudPreview
+                soundcloudUrl={soundcloudUrl}
+                embedHtml={embedHtml}
+                embedLoading={embedLoading}
+                embedUrl={embedUrl}
+                isValid={isValidSoundCloudUrl(soundcloudUrl)}
+              />
             </div>
 
             <div>
@@ -522,37 +555,54 @@ function SubmitPageContent() {
               <p className="mt-2 text-sm text-text-secondary font-medium">{t('submit.optional')}</p>
             </div>
 
-            {/* Genre — compact chip grid */}
-            <div className="p-3 sm:p-4 rounded-xl border border-primary/25 bg-gradient-to-br from-primary/[0.08] to-transparent backdrop-blur-[1px] space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-bold text-text-primary tracking-tight flex items-center gap-1.5">
-                  <span className="text-primary" aria-hidden>♪</span> Genre
-                </span>
-                {suggestedGenreFromSoundCloud && !genreMain && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const s = suggestedGenreFromSoundCloud.trim()
-                      const mainMatch = GENRE_MAIN_OPTIONS.find((o) => o.value.toLowerCase() === s.toLowerCase())
-                      if (mainMatch) {
-                        setGenreMain(mainMatch.value)
-                        setGenreSub('')
-                        setGenreOther('')
-                      } else {
-                        setGenreMain('Other')
-                        setGenreSub('')
-                        setGenreOther(s)
-                      }
-                    }}
-                    disabled={loading || (!submissionsOpen && !isEditing)}
-                    className="text-[11px] font-semibold text-primary hover:text-primary-hover px-2 py-1 rounded-md bg-primary/15 border border-primary/30 transition-colors"
-                  >
-                    Use “{suggestedGenreFromSoundCloud}”
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                  {GENRE_MAIN_OPTIONS.map((opt) => (
+            {/* Genre — styled to match app theme */}
+            <fieldset className="rounded-xl overflow-hidden border-2 border-gray-700/60 bg-background-lighter/50">
+              <legend className="sr-only">Genre</legend>
+              <div className="p-4 sm:p-5">
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">Genre</span>
+                  {suggestedGenreFromSoundCloud && !genreMain && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const s = suggestedGenreFromSoundCloud.trim()
+                        const mainMatch = GENRE_MAIN_OPTIONS.find((o) => o.value.toLowerCase() === s.toLowerCase())
+                        if (mainMatch) {
+                          setGenreMain(mainMatch.value)
+                          setGenreSub('')
+                          setGenreOther('')
+                        } else {
+                          const subMatch = Object.entries(GENRE_SUB_BY_MAIN).find(([, subs]) =>
+                            subs.some((sub) => sub.value.toLowerCase() === s.toLowerCase())
+                          )
+                          if (subMatch) {
+                            setGenreMain(subMatch[0])
+                            setGenreSub(subMatch[1].find((sub) => sub.value.toLowerCase() === s.toLowerCase())!.value)
+                            setGenreOther('')
+                          } else {
+                            setGenreMain('Other')
+                            setGenreSub('')
+                            setGenreOther(s)
+                          }
+                        }
+                      }}
+                      disabled={loading || (!submissionsOpen && !isEditing)}
+                      className="text-[10px] font-bold uppercase tracking-wider text-background px-2.5 py-1 rounded-full bg-primary/90 border border-primary hover:bg-primary transition-colors"
+                    >
+                      From track: {suggestedGenreFromSoundCloud}
+                    </button>
+                  )}
+                  {genreMain && (
+                    <span className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider">
+                      {genreMain}
+                      {genreSub && ` · ${genreSub}`}
+                      {genreMain === 'Other' && genreOther && ` · ${genreOther}`}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {GENRE_MAIN_OPTIONS.filter((o) => o.value !== 'Other').map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
@@ -562,68 +612,74 @@ function SubmitPageContent() {
                         setGenreOther('')
                       }}
                       disabled={loading || (!submissionsOpen && !isEditing)}
-                      className={`px-3 py-2 rounded-lg text-xs font-bold transition-all duration-200 border touch-manipulation active:scale-[0.97] ${
+                      className={`relative py-2.5 px-2 rounded-button text-xs font-bold transition-all duration-200 touch-manipulation overflow-hidden ${
                         genreMain === opt.value
-                          ? 'bg-primary text-background border-primary shadow-md'
-                          : 'bg-background/80 text-text-primary border-gray-600 hover:border-primary/40 hover:bg-primary/5'
+                          ? 'bg-primary text-background shadow-md shadow-primary/20 ring-2 ring-primary/60 ring-offset-2 ring-offset-background-light scale-[1.02]'
+                          : 'bg-background border-2 border-gray-700/60 text-text-secondary hover:border-primary/40 hover:text-text-primary hover:bg-primary/5'
                       }`}
                     >
-                      {opt.label}
+                      <span className="block truncate">{opt.label}</span>
                     </button>
                   ))}
-              </div>
-
-              {genreMain === 'Future House' && GENRE_SUB_BY_MAIN['Future House'] && (
-                <div className="animate-fade-in flex flex-wrap gap-1.5 pt-0.5">
-                  {GENRE_SUB_BY_MAIN['Future House'].map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setGenreSub(genreSub === opt.value ? '' : opt.value)}
-                      disabled={loading || (!submissionsOpen && !isEditing)}
-                      className={`px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all border ${
-                        genreSub === opt.value ? 'bg-primary/80 text-background border-primary' : 'bg-background/80 text-text-secondary border-gray-600 hover:border-primary/40'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {genreMain === 'Drum & Bass' && GENRE_SUB_BY_MAIN['Drum & Bass'] && (
-                <div className="animate-fade-in flex flex-wrap gap-1.5 pt-0.5">
-                  {GENRE_SUB_BY_MAIN['Drum & Bass'].map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setGenreSub(genreSub === opt.value ? '' : opt.value)}
-                      disabled={loading || (!submissionsOpen && !isEditing)}
-                      className={`px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all border ${
-                        genreSub === opt.value ? 'bg-primary/80 text-background border-primary' : 'bg-background/80 text-text-secondary border-gray-600 hover:border-primary/40'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {genreMain === 'Other' && (
-                <div className="animate-fade-in pt-0.5">
-                  <input
-                    type="text"
-                    id="genre_other"
-                    value={genreOther}
-                    onChange={(e) => setGenreOther(e.target.value)}
-                    placeholder="e.g. Techno, Trance…"
-                    className="w-full px-3 py-2 bg-background border border-gray-600 rounded-lg text-sm font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary"
+                  <button
+                    key="Other"
+                    type="button"
+                    onClick={() => {
+                      setGenreMain('Other')
+                      setGenreSub('')
+                      setGenreOther('')
+                    }}
                     disabled={loading || (!submissionsOpen && !isEditing)}
-                  />
-                  <p className="mt-1 text-[11px] text-text-muted">Cannot match an existing genre.</p>
+                    className={`relative py-2.5 px-2 rounded-button text-xs font-medium transition-all duration-200 touch-manipulation overflow-hidden border border-dashed ${
+                      genreMain === 'Other'
+                        ? 'bg-primary/80 text-background border-primary shadow-md ring-2 ring-primary/50 ring-offset-2 ring-offset-background-light scale-[1.02]'
+                        : 'bg-background/80 border-gray-600 text-text-muted hover:border-gray-500 hover:text-text-secondary'
+                    }`}
+                  >
+                    <span className="block truncate">Other</span>
+                  </button>
                 </div>
-              )}
-            </div>
+
+                {(genreMain === 'Future House' || genreMain === 'Drum & Bass') && GENRE_SUB_BY_MAIN[genreMain] && (
+                  <div className="mt-4 pt-4 border-t-2 border-gray-700/60 animate-fade-in">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2">Sub-genre (optional)</p>
+                    <div className="flex flex-wrap gap-2">
+                      {GENRE_SUB_BY_MAIN[genreMain].map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setGenreSub(genreSub === opt.value ? '' : opt.value)}
+                          disabled={loading || (!submissionsOpen && !isEditing)}
+                          className={`px-3 py-1.5 rounded-button text-[11px] font-semibold transition-all border-2 ${
+                            genreSub === opt.value
+                              ? 'bg-primary text-background border-primary'
+                              : 'bg-background border-gray-700/60 text-text-secondary hover:border-primary/50 hover:text-text-primary hover:bg-primary/5'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {genreMain === 'Other' && (
+                  <div className="mt-4 pt-4 border-t-2 border-gray-700/60 animate-fade-in">
+                    <label htmlFor="genre_other" className="block text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2">Custom genre</label>
+                    <input
+                      type="text"
+                      id="genre_other"
+                      value={genreOther}
+                      onChange={(e) => setGenreOther(e.target.value)}
+                      placeholder="e.g. Techno, Trance…"
+                      className="w-full px-4 py-2.5 rounded-button bg-background border-2 border-gray-600 text-sm font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary"
+                      disabled={loading || (!submissionsOpen && !isEditing)}
+                    />
+                    <p className="mt-1.5 text-[10px] text-text-muted">Must differ from genres in the list above.</p>
+                  </div>
+                )}
+              </div>
+            </fieldset>
 
             <div className="pt-4 border-t-2 border-gray-700/60">
               <button

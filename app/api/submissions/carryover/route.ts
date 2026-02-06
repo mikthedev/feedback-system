@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
           soundcloud_url,
           song_title,
           artist_name,
+          genre,
           session_number,
           created_at,
           users!submissions_user_id_fkey (
@@ -82,6 +83,7 @@ export async function GET(request: NextRequest) {
         soundcloud_url,
         song_title,
         artist_name,
+        genre,
         session_number,
         created_at,
         updated_at,

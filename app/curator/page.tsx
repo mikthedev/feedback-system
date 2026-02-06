@@ -665,32 +665,32 @@ export default function CuratorPage() {
     <div className="bg-background px-4 sm:px-3 md:p-4 py-4 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-7xl mx-auto w-full min-w-0">
         <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-4 mb-4 animate-fade-in border border-gray-800/50 sm:rounded-xl">
-          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
             <h1 className="text-lg font-bold text-text-primary truncate min-w-0 sm:text-xl md:text-2xl">MikeGTC Panel</h1>
-            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <div className="flex items-center gap-3 shrink-0 flex-wrap">
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="min-h-[36px] px-3 py-1.5 text-xs font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
+                className="min-h-[42px] px-4 py-2 text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
               >
                 {showSettings ? 'Hide' : 'Settings'}
               </button>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="min-h-[36px] px-3 py-1.5 text-xs font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
+                className="min-h-[42px] px-4 py-2 text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
               >
                 Dashboard
               </button>
-              {/* XP bar — compact, fits header */}
-              <div className="flex items-stretch rounded-lg overflow-hidden border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 min-h-[32px] shadow-sm" title={!useXpAllowed && useXpReason ? useXpReason : 'Spend 100 XP to move up'}>
-                <div className="flex items-center gap-1 pl-2 pr-1.5 py-1 min-w-0">
-                  <span className="text-[8px] font-bold text-text-muted uppercase tracking-wider shrink-0">XP</span>
-                  <span className={`text-sm font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
+              {/* XP bar — same height as buttons, longer */}
+              <div className="flex items-stretch rounded-lg overflow-hidden border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 h-[42px] w-[220px] min-w-[200px] shrink-0 shadow-sm" title={!useXpAllowed && useXpReason ? useXpReason : 'Spend 100 XP to move up'}>
+                <div className="flex items-center gap-2 pl-3 pr-2 py-2 min-w-0 flex-1">
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0">XP</span>
+                  <span className={`text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
                   {xp % 100 > 0 && xp < 9999 && (
-                    <div className="hidden sm:flex items-center gap-0.5 min-w-0">
-                      <div className="w-4 h-1 bg-background-lighter/80 rounded-full overflow-hidden flex-1 min-w-0 max-w-[32px]">
+                    <div className="hidden sm:flex items-center gap-1 min-w-0 flex-1">
+                      <div className="w-6 h-1.5 bg-background-lighter/80 rounded-full overflow-hidden flex-1 min-w-0 max-w-[40px]">
                         <div className="h-full bg-primary rounded-full" style={{ width: `${xp % 100}%` }} />
                       </div>
-                      <span className="text-[8px] text-text-muted tabular-nums font-semibold shrink-0">{100 - (xp % 100)}</span>
+                      <span className="text-[10px] text-text-muted tabular-nums font-semibold shrink-0">{100 - (xp % 100)}</span>
                     </div>
                   )}
                 </div>
@@ -700,7 +700,7 @@ export default function CuratorPage() {
                   onClick={handleUseXp}
                   disabled={!useXpAllowed || useXpLoading}
                   title={useXpReason || 'Spend 100 XP to move up 1 position'}
-                  className="shrink-0 min-w-[56px] min-h-[32px] px-2 font-bold text-[10px] text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors button-press"
+                  className="shrink-0 min-w-[64px] h-[42px] px-3 font-bold text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors button-press"
                 >
                   {useXpLoading ? '…' : 'Use XP'}
                 </button>
@@ -875,24 +875,30 @@ export default function CuratorPage() {
                         <img
                           src={submissionArtworks[submission.id] || ''}
                           alt=""
-                          className="w-8 h-8 rounded object-cover flex-shrink-0 border border-gray-600"
+                          className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-gray-600"
                           onError={(e) => { e.currentTarget.style.display = 'none' }}
                         />
                       ) : (
-                        <div className="w-8 h-8 rounded bg-background-lighter border border-gray-600 flex-shrink-0 flex items-center justify-center">
-                          <span className="text-xs text-text-muted">♪</span>
+                        <div className="w-12 h-12 rounded-lg bg-background-lighter border border-gray-600 flex-shrink-0 flex items-center justify-center">
+                          <span className="text-sm text-text-muted">♪</span>
                         </div>
                       )}
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        <p className="text-xs truncate font-medium text-text-primary">
-                          {submission.song_title || submissionSoundCloudMetadata[submission.id]?.title || 'Untitled'}
+                      <div className="flex-1 min-w-0 overflow-hidden space-y-0.5">
+                        <p className="text-xs truncate font-bold text-text-primary">
+                          {(() => {
+                            const raw = submission.song_title || submissionSoundCloudMetadata[submission.id]?.title || 'Untitled'
+                            const artist = submission.artist_name || submissionSoundCloudMetadata[submission.id]?.author_name || submission.users.display_name
+                            return artist && raw.endsWith(' by ' + artist) ? raw.slice(0, -(3 + artist.length)).trim() || raw : raw
+                          })()}
                         </p>
-                        <p className="text-[10px] truncate text-text-secondary">
-                          {submission.users.display_name}
-                          {submission.genre && (
-                            <span className="text-text-muted ml-1">• {submission.genre}</span>
-                          )}
+                        <p className="text-[10px] truncate text-text-secondary font-medium">
+                          {submission.artist_name || submissionSoundCloudMetadata[submission.id]?.author_name || submission.users.display_name}
                         </p>
+                        {submission.genre && (
+                          <span className="inline-block text-[9px] font-semibold text-primary px-1.5 py-0.5 rounded bg-primary/15 border border-primary/30 truncate max-w-full">
+                            {(submission.genre?.match(/\(([^)]+)\)\s*$/) ?? [null, submission.genre])[1]}
+                          </span>
+                        )}
                       </div>
                     </div>
                   )})}
@@ -986,29 +992,45 @@ export default function CuratorPage() {
                     Back
                   </button>
 
-                  {/* Track info - compact */}
-                  <div className="flex items-center gap-3 pb-3 border-b border-gray-700/50">
-                    <div className="flex-1 min-w-0">
-                      <h2 className="text-base sm:text-lg font-extrabold text-primary tracking-tight truncate">
-                        {selectedSubmission.song_title || submissionSoundCloudMetadata[selectedSubmission.id]?.title || 'Untitled Track'}
-                      </h2>
-                      <p className="text-sm text-text-secondary font-medium truncate">
-                        {selectedSubmission.artist_name || submissionSoundCloudMetadata[selectedSubmission.id]?.author_name || selectedSubmission.users.display_name}
-                        <span className="text-text-muted mx-2">•</span>
-                        <span className="text-text-muted">{selectedSubmission.users.display_name}</span>
-                      </p>
-                      {selectedSubmission.genre && (
-                        <p className="text-xs text-text-muted font-semibold mt-1 flex items-center gap-1.5">
-                          <span className="text-primary">Genre:</span>
-                          <span className="text-text-secondary">{selectedSubmission.genre}</span>
-                        </p>
+                  {/* Track info — matches general design */}
+                  <div className="pb-3 border-b border-gray-800/50">
+                    <div className="flex items-stretch flex-wrap gap-2">
+                      <div className="flex-1 min-w-[140px] flex flex-col gap-0.5 rounded-lg border-2 border-primary/40 bg-primary/5 px-3 py-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Song</span>
+                        <span className="text-base font-bold text-text-primary truncate">
+                          {(() => {
+                            const rawSong = selectedSubmission.song_title || submissionSoundCloudMetadata[selectedSubmission.id]?.title || 'Untitled Track'
+                            const artistDisplay = selectedSubmission.artist_name || submissionSoundCloudMetadata[selectedSubmission.id]?.author_name || selectedSubmission.users.display_name
+                            if (artistDisplay && rawSong.endsWith(' by ' + artistDisplay)) {
+                              return rawSong.slice(0, -(3 + artistDisplay.length)).trim() || rawSong
+                            }
+                            return rawSong
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-[120px] flex flex-col gap-0.5 rounded-lg border border-gray-800/50 bg-background-lighter px-3 py-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Artist</span>
+                        <span className="text-sm font-semibold text-text-primary truncate">
+                          {selectedSubmission.artist_name || submissionSoundCloudMetadata[selectedSubmission.id]?.author_name || selectedSubmission.users.display_name}
+                        </span>
+                      </div>
+                      <div className="min-w-[100px] flex flex-col gap-0.5 rounded-lg border-2 border-primary/40 bg-primary/5 px-3 py-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Genre</span>
+                        <span className="text-sm font-bold text-primary truncate">
+                          {selectedSubmission.genre ? (selectedSubmission.genre?.match(/\(([^)]+)\)\s*$/) ?? [null, selectedSubmission.genre])[1] : '—'}
+                        </span>
+                      </div>
+                      <div className="min-w-[100px] flex flex-col gap-0.5 rounded-lg border border-gray-800/50 bg-background-lighter px-3 py-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Submitter</span>
+                        <span className="text-sm text-text-secondary truncate">{selectedSubmission.users.display_name}</span>
+                      </div>
+                      {selectedSubmission.session_number != null && (
+                        <div className="flex flex-col justify-center rounded-lg border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 px-3 py-2 shrink-0">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Session</span>
+                          <span className="text-base font-bold text-primary tabular-nums">#{selectedSubmission.session_number}</span>
+                        </div>
                       )}
                     </div>
-                    {selectedSubmission.session_number != null && (
-                      <span className="shrink-0 px-2 py-1 rounded-lg bg-primary/20 text-primary text-xs font-bold border border-primary/40">
-                        #{selectedSubmission.session_number}
-                      </span>
-                    )}
                   </div>
 
                   {/* Large SoundCloud embed */}

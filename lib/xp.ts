@@ -66,9 +66,10 @@ export async function logXp(
   userId: string,
   amount: number,
   source: string,
-  description?: string
+  description?: string,
+  options?: { allowZero?: boolean }
 ): Promise<void> {
-  if (amount === 0) return
+  if (amount === 0 && !options?.allowZero) return
   await supabase.from('xp_log').insert({
     user_id: userId,
     amount,

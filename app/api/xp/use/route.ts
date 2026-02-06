@@ -119,28 +119,40 @@ export async function POST(_request: NextRequest) {
       })
     }
 
-    const { mySubmissionId, aboveSubmissionId } = validation
-    const myRow = submissions.find((s) => s.id === mySubmissionId)!
-    const aboveRow = submissions.find((s) => s.id === aboveSubmissionId)!
-    const myPos = myRow.queue_position ?? submissions.indexOf(myRow) + 1
-    const abovePos = aboveRow.queue_position ?? submissions.indexOf(aboveRow) + 1
+    const { myIndex, mySubmissionId, aboveSubmissionId } = validation
+    // Swap positions in the ordered array (index-based, not raw queue_position)
+    const reordered = [...submissions]
+    const aboveIndex = myIndex - 1
+    ;[reordered[myIndex], reordered[aboveIndex]] = [reordered[aboveIndex]!, reordered[myIndex]!]
+    // Assign sequential unique queue_positions (1,2,3,...) to prevent ties.
+    // Ties + created_at tiebreaker caused users to jump multiple spots (e.g. 3rd→1st).
+    const updates = reordered.map((row, i) => ({
+      id: row.id,
+      queue_position: i + 1,
+    }))
+    for (const u of updates) {
+      await supabase
+        .from('submissions')
+        .update({ queue_position: u.queue_position })
+        .eq('id', u.id)
+    }
 
-    await supabase
-      .from('submissions')
-      .update({ queue_position: abovePos })
-      .eq('id', mySubmissionId)
-    await supabase
-      .from('submissions')
-      .update({ queue_position: myPos })
-      .eq('id', aboveSubmissionId)
-
+    const bumpedUserId = aboveRow.user_id
     await deductXp(supabase, userId, XP_PER_POSITION)
     await logXp(
       supabase,
       userId,
       -XP_PER_POSITION,
       'queue_move',
-      'Used 100 XP to move up 1 position'
+      `Moved up 1 position in queue (-${XP_PER_POSITION} XP)`
+    )
+    await logXp(
+      supabase,
+      bumpedUserId,
+      0,
+      'queue_bump',
+      'Moved down 1 position (someone used XP to pass you)',
+      { allowZero: true }
     )
 
     await supabase.from('user_session_xp').upsert(

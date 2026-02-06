@@ -24,6 +24,7 @@ interface Submission {
   description?: string
   artist_name?: string
   song_title?: string
+  genre?: string | null
   status: string
   session_number?: number
   created_at: string
@@ -1082,9 +1083,22 @@ export default function Dashboard() {
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted">
-                        <span>{new Date(submission.created_at).toLocaleDateString()}</span>
-                        {submission.session_number && <span>• #{submission.session_number}</span>}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1.5 rounded-lg border border-gray-800/50 bg-background-lighter px-2.5 py-1">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted">Date</span>
+                          <span className="text-xs font-semibold text-text-primary">{new Date(submission.created_at).toLocaleDateString()}</span>
+                        </div>
+                        {submission.session_number != null && (
+                          <div className="flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/5 px-2.5 py-1">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-primary">Session</span>
+                            <span className="text-xs font-bold text-primary tabular-nums">#{submission.session_number}</span>
+                          </div>
+                        )}
+                        {submission.genre && (
+                          <span className="px-2 py-1 rounded-lg bg-primary/15 text-primary text-[10px] font-bold border border-primary/30">
+                            {(submission.genre?.match(/\(([^)]+)\)\s*$/) ?? [null, submission.genre])[1]}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -1178,9 +1192,22 @@ export default function Dashboard() {
                               </p>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted">
-                            <span>{new Date(submission.created_at).toLocaleDateString()}</span>
-                            {submission.session_number && <span>• #{submission.session_number}</span>}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex items-center gap-1.5 rounded-lg border border-gray-800/50 bg-background-lighter px-2.5 py-1">
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted">Date</span>
+                              <span className="text-xs font-semibold text-text-primary">{new Date(submission.created_at).toLocaleDateString()}</span>
+                            </div>
+                            {submission.session_number != null && (
+                              <div className="flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/5 px-2.5 py-1">
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-primary">Session</span>
+                                <span className="text-xs font-bold text-primary tabular-nums">#{submission.session_number}</span>
+                              </div>
+                            )}
+                            {submission.genre && (
+                              <span className="px-2 py-1 rounded-lg bg-primary/15 text-primary text-[10px] font-bold border border-primary/30">
+                                {(submission.genre?.match(/\(([^)]+)\)\s*$/) ?? [null, submission.genre])[1]}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1330,6 +1357,8 @@ export default function Dashboard() {
                 xpLog={xpLog}
                 loadingLog={loadingXpLog}
                 onShowXpHelp={() => setShowXpHelpModal(true)}
+                useXpAllowed={useXpAllowed}
+                useXpReason={useXpReason}
               />
             </div>
           </aside>

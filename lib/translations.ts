@@ -157,6 +157,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'xpHelp.followNote': 'Follow bonus is once ever — unfollow/refollow doesn\'t repeat it',
     'xpHelp.reviewNote': 'After review, MikeGTC scores grant XP for future submissions only',
     'xpHelp.useXpNote': 'Each "Use XP" spends 100 XP to move up 1 position. Up to 3 moves (300 XP) per session.',
+    'xpHelp.youCanUseXp': 'You can use your XP',
+    'xpHelp.unknownReason': 'Unable to check.',
   },
   uk: {
     'footer.contact': 'Контакт',
@@ -303,6 +305,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'xpHelp.followNote': 'Бонус за підписку нараховується один раз — відписка/підписка знову не повторює його',
     'xpHelp.reviewNote': 'Після огляду бали MikeGTC дають XP лише для майбутніх заявок',
     'xpHelp.useXpNote': 'Кожне «Використати XP» витрачає 100 XP на переміщення на 1 позицію вгору. До 3 переміщень (300 XP) за сесію.',
+    'xpHelp.youCanUseXp': 'Ви можете використати свій XP',
+    'xpHelp.unknownReason': 'Не вдалося перевірити.',
   },
   de: {
     'footer.contact': 'Kontakt',
@@ -449,6 +453,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'xpHelp.followNote': 'Folge-Bonus gibt es nur einmal — Entfolgen/ erneutes Folgen wiederholt ihn nicht',
     'xpHelp.reviewNote': 'Nach der Bewertung geben MikeGTCs Bewertungen nur für künftige Einreichungen XP',
     'xpHelp.useXpNote': 'Jedes „XP nutzen“ kostet 100 XP für 1 Position nach oben. Bis zu 3 Züge (300 XP) pro Session.',
+    'xpHelp.youCanUseXp': 'Du kannst dein XP nutzen',
+    'xpHelp.unknownReason': 'Prüfung nicht möglich.',
   },
 }
 

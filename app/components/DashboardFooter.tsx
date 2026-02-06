@@ -27,6 +27,9 @@ interface DashboardFooterProps {
   compactTop?: boolean
   /** Opens the live indicators help modal (? icon). Only used when compactTop. */
   onShowIndicatorsHelp?: () => void
+  /** Use XP status: when true, show "You can use your XP"; when false, show reason why not. */
+  useXpAllowed?: boolean
+  useXpReason?: string
 }
 
 const INDICATOR_STYLE =
@@ -134,6 +137,8 @@ export default function DashboardFooter({
   onShowXpHelp,
   compactTop = false,
   onShowIndicatorsHelp,
+  useXpAllowed,
+  useXpReason,
 }: DashboardFooterProps) {
   const { t } = useLanguage()
   const hasReviewXp = xpLog.some(
@@ -183,7 +188,7 @@ export default function DashboardFooter({
       <button
         type="button"
         onClick={onShowXpHelp}
-        className="w-full min-h-[48px] flex items-center justify-center gap-2 rounded-xl bg-primary/10 border-2 border-primary/40 text-primary font-bold text-sm hover:bg-primary/20 hover:border-primary/50 transition-colors touch-manipulation mb-4"
+        className="w-full min-h-[48px] flex items-center justify-center gap-2 rounded-xl bg-primary/10 border-2 border-primary/40 text-primary font-bold text-sm hover:bg-primary/20 hover:border-primary/50 transition-colors touch-manipulation"
         title={t('xp.howXpWorks')}
       >
         <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,6 +201,21 @@ export default function DashboardFooter({
         </svg>
         {t('xp.howXpWorks')}
       </button>
+
+      {/* Use XP status — why you can / can't use XP */}
+      {useXpAllowed != null && useXpReason != null && (
+        <div
+          className={`mt-3 mb-4 px-3 py-2.5 rounded-lg border-2 text-sm font-medium ${
+            useXpAllowed
+              ? 'bg-primary/10 border-primary/30 text-primary'
+              : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+          }`}
+        >
+          {useXpAllowed
+            ? t('xpHelp.youCanUseXp')
+            : (useXpReason || t('xpHelp.unknownReason'))}
+        </div>
+      )}
 
       {/* XP Log — expandable */}
       <details className="group border-t-2 border-gray-700/50 -mx-4 pt-0">
@@ -237,15 +257,19 @@ export default function DashboardFooter({
                       minute: '2-digit',
                     })}
                   </span>
-                  <span
-                    className={
-                      entry.amount >= 0
-                        ? 'text-primary font-bold tabular-nums'
-                        : 'text-red-400 font-bold tabular-nums'
-                    }
-                  >
-                    {entry.amount >= 0 ? '+' : ''}{entry.amount}
-                  </span>
+                  {entry.amount !== 0 ? (
+                    <span
+                      className={
+                        entry.amount > 0
+                          ? 'text-primary font-bold tabular-nums'
+                          : 'text-red-400 font-bold tabular-nums'
+                      }
+                    >
+                      {entry.amount > 0 ? '+' : ''}{entry.amount}
+                    </span>
+                  ) : (
+                    <span className="text-text-muted font-medium tabular-nums">—</span>
+                  )}
                   <span className="text-text-secondary text-sm truncate font-medium">
                     {entry.description || entry.source}
                   </span>

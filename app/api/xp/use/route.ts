@@ -89,10 +89,10 @@ export async function POST(_request: NextRequest) {
       movesUsedThisSession = Math.max(0, (usx as { moves_used_this_session: number }).moves_used_this_session)
     }
 
-    const myIndex = items.findIndex((i) => i.user_id === userId)
+    const userIndex = items.findIndex((i) => i.user_id === userId)
     let aboveUserXp: number | null = null
-    if (myIndex > 0) {
-      const aboveUserId = items[myIndex - 1]!.user_id
+    if (userIndex > 0) {
+      const aboveUserId = items[userIndex - 1]!.user_id
       const { data: aboveUser } = await supabase
         .from('users')
         .select('xp')

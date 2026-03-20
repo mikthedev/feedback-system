@@ -51,9 +51,9 @@ export default function Footer() {
   return (
     <footer className="relative w-full mt-auto bg-background pb-[env(safe-area-inset-bottom)]">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-700/50 to-transparent" />
-      <div className="max-w-6xl mx-auto px-4 py-4 sm:px-4 md:px-6 sm:py-4 md:py-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <div className="flex flex-col gap-2 min-w-0">
+      <div className="max-w-6xl mx-auto px-3 py-3 sm:px-4 md:px-6 sm:py-4 md:py-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex flex-col gap-1.5 min-w-0 sm:gap-2">
             <span className="text-xs uppercase tracking-wider text-text-muted font-bold">{t('footer.contact')}</span>
             <a
               href="mailto:michael.bbox@gmail.com"
@@ -63,7 +63,7 @@ export default function Footer() {
             </a>
             <span className="text-sm text-text-muted font-medium">{t('footer.copyright')}</span>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-shrink-0 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
             {/* Language dropdown: flag + label, opens list of languages */}
             <div className="relative" ref={dropdownRef}>
               <button

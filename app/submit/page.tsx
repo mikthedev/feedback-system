@@ -25,10 +25,10 @@ const SoundCloudPreview = memo(function SoundCloudPreview({
 }) {
   if (!isValid) return null
   return (
-    <div className="mt-4 p-4 bg-background-lighter rounded-xl border-2 border-gray-700/60 soundcloud-embed-inner" style={{ contain: 'layout style paint' }}>
-      <p className="text-sm font-bold text-text-secondary mb-2">{previewLabel}</p>
+    <div className="mt-3 p-3 sm:mt-4 sm:p-4 bg-background-lighter rounded-lg sm:rounded-xl border-2 border-gray-700/60 soundcloud-embed-inner" style={{ contain: 'layout style paint' }}>
+      <p className="text-xs sm:text-sm font-bold text-text-secondary mb-1.5 sm:mb-2">{previewLabel}</p>
       {embedLoading ? (
-        <div className="w-full h-28 sm:h-32 flex items-center justify-center">
+        <div className="w-full h-24 sm:h-32 flex items-center justify-center">
           <p className="text-[11px] sm:text-xs text-text-secondary">{loadingLabel}</p>
         </div>
       ) : embedHtml ? (
@@ -486,11 +486,11 @@ function SubmitPageContent() {
   }
 
   return (
-    <div className="bg-background px-3 sm:px-3 md:px-4 py-4 sm:py-5 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div className="bg-background px-2.5 sm:px-3 md:px-4 py-3 sm:py-5 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-2xl mx-auto w-full min-w-0">
-        <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-5 md:p-6 animate-fade-in border-2 border-gray-700/60">
-          <div className="flex items-center justify-between gap-4 mb-4">
-            <h1 className="text-lg font-extrabold text-text-primary truncate min-w-0 sm:text-xl md:text-2xl tracking-tight">
+        <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-5 md:p-6 animate-fade-in border-2 border-gray-700/60">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
+            <h1 className="text-base font-extrabold text-text-primary truncate min-w-0 sm:text-xl md:text-2xl tracking-tight">
               {isEditing ? t('submit.editDemo') : t('submit.title')}
             </h1>
             {isEditing && (
@@ -500,17 +500,17 @@ function SubmitPageContent() {
             )}
           </div>
           {!submissionsOpen && (
-            <div className="mb-4 p-4 bg-yellow-500/10 border-2 border-yellow-500/40 text-yellow-400 rounded-xl text-sm font-bold">
+            <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-yellow-500/10 border-2 border-yellow-500/40 text-yellow-400 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold">
               ⚠️ {t('submit.submissionsClosed')}
             </div>
           )}
           {success && (
-            <div className="mb-4 p-4 bg-primary/10 border-2 border-primary/40 text-primary rounded-xl animate-scale-in text-sm font-bold">
+            <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-primary/10 border-2 border-primary/40 text-primary rounded-lg sm:rounded-xl animate-scale-in text-xs sm:text-sm font-bold">
               {isEditing ? t('submit.updated') : t('submit.submitted')}
             </div>
           )}
           {error && (
-            <div className={`mb-4 p-4 border-2 rounded-xl animate-scale-in text-sm font-bold ${
+            <div className={`mb-3 sm:mb-4 p-3 sm:p-4 border-2 rounded-lg sm:rounded-xl animate-scale-in text-xs sm:text-sm font-bold ${
               error.includes('strictly prohibited') || error.includes('may result in a ban')
                 ? 'bg-red-500/15 border-red-500/60 text-red-400'
                 : error.includes('already been submitted') || error.includes('has already been submitted')
@@ -525,8 +525,8 @@ function SubmitPageContent() {
 
           {/* Genre prompt: ask to fill for better experience, or use SoundCloud hashtag / submit without */}
           {showGenrePrompt && pendingSubmit && (
-            <div className="mb-4 p-4 rounded-xl border-2 border-amber-500/40 bg-amber-500/10 text-amber-200 animate-scale-in space-y-3">
-              <p className="text-sm font-bold">
+            <div className="mb-3 sm:mb-4 p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 border-amber-500/40 bg-amber-500/10 text-amber-200 animate-scale-in space-y-2 sm:space-y-3">
+              <p className="text-xs sm:text-sm font-bold leading-snug">
                 Add a genre for a better experience — it helps us organize and review your track.
               </p>
               <div className="flex flex-wrap gap-2">
@@ -559,9 +559,9 @@ function SubmitPageContent() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-4">
+          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-3 sm:space-y-4">
             <div>
-              <label htmlFor="soundcloud_url" className="block text-sm font-bold text-text-primary mb-2">
+              <label htmlFor="soundcloud_url" className="block text-sm font-bold text-text-primary mb-1.5 sm:mb-2">
                 {t('submit.soundcloudUrl')} <span className="text-primary">*</span>
               </label>
               <input
@@ -571,10 +571,10 @@ function SubmitPageContent() {
                 onChange={(e) => setSoundcloudUrl(e.target.value)}
                 placeholder="https://soundcloud.com/…"
                 required
-                className="w-full px-4 py-3 bg-background border-2 border-gray-600 rounded-xl text-base font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-all min-h-[48px]"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-background border-2 border-gray-600 rounded-lg sm:rounded-xl text-base font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-all min-h-[44px] sm:min-h-[48px]"
                 disabled={loading || (!submissionsOpen && !isEditing)}
               />
-              <p className="mt-2 text-sm text-text-secondary font-medium">{t('submit.soundcloudUrlsOnly')}</p>
+              <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-text-secondary font-medium">{t('submit.soundcloudUrlsOnly')}</p>
               <SoundCloudPreview
                 soundcloudUrl={soundcloudUrl}
                 embedHtml={embedHtml}
@@ -587,24 +587,24 @@ function SubmitPageContent() {
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-bold text-text-primary mb-2">{t('common.description')}</label>
+              <label htmlFor="description" className="block text-sm font-bold text-text-primary mb-1.5 sm:mb-2">{t('common.description')}</label>
               <textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t('submit.descriptionPlaceholder')}
                 rows={3}
-                className="w-full px-4 py-3 bg-background border-2 border-gray-600 rounded-xl text-base font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary resize-none min-h-[88px]"
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-background border-2 border-gray-600 rounded-lg sm:rounded-xl text-base font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary resize-none min-h-[76px] sm:min-h-[88px]"
                 disabled={loading || (!submissionsOpen && !isEditing)}
               />
-              <p className="mt-2 text-sm text-text-secondary font-medium">{t('submit.optional')}</p>
+              <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-text-secondary font-medium">{t('submit.optional')}</p>
             </div>
 
             {/* Genre — matches form theme: border-2 gray-700/60, rounded-xl, bg-background-lighter */}
             <fieldset className="rounded-xl overflow-hidden border-2 border-gray-700/60 bg-background-lighter/50">
               <legend className="sr-only">{t('submit.genre')}</legend>
-              <div className="p-4 sm:p-5">
-                <div className="flex flex-wrap items-center gap-3 mb-4">
+              <div className="p-3 sm:p-5">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                   <label className="block text-sm font-bold text-text-primary">{t('submit.genre')}</label>
                   {suggestedGenreFromSoundCloud && !genreMain && (
                     <button
@@ -647,9 +647,9 @@ function SubmitPageContent() {
                 </div>
 
                 {/* Genres with sub-options */}
-                <div className="mb-4 p-4 rounded-xl border-2 border-gray-700/60 bg-background/50">
-                  <p className="text-sm font-bold text-text-secondary mb-3">{t('submit.genreWithSub')}</p>
-                  <div className="flex flex-wrap gap-2">
+                <div className="mb-3 sm:mb-4 p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 border-gray-700/60 bg-background/50">
+                  <p className="text-xs sm:text-sm font-bold text-text-secondary mb-2 sm:mb-3">{t('submit.genreWithSub')}</p>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {GENRES_WITH_SUB.map((value) => {
                       const opt = { value, label: value }
                       const selected = genreMain === opt.value
@@ -663,7 +663,7 @@ function SubmitPageContent() {
                             setGenreOther('')
                           }}
                           disabled={loading || (!submissionsOpen && !isEditing)}
-                          className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all duration-200 touch-manipulation border-2 ${
+                          className={`py-2 px-3 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 touch-manipulation border-2 ${
                             selected
                               ? 'bg-primary text-background border-primary'
                               : 'bg-background border-gray-600 text-text-secondary hover:border-primary/50 hover:text-text-primary focus:ring-2 focus:ring-primary'
@@ -675,9 +675,9 @@ function SubmitPageContent() {
                     })}
                   </div>
                   {GENRES_WITH_SUB.includes(genreMain as (typeof GENRES_WITH_SUB)[number]) && GENRE_SUB_BY_MAIN[genreMain] && (
-                    <div className="mt-4 pt-4 border-t-2 border-gray-700/60 animate-fade-in">
-                      <p className="text-sm font-bold text-text-secondary mb-2">{t('submit.subGenreOptional')}</p>
-                      <div className="flex flex-wrap gap-2">
+                    <div className="mt-3 pt-3 sm:mt-4 sm:pt-4 border-t-2 border-gray-700/60 animate-fade-in">
+                      <p className="text-xs sm:text-sm font-bold text-text-secondary mb-1.5 sm:mb-2">{t('submit.subGenreOptional')}</p>
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
                         {GENRE_SUB_BY_MAIN[genreMain].map((opt) => (
                           <button
                             key={opt.value}
@@ -699,9 +699,9 @@ function SubmitPageContent() {
                 </div>
 
                 {/* Other genres */}
-                <div className="p-4 rounded-xl border-2 border-gray-700/60 bg-background/50">
-                  <p className="text-sm font-bold text-text-secondary mb-3">{t('submit.genreOtherMain')}</p>
-                  <div className="flex flex-wrap gap-2">
+                <div className="p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 border-gray-700/60 bg-background/50">
+                  <p className="text-xs sm:text-sm font-bold text-text-secondary mb-2 sm:mb-3">{t('submit.genreOtherMain')}</p>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {GENRE_MAIN_OPTIONS.filter((o) => o.value !== 'Other' && !GENRES_WITH_SUB.includes(o.value as typeof GENRES_WITH_SUB[number])).map((opt) => {
                       const selected = genreMain === opt.value
                       return (
@@ -714,7 +714,7 @@ function SubmitPageContent() {
                             setGenreOther('')
                           }}
                           disabled={loading || (!submissionsOpen && !isEditing)}
-                          className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all duration-200 touch-manipulation border-2 ${
+                          className={`py-2 px-3 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 touch-manipulation border-2 ${
                             selected
                               ? 'bg-primary text-background border-primary'
                               : 'bg-background border-gray-600 text-text-secondary hover:border-primary/50 hover:text-text-primary focus:ring-2 focus:ring-primary'
@@ -733,7 +733,7 @@ function SubmitPageContent() {
                         setGenreOther('')
                       }}
                       disabled={loading || (!submissionsOpen && !isEditing)}
-                      className={`py-2.5 px-4 rounded-xl text-xs font-medium transition-all duration-200 touch-manipulation border-2 border-dashed ${
+                      className={`py-2 px-3 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-medium transition-all duration-200 touch-manipulation border-2 border-dashed ${
                         genreMain === 'Other'
                           ? 'bg-primary text-background border-primary'
                           : 'bg-background border-gray-600 text-text-muted hover:border-gray-500 hover:text-text-secondary'
@@ -745,15 +745,15 @@ function SubmitPageContent() {
                 </div>
 
                 {genreMain === 'Other' && (
-                  <div className="mt-4 p-4 rounded-xl border-2 border-gray-700/60 bg-background/50 animate-fade-in">
-                    <label htmlFor="genre_other" className="block text-sm font-bold text-text-secondary mb-2">{t('submit.customGenre')}</label>
+                  <div className="mt-3 sm:mt-4 p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 border-gray-700/60 bg-background/50 animate-fade-in">
+                    <label htmlFor="genre_other" className="block text-sm font-bold text-text-secondary mb-1.5 sm:mb-2">{t('submit.customGenre')}</label>
                     <input
                       type="text"
                       id="genre_other"
                       value={genreOther}
                       onChange={(e) => setGenreOther(e.target.value)}
                       placeholder={t('submit.customGenrePlaceholder')}
-                      className="w-full px-4 py-3 bg-background border-2 border-gray-600 rounded-xl text-sm font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary"
+                      className="w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-background border-2 border-gray-600 rounded-lg sm:rounded-xl text-base sm:text-sm font-medium text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary min-h-[44px] sm:min-h-0"
                       disabled={loading || (!submissionsOpen && !isEditing)}
                     />
                     <p className="mt-2 text-sm text-text-secondary font-medium">{t('submit.customGenreHint')}</p>
@@ -762,11 +762,11 @@ function SubmitPageContent() {
               </div>
             </fieldset>
 
-            <div className="pt-4 border-t-2 border-gray-700/60">
+            <div className="pt-3 sm:pt-4 border-t-2 border-gray-700/60">
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-2 text-sm font-bold text-text-secondary hover:text-text-primary transition-colors duration-200 mb-4 touch-manipulation min-h-[48px] items-center"
+                className="flex items-center gap-2 text-sm font-bold text-text-secondary hover:text-text-primary transition-colors duration-200 mb-3 sm:mb-4 touch-manipulation min-h-[44px] items-center -mx-0.5 px-0.5"
               >
                 <svg
                   className={`w-4 h-4 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`}
@@ -786,8 +786,8 @@ function SubmitPageContent() {
 
               {/* Advanced Options Content */}
               {showAdvanced && (
-                <div className="space-y-4 animate-fade-in">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3 sm:space-y-4 animate-fade-in">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                     <label htmlFor="artist_name" className="block text-sm font-bold text-text-secondary mb-2">
                       {t('submit.artistName')}
@@ -798,7 +798,7 @@ function SubmitPageContent() {
                       value={artistName}
                       onChange={(e) => setArtistName(e.target.value)}
                       placeholder={t('submit.overrideArtist')}
-                      className="w-full px-4 py-3 text-base font-medium bg-background border-2 border-gray-600 rounded-xl text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words min-h-[48px]"
+                      className="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-base font-medium bg-background border-2 border-gray-600 rounded-lg sm:rounded-xl text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words min-h-[44px] sm:min-h-[48px]"
                         disabled={loading || (!submissionsOpen && !isEditing)}
                       />
                     </div>
@@ -812,7 +812,7 @@ function SubmitPageContent() {
                       value={songTitle}
                       onChange={(e) => setSongTitle(e.target.value)}
                       placeholder={t('submit.overrideSongTitle')}
-                      className="w-full px-4 py-3 text-base font-medium bg-background border-2 border-gray-600 rounded-xl text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words min-h-[48px]"
+                      className="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-base font-medium bg-background border-2 border-gray-600 rounded-lg sm:rounded-xl text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words min-h-[44px] sm:min-h-[48px]"
                         disabled={loading || (!submissionsOpen && !isEditing)}
                       />
                     </div>
@@ -829,7 +829,7 @@ function SubmitPageContent() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="your@email.com"
-                        className="w-full px-4 py-3 text-base font-medium bg-background border-2 border-gray-600 rounded-xl text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words min-h-[48px]"
+                        className="w-full px-3 py-2.5 sm:px-4 sm:py-3 text-base font-medium bg-background border-2 border-gray-600 rounded-lg sm:rounded-xl text-text-primary placeholder:text-text-muted focus:ring-2 focus:ring-primary focus:border-primary break-words min-h-[44px] sm:min-h-[48px]"
                         disabled={loading || !submissionsOpen}
                       />
                       <p className="mt-2 text-sm text-text-muted font-medium">
@@ -841,18 +841,18 @@ function SubmitPageContent() {
               )}
             </div>
 
-            <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:gap-4">
+            <div className="flex flex-col gap-2.5 pt-3 sm:pt-4 sm:flex-row sm:gap-4">
               <button
                 type="submit"
                 disabled={loading || !soundcloudUrl.trim() || (!submissionsOpen && !isEditing)}
-                className="w-full min-h-[52px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-3 px-5 rounded-xl text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press touch-manipulation sm:flex-[2] border-2 border-transparent hover:border-primary/30"
+                className="w-full min-h-[48px] sm:min-h-[52px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-2.5 px-4 sm:py-3 sm:px-5 rounded-lg sm:rounded-xl text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98] button-press touch-manipulation sm:flex-[2] border-2 border-transparent hover:border-primary/30"
               >
                 {loading ? (isEditing ? t('submit.updating') : t('submit.submitting')) : (isEditing ? t('submit.updateButton') : t('submit.title'))}
               </button>
               <button
                 type="button"
                 onClick={() => router.push('/dashboard')}
-                className="w-full min-h-[48px] px-4 py-3 border-2 border-gray-600 text-text-primary rounded-xl text-base font-bold hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press touch-manipulation sm:flex-1"
+                className="w-full min-h-[44px] sm:min-h-[48px] px-3 py-2.5 sm:px-4 sm:py-3 border-2 border-gray-600 text-text-primary rounded-lg sm:rounded-xl text-base font-bold hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press touch-manipulation sm:flex-1"
               >
                 {t('submit.cancel')}
               </button>

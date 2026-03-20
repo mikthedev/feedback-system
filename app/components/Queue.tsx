@@ -184,17 +184,17 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
   const hiddenCount = processedQueue.length - QUEUE_COLLAPSED_VISIBLE
 
   return (
-    <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60 w-full">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="p-2 bg-primary/10 rounded-lg border-2 border-primary/30 shrink-0">
-          <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border-2 border-gray-700/60 w-full">
+      <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+        <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg border-2 border-primary/30 shrink-0">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
         </div>
-        <div className="flex items-center gap-4 flex-1 min-w-0">
-          <h3 className="text-base font-extrabold text-text-primary tracking-tight">{t('queue.title')}</h3>
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+          <h3 className="text-sm sm:text-base font-extrabold text-text-primary tracking-tight">{t('queue.title')}</h3>
           {processedQueue.length > 0 && (
-            <span className="text-sm font-bold text-text-secondary bg-background-lighter px-3 py-1 rounded-full border-2 border-gray-600">
+            <span className="text-xs sm:text-sm font-bold text-text-secondary bg-background-lighter px-2 py-0.5 sm:px-3 sm:py-1 rounded-full border-2 border-gray-600">
               {processedQueue.length}
             </span>
           )}
@@ -207,11 +207,11 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
           <p className="text-sm font-medium text-text-secondary py-4">{t('queue.empty')}</p>
         ) : (
             <>
-            <div className="space-y-3 max-h-[240px] sm:max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-hide">
+            <div className="space-y-2 sm:space-y-3 max-h-[200px] sm:max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-hide">
               {visibleItems.map((item, index) => (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-3 p-3 rounded-xl border-2 min-h-[56px] transition-all duration-500 relative overflow-visible ${
+                  className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 min-h-[52px] sm:min-h-[56px] transition-all duration-500 relative overflow-visible ${
                     item._isNew ? 'animate-slide-in bg-primary/5 border-primary/30' : 'border-gray-700/50 hover:border-primary/40 hover:bg-background-lighter'
                   } ${
                     item._movedUp ? 'animate-queue-moved-up border-primary/40 bg-primary/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]' : ''
@@ -257,8 +257,8 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-text-primary truncate" title={item.displayTitle}>{item.displayTitle}</p>
-                    <p className="text-xs text-text-secondary truncate mt-0.5 font-medium">{item.displayArtist}</p>
+                    <p className="text-xs sm:text-sm font-bold text-text-primary truncate" title={item.displayTitle}>{item.displayTitle}</p>
+                    <p className="text-[11px] sm:text-xs text-text-secondary truncate mt-0.5 font-medium">{item.displayArtist}</p>
                   </div>
                 </div>
               ))}
@@ -267,7 +267,7 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
               <button
                 type="button"
                 onClick={() => setQueueExpanded((e) => !e)}
-                className="mt-3 w-full min-h-[40px] flex items-center justify-center gap-2 rounded-xl bg-background-lighter hover:bg-gray-700/50 border-2 border-gray-600 text-text-primary text-sm font-bold transition-colors touch-manipulation"
+                className="mt-2 sm:mt-3 w-full min-h-[40px] flex items-center justify-center gap-2 rounded-lg sm:rounded-xl bg-background-lighter hover:bg-gray-700/50 border-2 border-gray-600 text-text-primary text-xs sm:text-sm font-bold transition-colors touch-manipulation"
               >
                 {isCollapsed ? (
                   <>{t('queue.showMore').replace('{n}', String(hiddenCount))}</>

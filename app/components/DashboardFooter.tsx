@@ -53,7 +53,7 @@ function IndicatorRow({
   t: (key: string) => string
 }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-0.5 sm:gap-2">
+      <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-0.5 sm:gap-2">
       <span
         className={`${INDICATOR_STYLE} ${
           timeXpActive
@@ -147,7 +147,7 @@ export default function DashboardFooter({
 
   if (compactTop) {
     return (
-      <div className="flex flex-nowrap items-center gap-1.5 py-1.5 px-2 rounded-lg bg-background-lighter/60 border-2 border-gray-700/50 sm:gap-3 sm:py-2.5 sm:px-3 sm:rounded-lg">
+      <div className="flex flex-nowrap items-center gap-0.5 py-1 px-1.5 rounded-md sm:rounded-lg bg-background-lighter/60 border-2 border-gray-700/50 sm:gap-3 sm:py-2.5 sm:px-3">
         <IndicatorRow
           timeXpActive={timeXpActive}
           followingMikegtcoff={followingMikegtcoff}
@@ -162,23 +162,23 @@ export default function DashboardFooter({
   }
 
   return (
-    <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60 w-full">
+    <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border-2 border-gray-700/60 w-full">
       {/* XP summary — 2 stat cards in a row */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="rounded-lg bg-background/80 border-2 border-gray-700/50 p-3 flex flex-col items-center justify-center min-h-[72px]">
-          <span className="text-xs font-bold text-text-muted uppercase tracking-wider">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-4">
+        <div className="rounded-md sm:rounded-lg bg-background/80 border-2 border-gray-700/50 p-2 sm:p-3 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px]">
+          <span className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-wider">
             {t('xp.used')}
           </span>
-          <span className="mt-1 text-lg font-extrabold text-text-primary tabular-nums" title={usedCap == null ? 'No limit for testers' : undefined}>
+          <span className="mt-0.5 sm:mt-1 text-base sm:text-lg font-extrabold text-text-primary tabular-nums" title={usedCap == null ? 'No limit for testers' : undefined}>
             {xpUsedThisSession}
             {usedCap != null ? <span className="text-text-muted font-semibold">/{usedCap}</span> : <span className="text-text-muted font-semibold text-xs ml-0.5">({t('common.noLimit')})</span>}
           </span>
         </div>
-        <div className="rounded-lg bg-background/80 border-2 border-gray-700/50 p-3 flex flex-col items-center justify-center min-h-[72px]">
-          <span className="text-xs font-bold text-text-muted uppercase tracking-wider">
+        <div className="rounded-md sm:rounded-lg bg-background/80 border-2 border-gray-700/50 p-2 sm:p-3 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px]">
+          <span className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-wider">
             {t('xp.stored')}
           </span>
-          <span className="mt-1 text-lg font-extrabold text-primary tabular-nums">
+          <span className="mt-0.5 sm:mt-1 text-base sm:text-lg font-extrabold text-primary tabular-nums">
             {xp}
           </span>
         </div>
@@ -188,10 +188,10 @@ export default function DashboardFooter({
       <button
         type="button"
         onClick={onShowXpHelp}
-        className="w-full min-h-[48px] flex items-center justify-center gap-2 rounded-xl bg-primary/10 border-2 border-primary/40 text-primary font-bold text-sm hover:bg-primary/20 hover:border-primary/50 transition-colors touch-manipulation"
+        className="w-full min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl bg-primary/10 border-2 border-primary/40 text-primary font-bold text-xs sm:text-sm hover:bg-primary/20 hover:border-primary/50 transition-colors touch-manipulation"
         title={t('xp.howXpWorks')}
       >
-        <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -205,7 +205,7 @@ export default function DashboardFooter({
       {/* Use XP status — why you can / can't use XP */}
       {useXpAllowed != null && useXpReason != null && (
         <div
-          className={`mt-3 mb-4 px-3 py-2.5 rounded-lg border-2 text-sm font-medium ${
+          className={`mt-2 sm:mt-3 mb-3 sm:mb-4 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg border-2 text-xs sm:text-sm font-medium ${
             useXpAllowed
               ? 'bg-primary/10 border-primary/30 text-primary'
               : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
@@ -219,7 +219,7 @@ export default function DashboardFooter({
 
       {/* XP Log — expandable */}
       <details className="group border-t-2 border-gray-700/50 -mx-4 pt-0">
-        <summary className="list-none flex items-center justify-between gap-2 px-4 py-3 cursor-pointer text-sm font-bold text-text-secondary hover:text-text-primary hover:bg-gray-800/20 active:bg-gray-800/30 min-h-[48px] touch-manipulation">
+        <summary className="list-none flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 sm:py-3 cursor-pointer text-xs sm:text-sm font-bold text-text-secondary hover:text-text-primary hover:bg-gray-800/20 active:bg-gray-800/30 min-h-[44px] sm:min-h-[48px] touch-manipulation">
           <span className="flex items-center gap-2">
             <span>{t('xp.xpLog')}</span>
             {xpLog.length > 0 && (

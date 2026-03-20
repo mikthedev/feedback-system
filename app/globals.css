@@ -10,6 +10,13 @@
   --space-section: 1.25rem; /* 20px - between major sections */
 }
 
+@media (max-width: 639px) {
+  :root {
+    --space-field: 0.75rem;
+    --space-section: 1rem;
+  }
+}
+
 /* Custom range slider styling for red-to-green gradient */
 input[type="range"].slider-gradient {
   -webkit-appearance: none;
@@ -63,7 +70,7 @@ input[type="range"].slider-gradient::-moz-range-thumb:active {
 .soundcloud-embed-inner iframe {
   width: 100% !important;
   max-width: 100% !important;
-  height: 130px !important;
+  height: 112px !important;
   border-radius: 0.375rem;
 }
 @media (min-width: 640px) {
@@ -81,7 +88,7 @@ input[type="range"].slider-gradient::-moz-range-thumb:active {
 .soundcloud-embed-large iframe,
 .soundcloud-embed-large .soundcloud-embed iframe,
 .soundcloud-embed-large .soundcloud-embed-inner iframe {
-  height: 250px !important;
+  height: 200px !important;
   border-radius: 0.5rem;
 }
 @media (min-width: 640px) {

@@ -15,20 +15,20 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-6 sm:px-4 sm:py-6 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="bg-background-light rounded-xl sm:rounded-2xl p-6 sm:p-6 md:p-8 max-w-md w-full border-2 border-gray-700/60 shadow-xl">
-        <div className="text-center mb-6 animate-fade-in">
-          <h1 className="text-xl font-extrabold mb-4 text-text-primary leading-tight sm:text-3xl md:text-4xl tracking-tight">
+    <div className="min-h-screen flex items-center justify-center bg-background px-3 py-5 sm:px-4 sm:py-6 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="bg-background-light rounded-lg sm:rounded-2xl p-4 sm:p-6 md:p-8 max-w-md w-full border-2 border-gray-700/60 shadow-xl">
+        <div className="text-center mb-4 sm:mb-6 animate-fade-in">
+          <h1 className="text-lg font-extrabold mb-2 sm:mb-4 text-text-primary leading-tight sm:text-3xl md:text-4xl tracking-tight">
             {t('home.title')}
           </h1>
-          <p className="text-text-secondary text-sm font-medium leading-relaxed sm:text-base">
+          <p className="text-text-secondary text-sm font-medium leading-snug sm:leading-relaxed sm:text-base">
             {t('home.subtitle')}
           </p>
         </div>
         <button
           onClick={handleTwitchLogin}
           disabled={loading}
-          className="relative w-full min-h-[52px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-4 px-5 rounded-xl text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group shadow-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30"
+          className="relative w-full min-h-[48px] sm:min-h-[52px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-3 px-4 sm:py-4 sm:px-5 rounded-xl text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group shadow-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] button-press touch-manipulation border-2 border-transparent hover:border-primary/30"
         >
           <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" aria-hidden />
           <span className="relative flex items-center justify-center gap-2">

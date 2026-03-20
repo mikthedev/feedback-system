@@ -747,7 +747,7 @@ export default function Dashboard() {
   return (
     <div className="bg-background animate-page-transition">{/* Floating Status Banner - compact */}
       <div
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out pt-[env(safe-area-inset-top)] px-3 sm:px-4 md:px-5 ${getBannerClasses()} ${getBannerAnimation()}`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out pt-[env(safe-area-inset-top)] px-2.5 sm:px-4 md:px-5 ${getBannerClasses()} ${getBannerAnimation()}`}
       >
         <div className="max-w-6xl mx-auto pt-1.5 pb-1.5 sm:pt-2 sm:pb-2">
           <div
@@ -765,8 +765,8 @@ export default function Dashboard() {
       </div>
 
       {/* Main: top padding clears fixed banner; same px so banner and content align in width */}
-      <div className="pt-11 sm:pt-12 md:pt-14 px-3 sm:px-4 md:px-5 pb-4 sm:pb-5">
-        <div className="max-w-6xl mx-auto space-y-4">
+      <div className="pt-11 sm:pt-12 md:pt-14 px-2.5 sm:px-4 md:px-5 pb-3 sm:pb-5">
+        <div className="max-w-6xl mx-auto space-y-3 sm:space-y-4">
           <DashboardFooter
             xp={xp}
             xpUsedThisSession={xpUsedThisSession}
@@ -782,11 +782,11 @@ export default function Dashboard() {
             compactTop
           />
 
-          <div className="lg:flex lg:gap-6 lg:items-start">
+          <div className="lg:flex lg:gap-5 xl:gap-6 lg:items-start">
             {/* Main column: welcome, submissions, reviewed — even space-y-4 */}
-            <div className="lg:flex-1 lg:min-w-0 space-y-4">
+            <div className="lg:flex-1 lg:min-w-0 space-y-3 sm:space-y-4">
           {/* Welcome card */}
-          <div className="bg-background-light rounded-2xl shadow-lg p-5 sm:p-6 animate-fade-in border-2 border-gray-700/60 overflow-hidden relative">
+          <div className="bg-background-light rounded-xl sm:rounded-2xl shadow-lg p-3.5 sm:p-6 animate-fade-in border-2 border-gray-700/60 overflow-hidden relative">
             <div
               className="absolute top-0 left-0 right-0 h-1 opacity-70"
               style={{
@@ -794,26 +794,26 @@ export default function Dashboard() {
               }}
               aria-hidden
             />
-            <div className="flex flex-col gap-5 sm:gap-6">
+            <div className="flex flex-col gap-3 sm:gap-6">
               {/* Header: avatar, greeting, logout */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4 min-w-0">
+              <div className="flex items-center justify-between gap-2 sm:gap-4">
+                <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
                   {(profileImageUrl ?? user.profile_image_url) && !profileImageFailed ? (
                     <img
                       src={profileImageUrl ?? user.profile_image_url ?? ''}
                       alt=""
                       referrerPolicy="no-referrer"
                       crossOrigin="anonymous"
-                      className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-full border-2 border-primary/30 bg-background object-cover shadow-lg"
+                      className="h-12 w-12 sm:h-16 sm:w-16 shrink-0 rounded-full border-2 border-primary/30 bg-background object-cover shadow-lg"
                       onError={() => setProfileImageFailed(true)}
                     />
                   ) : (
-                    <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 rounded-full border-2 border-primary/30 bg-background-lighter flex items-center justify-center text-primary text-xl sm:text-2xl font-black" aria-hidden>
+                    <div className="h-12 w-12 sm:h-16 sm:w-16 shrink-0 rounded-full border-2 border-primary/30 bg-background-lighter flex items-center justify-center text-primary text-lg sm:text-2xl font-black" aria-hidden>
                       {(user.display_name || '?').charAt(0).toUpperCase()}
                     </div>
                   )}
                   <div className="min-w-0">
-                    <h1 className="text-lg sm:text-xl font-extrabold text-text-primary tracking-tight">
+                    <h1 className="text-base sm:text-xl font-extrabold text-text-primary tracking-tight">
                       {t('dashboard.welcome')}{' '}
                       <span className="text-primary">{user.display_name}</span>
                     </h1>
@@ -827,7 +827,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={openLogoutConfirm}
-                  className="shrink-0 h-10 w-10 sm:h-11 sm:w-11 flex items-center justify-center rounded-xl bg-background/80 hover:bg-gray-700/60 text-text-muted hover:text-text-primary border border-gray-600/60 transition-all duration-200 active:scale-[0.97]"
+                  className="shrink-0 h-9 w-9 sm:h-11 sm:w-11 flex items-center justify-center rounded-lg sm:rounded-xl bg-background/80 hover:bg-gray-700/60 text-text-muted hover:text-text-primary border border-gray-600/60 transition-all duration-200 active:scale-[0.97]"
                   title={t('common.logOut')}
                   aria-label={t('common.logOut')}
                 >
@@ -836,7 +836,7 @@ export default function Dashboard() {
               </div>
 
               {useXpMessage && (
-                <p className={`text-sm font-semibold rounded-lg px-4 py-3 animate-scale-in border ${
+                <p className={`text-xs sm:text-sm font-semibold rounded-lg px-3 py-2 sm:px-4 sm:py-3 animate-scale-in border ${
                   useXpBlocked ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' : 'text-primary bg-primary/10 border-primary/30'
                 }`}>
                   {useXpMessage}
@@ -845,21 +845,21 @@ export default function Dashboard() {
 
               {/* Quick actions + XP */}
               <div>
-                <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">{t('dashboard.quickActions')}</p>
+                <p className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-wider mb-2 sm:mb-3">{t('dashboard.quickActions')}</p>
                 {/* Mobile: Submit Demo | Carryover same length, XP full width below. Desktop: flex row */}
-                <div className="flex flex-col sm:flex-row flex-wrap items-stretch gap-3 w-full">
+                <div className="flex flex-col sm:flex-row flex-wrap items-stretch gap-2 sm:gap-3 w-full">
                   {/* Row 1 on mobile: Submit Demo + Carryover (equal width). On desktop: inline with XP */}
-                  <div className="grid grid-cols-2 sm:contents gap-3">
+                  <div className="grid grid-cols-2 sm:contents gap-2 sm:gap-3">
                     <Link
                       href="/submit"
-                      className="flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-sm transition-all active:scale-[0.98] sm:shrink-0"
+                      className="flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-[48px] px-2.5 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-xs sm:text-sm transition-all active:scale-[0.98] sm:shrink-0"
                     >
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                       {t('dashboard.submitDemo')}
                     </Link>
                     <Link
                       href="/carryover"
-                      className="flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-sm transition-all active:scale-[0.98] sm:shrink-0"
+                      className="flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-[48px] px-2.5 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-xs sm:text-sm transition-all active:scale-[0.98] sm:shrink-0"
                     >
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                       {t('dashboard.carryover')} {carryoverCount > 0 ? `(${carryoverCount})` : ''}
@@ -868,15 +868,15 @@ export default function Dashboard() {
                   {user.role === 'curator' && (
                     <Link
                       href="/curator"
-                      className="flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-sm transition-all active:scale-[0.98] sm:shrink-0 w-full sm:w-auto"
+                      className="flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-[48px] px-2.5 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-xs sm:text-sm transition-all active:scale-[0.98] sm:shrink-0 w-full sm:w-auto"
                     >
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                       MikeGTC
                     </Link>
                   )}
                   {/* XP bar — progress reaches to Use XP button; on mobile full width */}
-                  <div className="flex items-stretch rounded-xl overflow-hidden border-2 border-primary bg-primary/25 min-h-[48px] w-full sm:flex-1 sm:min-w-[200px]" title={!useXpAllowed && useXpReason ? useXpReason : t('dashboard.spend100Xp')}>
-                    <div className="flex items-center gap-2 pl-3 pr-2 py-2 min-w-0 flex-1 w-full">
+                  <div className="flex items-stretch rounded-lg sm:rounded-xl overflow-hidden border-2 border-primary bg-primary/25 min-h-[44px] sm:min-h-[48px] w-full sm:flex-1 sm:min-w-[200px]" title={!useXpAllowed && useXpReason ? useXpReason : t('dashboard.spend100Xp')}>
+                    <div className="flex items-center gap-1.5 sm:gap-2 pl-2.5 pr-1.5 sm:pl-3 sm:pr-2 py-1.5 sm:py-2 min-w-0 flex-1 w-full">
                       <span className="text-[10px] font-bold text-primary uppercase tracking-wider shrink-0">XP</span>
                       <span className={`text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
                       {xpInBlock > 0 && xp < 9999 && (
@@ -894,7 +894,7 @@ export default function Dashboard() {
                       onClick={handleUseXp}
                       disabled={!useXpAllowed || useXpLoading}
                       title={useXpReason || t('dashboard.spend100XpPosition')}
-                      className={`shrink-0 min-w-[80px] min-h-[48px] px-3 font-bold text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors flex items-center justify-center ${useXpClicking ? 'animate-use-xp-click' : 'button-press'}`}
+                      className={`shrink-0 min-w-[72px] sm:min-w-[80px] min-h-[44px] sm:min-h-[48px] px-2.5 sm:px-3 font-bold text-[11px] sm:text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors flex items-center justify-center ${useXpClicking ? 'animate-use-xp-click' : 'button-press'}`}
                     >
                       {useXpLoading ? '…' : t('dashboard.useXp')}
                     </button>
@@ -906,10 +906,10 @@ export default function Dashboard() {
 
           {/* Curator: Grant XP to any user or self */}
           {user.role === 'curator' && (
-            <div className="bg-primary/5 rounded-xl shadow-lg p-4 border-2 border-primary/40 animate-fade-in">
-              <h2 className="text-base font-extrabold text-text-primary mb-1">{t('dashboard.grantXp')}</h2>
-              <p className="text-sm text-text-secondary mb-4 font-medium">{t('dashboard.grantXpDesc')}</p>
-              <form onSubmit={handleGrantXp} className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="bg-primary/5 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 border-2 border-primary/40 animate-fade-in">
+              <h2 className="text-sm sm:text-base font-extrabold text-text-primary mb-0.5 sm:mb-1">{t('dashboard.grantXp')}</h2>
+              <p className="text-xs sm:text-sm text-text-secondary mb-3 sm:mb-4 font-medium">{t('dashboard.grantXpDesc')}</p>
+              <form onSubmit={handleGrantXp} className="flex flex-wrap items-center gap-2 sm:gap-4">
                 <select
                   value={grantTargetId}
                   onChange={(e) => setGrantTargetId(e.target.value)}
@@ -941,10 +941,10 @@ export default function Dashboard() {
 
           {/* Tester panel */}
           {user.role === 'tester' && (
-            <div className="bg-amber-500/5 rounded-xl shadow-lg p-4 border-2 border-amber-500/40 animate-fade-in">
-              <h2 className="text-base font-extrabold text-text-primary mb-1">{t('dashboard.adjustXp')}</h2>
-              <p className="text-sm text-text-secondary mb-4 font-medium">{t('dashboard.adjustXpDesc')}</p>
-              <form onSubmit={handleXpAdjustSubmit} className="flex flex-wrap items-center gap-4">
+            <div className="bg-amber-500/5 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 border-2 border-amber-500/40 animate-fade-in">
+              <h2 className="text-sm sm:text-base font-extrabold text-text-primary mb-0.5 sm:mb-1">{t('dashboard.adjustXp')}</h2>
+              <p className="text-xs sm:text-sm text-text-secondary mb-3 sm:mb-4 font-medium">{t('dashboard.adjustXpDesc')}</p>
+              <form onSubmit={handleXpAdjustSubmit} className="flex flex-wrap items-center gap-2 sm:gap-4">
                 <input
                   type="number"
                   value={xpAdjustValue}
@@ -970,9 +970,9 @@ export default function Dashboard() {
             </div>
           )}
 
-          <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
-              <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+          <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border-2 border-gray-700/60">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                 <div className="p-2 bg-primary/10 rounded-lg border-2 border-primary/30 shrink-0">
                   <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
@@ -1062,14 +1062,14 @@ export default function Dashboard() {
           {submissions.length === 0 ? (
             <p className="text-sm font-medium text-text-secondary py-4">{t('dashboard.noSubmissions')}</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {submissions.map((submission, index) => (
                 <div
                   key={submission.id}
-                  className="border-2 rounded-xl p-4 hover:shadow-lg hover:border-primary/40 transition-all duration-200 animate-slide-in bg-background-lighter border-gray-700/50"
+                  className="border-2 rounded-lg sm:rounded-xl p-3 sm:p-4 hover:shadow-lg hover:border-primary/40 transition-all duration-200 animate-slide-in bg-background-lighter border-gray-700/50"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="flex justify-between items-start gap-3 mb-3">
+                  <div className="flex justify-between items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
                     <div className="flex-1 min-w-0">
                       <div className="mb-1">
                         {submission.song_title && (
@@ -1116,16 +1116,16 @@ export default function Dashboard() {
                     const showToggle = isLong
                     const showFull = !showToggle || isExpanded
                     return (
-                      <div className="mb-3 p-3 bg-background rounded-xl border-2 border-gray-700/50">
+                      <div className="mb-2 sm:mb-3 p-2.5 sm:p-3 bg-background rounded-lg sm:rounded-xl border-2 border-gray-700/50">
                         <div className="text-[8px] text-text-secondary font-bold uppercase tracking-wider mb-1.5 opacity-90">{t('common.description')}</div>
-                        <p className={`text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed ${showFull ? '' : 'line-clamp-2'}`}>
+                        <p className={`text-xs sm:text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed ${showFull ? '' : 'line-clamp-2'}`}>
                           {submission.description}
                         </p>
                         {showToggle && (
                           <button
                             type="button"
                             onClick={(e) => { e.preventDefault(); toggleDescriptionExpanded(submission.id) }}
-                            className="mt-2 text-xs font-bold text-primary hover:underline touch-manipulation"
+                            className="mt-1.5 sm:mt-2 text-xs font-bold text-primary hover:underline touch-manipulation min-h-[40px] sm:min-h-0 flex items-center"
                           >
                             {isExpanded ? t('common.hide') : t('common.showMore')}
                           </button>
@@ -1133,7 +1133,7 @@ export default function Dashboard() {
                       </div>
                     )
                   })()}
-                  <div className="mt-3">
+                  <div className="mt-2 sm:mt-3">
                     <SoundCloudEmbed
                       id={submission.id}
                       embedHtml={embedData[submission.id]?.html ?? null}
@@ -1150,13 +1150,13 @@ export default function Dashboard() {
 
           {/* Previous Reviewed Submissions Section */}
           {showReviewed && (
-            <div className="bg-background-light rounded-xl shadow-lg p-4 animate-fade-in border-2 border-gray-700/60">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-2 bg-primary/10 rounded-lg border-2 border-primary/30 shrink-0">
-                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border-2 border-gray-700/60">
+              <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+                <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg border-2 border-primary/30 shrink-0">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <h2 className="text-base font-extrabold text-text-primary tracking-tight">{t('dashboard.results')}</h2>
+                <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+                  <h2 className="text-sm sm:text-base font-extrabold text-text-primary tracking-tight">{t('dashboard.results')}</h2>
                   {reviewedSubmissions.length > 0 && (
                     <span className="text-sm font-bold text-text-secondary bg-background-lighter px-3 py-1 rounded-full border-2 border-gray-600">
                       {reviewedSubmissions.length}
@@ -1165,7 +1165,7 @@ export default function Dashboard() {
                 </div>
               </div>
               {reviewedSubmissions.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {reviewedSubmissions.map((submission, index) => {
                     const review = submission.reviews?.[0]
                     const avgScore = review ? ((Number(review.sound_score) + Number(review.structure_score) + Number(review.mix_score) + Number(review.vibe_score)) / 4).toFixed(1) : null
@@ -1174,11 +1174,11 @@ export default function Dashboard() {
                     return (
                     <div
                       key={submission.id}
-                      className="border-2 rounded-xl p-4 hover:shadow-lg hover:border-primary/40 transition-all duration-200 animate-slide-in bg-background-lighter border-gray-700/50"
+                      className="border-2 rounded-lg sm:rounded-xl p-3 sm:p-4 hover:shadow-lg hover:border-primary/40 transition-all duration-200 animate-slide-in bg-background-lighter border-gray-700/50"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       {/* Header with title, artist, date */}
-                      <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-start justify-between gap-2 sm:gap-3 mb-2 sm:mb-3">
                         <div className="flex-1 min-w-0">
                           <div className="mb-1">
                             {submission.song_title && (
@@ -1219,18 +1219,18 @@ export default function Dashboard() {
                         const showToggle = isLong
                         const showFull = !showToggle || isExpanded
                         return (
-                          <div className="mb-3 p-3 bg-background rounded-xl border-2 border-gray-700/50">
+                          <div className="mb-2 sm:mb-3 p-2.5 sm:p-3 bg-background rounded-lg sm:rounded-xl border-2 border-gray-700/50">
                             <div className="mb-1.5">
                               <div className="text-[8px] text-text-secondary font-bold uppercase tracking-wider mb-1 opacity-90">{t('common.description')}</div>
                             </div>
-                            <p className={`text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed ${showFull ? '' : 'line-clamp-2'}`}>
+                            <p className={`text-xs sm:text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed ${showFull ? '' : 'line-clamp-2'}`}>
                               {submission.description}
                             </p>
                             {showToggle && (
                               <button
                                 type="button"
                                 onClick={(e) => { e.preventDefault(); toggleDescriptionExpanded(submission.id) }}
-                                className="mt-2 text-xs font-bold text-primary hover:underline touch-manipulation"
+                                className="mt-1.5 sm:mt-2 text-xs font-bold text-primary hover:underline touch-manipulation min-h-[40px] sm:min-h-0 flex items-center"
                               >
                                 {isExpanded ? t('common.hide') : t('common.showMore')}
                               </button>
@@ -1241,8 +1241,8 @@ export default function Dashboard() {
 
                       {/* Scores Display */}
                       {review && (
-                        <div className="mb-3">
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="mb-2 sm:mb-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
                             {[
                               { label: 'Sound', score: review.sound_score, bg: 'bg-[#1E2A4A]', border: 'border-[#6A707B]', text: 'text-[#64B5F6]' },
                               { label: 'Structure', score: review.structure_score, bg: 'bg-[#1E4A2E]', border: 'border-[#6A707B]', text: 'text-[#66BB6A]' },
@@ -1251,13 +1251,13 @@ export default function Dashboard() {
                             ].map(({ label, score, bg, border, text }) => (
                               <div 
                                 key={label} 
-                                className={`${bg} border-2 ${border} rounded-lg px-2 py-2 text-center flex flex-col items-center justify-center min-h-[56px]`}
+                                className={`${bg} border-2 ${border} rounded-md sm:rounded-lg px-1.5 py-1.5 sm:px-2 sm:py-2 text-center flex flex-col items-center justify-center min-h-[48px] sm:min-h-[56px]`}
                                 title={label}
                               >
-                                <div className={`text-[8px] ${text} font-bold uppercase mb-1 opacity-90 leading-none`}>{label}</div>
-                                <div className={`text-base font-black ${text} tabular-nums leading-none flex items-baseline justify-center gap-0.5`}>
+                                <div className={`text-[7px] sm:text-[8px] ${text} font-bold uppercase mb-0.5 sm:mb-1 opacity-90 leading-none`}>{label}</div>
+                                <div className={`text-sm sm:text-base font-black ${text} tabular-nums leading-none flex items-baseline justify-center gap-0.5`}>
                                   <span>{score}</span>
-                                  <span className="text-xs opacity-70 leading-none">/10</span>
+                                  <span className="text-[10px] sm:text-xs opacity-70 leading-none">/10</span>
                                 </div>
                               </div>
                             ))}
@@ -1266,7 +1266,7 @@ export default function Dashboard() {
                       )}
 
                       {/* SoundCloud embed */}
-                      <div className="mt-3 rounded-lg overflow-hidden border border-gray-700/30">
+                      <div className="mt-2 sm:mt-3 rounded-lg overflow-hidden border border-gray-700/30">
                         <SoundCloudEmbed
                           id={`reviewed-${submission.id}`}
                           embedHtml={reviewedEmbedData[submission.id]?.html ?? null}
@@ -1278,8 +1278,8 @@ export default function Dashboard() {
 
                       {/* Rating Display - Below embed */}
                       {avgScore && (
-                        <div className="mt-3">
-                          <div className="flex flex-row gap-2">
+                        <div className="mt-2 sm:mt-3">
+                          <div className="flex flex-row gap-1.5 sm:gap-2">
                             <div className="flex-1 min-w-0 bg-primary/5 rounded-lg p-2 border border-primary/20">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
@@ -1337,7 +1337,7 @@ export default function Dashboard() {
             </div>
 
           {/* Sidebar: on phone Queue above XP footer; on lg XP footer above Queue */}
-          <aside className="flex flex-col gap-4 mt-4 lg:mt-0 lg:w-80 xl:w-96 lg:shrink-0 lg:sticky lg:top-16">
+          <aside className="flex flex-col gap-3 sm:gap-4 mt-3 sm:mt-4 lg:mt-0 lg:w-80 xl:w-96 lg:shrink-0 lg:sticky lg:top-16">
             <div className="order-1 lg:order-2">
               <Queue
                 currentUserId={user?.id}

@@ -107,13 +107,13 @@ export default function CarryoverPage() {
 
   return (
     <div className="bg-background animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="pt-8 sm:pt-9 px-3 sm:px-4 md:px-5 pb-4">
-        <div className="max-w-6xl mx-auto space-y-4">
-          <Link href="/dashboard" className="inline-flex items-center min-h-[48px] text-sm font-bold text-primary hover:text-primary-hover underline underline-offset-2 touch-manipulation">
+      <div className="pt-5 sm:pt-9 px-2.5 sm:px-4 md:px-5 pb-3 sm:pb-4">
+        <div className="max-w-6xl mx-auto space-y-3 sm:space-y-4">
+          <Link href="/dashboard" className="inline-flex items-center min-h-[44px] sm:min-h-[48px] text-sm font-bold text-primary hover:text-primary-hover underline underline-offset-2 touch-manipulation">
             {t('carryover.backToDashboard')}
           </Link>
-          <div className="bg-background-light rounded-xl shadow-lg p-4 md:p-5 animate-fade-in border-2 border-gray-700/60">
-            <div className="flex items-start gap-4 mb-4">
+          <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 md:p-5 animate-fade-in border-2 border-gray-700/60">
+            <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
               <div className="p-2 bg-amber-500/10 rounded-lg shrink-0 border-2 border-amber-500/30">
                 <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />

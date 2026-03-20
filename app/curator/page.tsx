@@ -662,29 +662,42 @@ export default function CuratorPage() {
   }
 
   return (
-    <div className="bg-background px-4 sm:px-3 md:p-4 py-4 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div className="bg-background px-2.5 sm:px-3 md:px-4 py-3 sm:py-4 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-7xl mx-auto w-full min-w-0">
-        <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-4 mb-4 animate-fade-in border border-gray-800/50 sm:rounded-xl">
-          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
-            <h1 className="text-lg font-bold text-text-primary truncate min-w-0 sm:text-xl md:text-2xl">MikeGTC Panel</h1>
-            <div className="flex items-center gap-3 shrink-0 flex-wrap">
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="min-h-[42px] px-4 py-2 text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
+        <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 mb-3 sm:mb-4 animate-fade-in border border-gray-800/50">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+            <h1 className="text-base font-bold text-text-primary truncate min-w-0 sm:text-xl md:text-2xl">MikeGTC Panel</h1>
+            <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-stretch sm:w-auto sm:gap-2 sm:shrink-0">
+              <div className="flex gap-2 w-full sm:w-auto">
+                <button
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="flex-1 sm:flex-none min-h-[44px] px-3 py-2 text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
+                >
+                  {showSettings ? 'Hide' : 'Settings'}
+                </button>
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className="flex-1 sm:flex-none min-h-[44px] px-3 py-2 text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
+                >
+                  Dashboard
+                </button>
+              </div>
+              {/* XP bar — full width on phone, fixed width on larger screens */}
+              <div
+                className="flex items-stretch rounded-lg overflow-hidden border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 h-[44px] w-full sm:w-[220px] sm:min-w-[200px] sm:max-w-[220px] shadow-sm"
+                title={!useXpAllowed && useXpReason ? useXpReason : t('dashboard.spend100Xp')}
               >
-                {showSettings ? 'Hide' : 'Settings'}
-              </button>
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="min-h-[42px] px-4 py-2 text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
-              >
-                Dashboard
-              </button>
-              {/* XP bar — same height as buttons, longer */}
-              <div className="flex items-stretch rounded-lg overflow-hidden border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 h-[42px] w-[220px] min-w-[200px] shrink-0 shadow-sm" title={!useXpAllowed && useXpReason ? useXpReason : t('dashboard.spend100Xp')}>
-                <div className="flex items-center gap-2 pl-3 pr-2 py-2 min-w-0 flex-1">
+                <div className="flex items-center gap-2 pl-2.5 pr-2 py-2 min-w-0 flex-1">
                   <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0">XP</span>
-                  <span className={`text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
+                  <span className={`text-sm sm:text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
+                  {xp % 100 > 0 && xp < 9999 && (
+                    <div className="flex sm:hidden items-center gap-1 min-w-0 flex-1">
+                      <div className="h-1.5 bg-background-lighter/80 rounded-full overflow-hidden flex-1 min-w-0">
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${xp % 100}%` }} />
+                      </div>
+                      <span className="text-[9px] text-text-muted tabular-nums font-semibold shrink-0">{100 - (xp % 100)}</span>
+                    </div>
+                  )}
                   {xp % 100 > 0 && xp < 9999 && (
                     <div className="hidden sm:flex items-center gap-1 min-w-0 flex-1">
                       <div className="w-6 h-1.5 bg-background-lighter/80 rounded-full overflow-hidden flex-1 min-w-0 max-w-[40px]">
@@ -700,7 +713,7 @@ export default function CuratorPage() {
                   onClick={handleUseXp}
                   disabled={!useXpAllowed || useXpLoading}
                   title={useXpReason || t('dashboard.spend100XpPosition')}
-                  className="shrink-0 min-w-[64px] h-[42px] px-3 font-bold text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors button-press"
+                  className="shrink-0 min-w-[68px] sm:min-w-[64px] h-[44px] px-2.5 sm:px-3 font-bold text-[11px] sm:text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors button-press"
                 >
                   {useXpLoading ? '…' : 'Use XP'}
                 </button>
@@ -799,11 +812,11 @@ export default function CuratorPage() {
             {error}
           </div>
         )}
-        <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
           {/* Pending submissions sidebar - compact, on the left */}
-          <div className={`${selectedSubmission ? 'hidden lg:block' : 'block'} lg:w-56 xl:w-64 lg:shrink-0 space-y-4`}>
-            <div className="bg-background-light rounded-xl shadow-lg p-3 animate-fade-in border-2 border-gray-700/60">
-              <h2 className="text-sm font-extrabold text-text-primary mb-3 tracking-tight">
+          <div className={`${selectedSubmission ? 'hidden lg:block' : 'block'} lg:w-56 xl:w-64 lg:shrink-0 space-y-3 sm:space-y-4`}>
+            <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-2.5 sm:p-3 animate-fade-in border-2 border-gray-700/60">
+              <h2 className="text-xs sm:text-sm font-extrabold text-text-primary mb-2 sm:mb-3 tracking-tight">
                 {t('queue.title')} ({submissions.length})
               </h2>
               {submissions.length === 0 ? (
@@ -907,9 +920,9 @@ export default function CuratorPage() {
             </div>
 
             {/* Submitters field - shows users in queue order */}
-            <div className="bg-background-light rounded-xl shadow-lg p-3 animate-fade-in border-2 border-gray-700/60">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-extrabold text-text-primary tracking-tight">
+            <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-2.5 sm:p-3 animate-fade-in border-2 border-gray-700/60">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <h2 className="text-xs sm:text-sm font-extrabold text-text-primary tracking-tight">
                   {t('curator.submitters')} ({getQueueSubmitters().length})
                 </h2>
                 <button
@@ -970,10 +983,10 @@ export default function CuratorPage() {
           </div>
 
           {/* Review window - wider, focuses on embed */}
-          <div className={`${selectedSubmission ? 'block' : 'hidden lg:block'} flex-1 min-w-0`}>
-            <div className="bg-background-light rounded-xl shadow-lg p-4 sm:p-5 animate-fade-in border-2 border-gray-700/60">
+            <div className={`${selectedSubmission ? 'block' : 'hidden lg:block'} flex-1 min-w-0`}>
+            <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-5 animate-fade-in border-2 border-gray-700/60">
               {selectedSubmission ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {/* Back button on mobile */}
                   <button
                     type="button"
@@ -984,7 +997,7 @@ export default function CuratorPage() {
                       setClosingDescriptionOverlay(false)
                       setClosingRatingOverlay(false)
                     }}
-                    className="lg:hidden flex items-center gap-2 text-text-secondary hover:text-primary transition-colors font-medium text-sm"
+                    className="lg:hidden flex items-center gap-2 -ml-1 px-1 min-h-[44px] text-text-secondary hover:text-primary transition-colors font-medium text-sm touch-manipulation"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -993,9 +1006,9 @@ export default function CuratorPage() {
                   </button>
 
                   {/* Track info — matches general design */}
-                  <div className="pb-3 border-b border-gray-800/50">
-                    <div className="flex items-stretch flex-wrap gap-2">
-                      <div className="flex-1 min-w-[140px] flex flex-col gap-0.5 rounded-lg border-2 border-primary/40 bg-primary/5 px-3 py-2">
+                  <div className="pb-2 sm:pb-3 border-b border-gray-800/50">
+                    <div className="flex items-stretch flex-wrap gap-1.5 sm:gap-2">
+                      <div className="flex-1 min-w-[min(100%,8rem)] sm:min-w-[140px] flex flex-col gap-0.5 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2 py-1.5 sm:px-3 sm:py-2">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Song</span>
                         <span className="text-base font-bold text-text-primary truncate">
                           {(() => {
@@ -1008,24 +1021,24 @@ export default function CuratorPage() {
                           })()}
                         </span>
                       </div>
-                      <div className="flex-1 min-w-[120px] flex flex-col gap-0.5 rounded-lg border border-gray-800/50 bg-background-lighter px-3 py-2">
+                      <div className="flex-1 min-w-[min(100%,7rem)] sm:min-w-[120px] flex flex-col gap-0.5 rounded-md sm:rounded-lg border border-gray-800/50 bg-background-lighter px-2 py-1.5 sm:px-3 sm:py-2">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Artist</span>
                         <span className="text-sm font-semibold text-text-primary truncate">
                           {selectedSubmission.artist_name || submissionSoundCloudMetadata[selectedSubmission.id]?.author_name || selectedSubmission.users.display_name}
                         </span>
                       </div>
-                      <div className="min-w-[100px] flex flex-col gap-0.5 rounded-lg border-2 border-primary/40 bg-primary/5 px-3 py-2">
+                      <div className="min-w-[min(100%,5.5rem)] sm:min-w-[100px] flex flex-col gap-0.5 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2 py-1.5 sm:px-3 sm:py-2">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Genre</span>
                         <span className="text-sm font-bold text-primary truncate">
                           {selectedSubmission.genre ? (selectedSubmission.genre?.match(/\(([^)]+)\)\s*$/) ?? [null, selectedSubmission.genre])[1] : '—'}
                         </span>
                       </div>
-                      <div className="min-w-[100px] flex flex-col gap-0.5 rounded-lg border border-gray-800/50 bg-background-lighter px-3 py-2">
+                      <div className="min-w-[min(100%,5.5rem)] sm:min-w-[100px] flex flex-col gap-0.5 rounded-md sm:rounded-lg border border-gray-800/50 bg-background-lighter px-2 py-1.5 sm:px-3 sm:py-2">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Submitter</span>
                         <span className="text-sm text-text-secondary truncate">{selectedSubmission.users.display_name}</span>
                       </div>
                       {selectedSubmission.session_number != null && (
-                        <div className="flex flex-col justify-center rounded-lg border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 px-3 py-2 shrink-0">
+                        <div className="flex flex-col justify-center rounded-md sm:rounded-lg border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 px-2 py-1.5 sm:px-3 sm:py-2 shrink-0">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Session</span>
                           <span className="text-base font-bold text-primary tabular-nums">#{selectedSubmission.session_number}</span>
                         </div>
@@ -1034,7 +1047,7 @@ export default function CuratorPage() {
                   </div>
 
                   {/* Large SoundCloud embed */}
-                  <div className="soundcloud-embed-large bg-background rounded-xl border-2 border-gray-700/50 overflow-hidden p-3 relative">
+                  <div className="soundcloud-embed-large bg-background rounded-lg sm:rounded-xl border-2 border-gray-700/50 overflow-hidden p-2 sm:p-3 relative">
                     <SoundCloudEmbed 
                       key={`embed-wrapper-${selectedSubmission.id}`}
                       submissionId={selectedSubmission.id}

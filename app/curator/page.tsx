@@ -458,7 +458,7 @@ export default function CuratorPage() {
       
       // Refresh submissions list
       fetchPendingSubmissions()
-      
+
       setTimeout(() => setSuccess(false), 3000)
     } catch (error) {
       setError('An error occurred. Please try again.')
@@ -668,16 +668,22 @@ export default function CuratorPage() {
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
             <h1 className="text-base font-bold text-text-primary truncate min-w-0 sm:text-xl md:text-2xl">MikeGTC Panel</h1>
             <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-stretch sm:w-auto sm:gap-2 sm:shrink-0">
-              <div className="flex gap-2 w-full sm:w-auto">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <button
                   onClick={() => setShowSettings(!showSettings)}
-                  className="flex-1 sm:flex-none min-h-[44px] px-3 py-2 text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
+                  className="flex-1 sm:flex-none min-h-[44px] min-w-[7rem] px-3 py-2 text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
                 >
                   {showSettings ? 'Hide' : 'Settings'}
                 </button>
+                <Link
+                  href="/curator/xp"
+                  className="flex-1 sm:flex-none min-h-[44px] min-w-[7rem] px-3 py-2 text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation text-center inline-flex items-center justify-center"
+                >
+                  {t('curator.navAllUsersXp')}
+                </Link>
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="flex-1 sm:flex-none min-h-[44px] px-3 py-2 text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
+                  className="flex-1 sm:flex-none min-h-[44px] min-w-[7rem] px-3 py-2 text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
                 >
                   Dashboard
                 </button>
@@ -690,20 +696,18 @@ export default function CuratorPage() {
                 <div className="flex items-center gap-2 pl-2.5 pr-2 py-2 min-w-0 flex-1">
                   <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0">XP</span>
                   <span className={`text-sm sm:text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
-                  {xp % 100 > 0 && xp < 9999 && (
+                  {xp < 9999 && (
                     <div className="flex sm:hidden items-center gap-1 min-w-0 flex-1">
-                      <div className="h-1.5 bg-background-lighter/80 rounded-full overflow-hidden flex-1 min-w-0">
-                        <div className="h-full bg-primary rounded-full" style={{ width: `${xp % 100}%` }} />
+                      <div className="h-2 bg-background-lighter/80 rounded-full overflow-hidden flex-1 min-w-0">
+                        <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${xp % 100}%` }} />
                       </div>
-                      <span className="text-[9px] text-text-muted tabular-nums font-semibold shrink-0">{100 - (xp % 100)}</span>
                     </div>
                   )}
-                  {xp % 100 > 0 && xp < 9999 && (
+                  {xp < 9999 && (
                     <div className="hidden sm:flex items-center gap-1 min-w-0 flex-1">
-                      <div className="w-6 h-1.5 bg-background-lighter/80 rounded-full overflow-hidden flex-1 min-w-0 max-w-[40px]">
-                        <div className="h-full bg-primary rounded-full" style={{ width: `${xp % 100}%` }} />
+                      <div className="w-7 h-2 bg-background-lighter/80 rounded-full overflow-hidden flex-1 min-w-0 max-w-[44px]">
+                        <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${xp % 100}%` }} />
                       </div>
-                      <span className="text-[10px] text-text-muted tabular-nums font-semibold shrink-0">{100 - (xp % 100)}</span>
                     </div>
                   )}
                 </div>

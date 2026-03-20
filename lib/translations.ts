@@ -115,6 +115,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'dashboard.useXpFailed': 'Failed to use XP',
     'dashboard.spend100Xp': 'Spend 100 XP to move up',
     'dashboard.spend100XpPosition': 'Spend 100 XP to move up 1 position',
+    'dashboard.useXpStatusReady': 'You can move up now.',
+    'dashboard.useXpToGoLine': '{n} XP to go',
 
     // Dashboard footer (XP)
     'xp.used': 'Used',
@@ -151,6 +153,13 @@ export const translations: Record<Locale, Record<string, string>> = {
     'curator.unableToEmbed': 'Unable to embed this track.',
     'curator.submitters': 'Submitters',
     'curator.noPendingSubmissions': 'No pending submissions',
+    'curator.allUsersXp': 'Stored XP (all users)',
+    'curator.navAllUsersXp': 'Users XP',
+    'curator.refreshXp': 'Refresh XP',
+    'curator.noUsersWithXp': 'No users with XP yet',
+    'curator.xpListHint':
+      'The queue updates automatically; this list shows stored XP on demand. Refresh to see current totals.',
+    'curator.backToPanel': 'MikeGTC Panel',
     'common.show': 'Show',
 
     // Queue
@@ -327,6 +336,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'dashboard.useXpFailed': 'Не вдалося використати XP',
     'dashboard.spend100Xp': 'Витратити 100 XP, щоб піднятися',
     'dashboard.spend100XpPosition': 'Витратити 100 XP, щоб піднятися на 1 позицію',
+    'dashboard.useXpStatusReady': 'Можна піднятися в черзі.',
+    'dashboard.useXpToGoLine': 'Ще {n} XP',
 
     'xp.used': 'Використано',
     'xp.stored': 'Збережено',
@@ -360,6 +371,13 @@ export const translations: Record<Locale, Record<string, string>> = {
     'curator.unableToEmbed': 'Не вдалося вставити цей трек.',
     'curator.submitters': 'Учасники',
     'curator.noPendingSubmissions': 'Немає заявок в очікуванні',
+    'curator.allUsersXp': 'Збережений XP (усі користувачі)',
+    'curator.navAllUsersXp': 'XP користувачів',
+    'curator.refreshXp': 'Оновити XP',
+    'curator.noUsersWithXp': 'Ще ніхто не має XP',
+    'curator.xpListHint':
+      'Черга оновлюється автоматично; цей список показує збережений XP за запитом. Натисніть оновлення, щоб побачити актуальні суми.',
+    'curator.backToPanel': 'Панель MikeGTC',
     'common.show': 'Показати',
 
     'queue.title': 'Черга',
@@ -533,6 +551,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'dashboard.useXpFailed': 'XP nutzen fehlgeschlagen',
     'dashboard.spend100Xp': '100 XP ausgeben, um vorzurücken',
     'dashboard.spend100XpPosition': '100 XP ausgeben, um 1 Position vorzurücken',
+    'dashboard.useXpStatusReady': 'Du kannst jetzt nach oben rutschen.',
+    'dashboard.useXpToGoLine': 'Noch {n} XP',
 
     'xp.used': 'Verbraucht',
     'xp.stored': 'Gespeichert',
@@ -566,6 +586,13 @@ export const translations: Record<Locale, Record<string, string>> = {
     'curator.unableToEmbed': 'Dieser Track kann nicht eingebettet werden.',
     'curator.submitters': 'Einreicher',
     'curator.noPendingSubmissions': 'Keine ausstehenden Einreichungen',
+    'curator.allUsersXp': 'Gespeicherter XP (alle Nutzer)',
+    'curator.navAllUsersXp': 'Nutzer-XP',
+    'curator.refreshXp': 'XP aktualisieren',
+    'curator.noUsersWithXp': 'Noch keine Nutzer mit XP',
+    'curator.xpListHint':
+      'Die Warteschlange aktualisiert sich automatisch; diese Liste zeigt gespeicherten XP auf Abruf. Aktualisieren für aktuelle Summen.',
+    'curator.backToPanel': 'MikeGTC-Panel',
     'common.show': 'Anzeigen',
 
     'queue.title': 'Warteschlange',

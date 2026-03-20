@@ -141,6 +141,7 @@ export default function DashboardFooter({
   useXpReason,
 }: DashboardFooterProps) {
   const { t } = useLanguage()
+  const xpToNext = 100 - (xp % 100)
   const hasReviewXp = xpLog.some(
     (e) => e.source === 'curator_review' || e.source === 'audience_review'
   )
@@ -202,18 +203,64 @@ export default function DashboardFooter({
         {t('xp.howXpWorks')}
       </button>
 
-      {/* Use XP status — why you can / can't use XP */}
-      {useXpAllowed != null && useXpReason != null && (
+      {/* Use XP — same tokens as stat cards + “How XP works” (primary) / amber warning */}
+      {typeof useXpAllowed === 'boolean' && (
         <div
-          className={`mt-2 sm:mt-3 mb-3 sm:mb-4 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg border-2 text-xs sm:text-sm font-medium ${
+          className={`relative mt-3 sm:mt-4 mb-3 sm:mb-4 overflow-hidden rounded-lg sm:rounded-xl border-2 p-3 sm:p-3.5 animate-fade-in transition-shadow ${
             useXpAllowed
-              ? 'bg-primary/10 border-primary/30 text-primary'
-              : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+              ? 'border-primary/40 bg-primary/10 shadow-sm ring-1 ring-inset ring-primary/10'
+              : 'border-gray-700/50 bg-background/80 shadow-sm ring-1 ring-inset ring-white/[0.04]'
           }`}
         >
-          {useXpAllowed
-            ? t('xpHelp.youCanUseXp')
-            : (useXpReason || t('xpHelp.unknownReason'))}
+          <div
+            className={`pointer-events-none absolute inset-x-4 top-0 h-px rounded-full ${
+              useXpAllowed
+                ? 'bg-gradient-to-r from-transparent via-primary/60 to-transparent'
+                : 'bg-gradient-to-r from-transparent via-amber-500/45 to-transparent'
+            }`}
+            aria-hidden
+          />
+          <div className="relative flex items-start gap-3 sm:gap-3.5">
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 shadow-inner ${
+                useXpAllowed
+                  ? 'border-primary/40 bg-primary/15 text-primary'
+                  : 'border-amber-500/30 bg-amber-500/[0.08] text-amber-400'
+              }`}
+              aria-hidden
+            >
+              {useXpAllowed ? (
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              )}
+            </div>
+            <div className="min-w-0 flex-1 space-y-1.5 pt-0.5">
+              <p
+                className={`text-sm sm:text-[15px] leading-snug font-semibold tracking-tight ${
+                  useXpAllowed ? 'text-primary' : 'text-text-primary'
+                }`}
+              >
+                {useXpAllowed
+                  ? t('dashboard.useXpStatusReady')
+                  : useXpReason || t('xpHelp.unknownReason')}
+              </p>
+              {!useXpAllowed && xp < 9999 && (
+                <p className="text-xs font-medium leading-relaxed text-text-secondary">
+                  {t('dashboard.useXpToGoLine').replace(/\{n\}/g, String(xpToNext))}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

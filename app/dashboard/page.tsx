@@ -675,7 +675,6 @@ export default function Dashboard() {
     return () => clearTimeout(t)
   }, [grantMessage])
 
-  const xpToNext = 100 - (xp % 100)
   const xpInBlock = xp % 100
 
   // Convert SoundCloud URL to embed URL - simplified approach
@@ -879,12 +878,11 @@ export default function Dashboard() {
                     <div className="flex items-center gap-1.5 sm:gap-2 pl-2.5 pr-1.5 sm:pl-3 sm:pr-2 py-1.5 sm:py-2 min-w-0 flex-1 w-full">
                       <span className="text-[10px] font-bold text-primary uppercase tracking-wider shrink-0">XP</span>
                       <span className={`text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
-                      {xpInBlock > 0 && xp < 9999 && (
+                      {xp < 9999 && (
                         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                          <div className="h-2.5 bg-background/60 rounded-full overflow-hidden flex-1 min-w-0 border-2 border-primary/40">
+                          <div className="h-3.5 bg-background/60 rounded-full overflow-hidden flex-1 min-w-0 border-2 border-primary/40">
                             <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${xpInBlock}%` }} />
                           </div>
-                          <span className="text-[10px] text-primary/90 tabular-nums font-bold shrink-0">{xpToNext} to +1</span>
                         </div>
                       )}
                     </div>

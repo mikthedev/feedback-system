@@ -3,6 +3,10 @@
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION clear_all_user_xp()
-RETURNS void AS $$
+RETURNS void
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
   UPDATE users SET xp = 0;
-$$ LANGUAGE sql SECURITY DEFINER;
+$$;

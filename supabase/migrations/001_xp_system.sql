@@ -30,7 +30,7 @@ CREATE TRIGGER update_user_tokens_updated_at
   BEFORE UPDATE ON user_tokens
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-ALTER TABLE user_tokens DISABLE ROW LEVEL SECURITY;
+ALTER TABLE user_tokens ENABLE ROW LEVEL SECURITY;
 
 -- -----------------------------------------------------------------------------
 -- user_session_xp: per-user, per-session XP tracking (sub/donation, moves, presence)
@@ -55,7 +55,7 @@ CREATE TRIGGER update_user_session_xp_updated_at
   BEFORE UPDATE ON user_session_xp
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-ALTER TABLE user_session_xp DISABLE ROW LEVEL SECURITY;
+ALTER TABLE user_session_xp ENABLE ROW LEVEL SECURITY;
 
 -- -----------------------------------------------------------------------------
 -- submissions: XP snapshot, carryover, time-based XP, audience rating

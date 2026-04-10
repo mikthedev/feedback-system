@@ -20,4 +20,4 @@ CREATE TRIGGER update_audience_chat_ratings_updated_at
   BEFORE UPDATE ON audience_chat_ratings
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-ALTER TABLE audience_chat_ratings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE audience_chat_ratings ENABLE ROW LEVEL SECURITY;

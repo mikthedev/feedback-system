@@ -14,7 +14,8 @@ BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+SET search_path = public, pg_temp;
 
 -- -----------------------------------------------------------------------------
 -- Core tables
@@ -175,7 +176,8 @@ BEGIN
 
   RETURN current_session_number;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+SET search_path = public, pg_temp;
 
 CREATE OR REPLACE FUNCTION close_current_session()
 RETURNS INTEGER AS $$
@@ -198,18 +200,44 @@ BEGIN
   END IF;
   RETURN NULL;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+SET search_path = public, pg_temp;
 
 -- -----------------------------------------------------------------------------
--- RLS disabled (auth via Twitch OAuth + API; service role used server-side)
+-- RLS: lock PostgREST (anon / authenticated); service role bypasses RLS.
+-- Migrations 011–012 apply the same pattern to every public table.
 -- -----------------------------------------------------------------------------
 
-ALTER TABLE users DISABLE ROW LEVEL SECURITY;
-ALTER TABLE submissions DISABLE ROW LEVEL SECURITY;
-ALTER TABLE reviews DISABLE ROW LEVEL SECURITY;
-ALTER TABLE submission_sessions DISABLE ROW LEVEL SECURITY;
-ALTER TABLE app_config DISABLE ROW LEVEL SECURITY;
-ALTER TABLE audience_chat_ratings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE submission_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audience_chat_ratings ENABLE ROW LEVEL SECURITY;
+
+DO $$
+DECLARE
+  t text;
+BEGIN
+  FOR t IN
+    SELECT c.relname
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+      AND c.relkind = 'r'
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS block_anon ON public.%I', t);
+    EXECUTE format(
+      'CREATE POLICY block_anon ON public.%I FOR ALL TO anon USING (false) WITH CHECK (false)',
+      t
+    );
+    EXECUTE format('DROP POLICY IF EXISTS block_authenticated ON public.%I', t);
+    EXECUTE format(
+      'CREATE POLICY block_authenticated ON public.%I FOR ALL TO authenticated USING (false) WITH CHECK (false)',
+      t
+    );
+  END LOOP;
+END $$;
 
 -- Optional: remove legacy settings table if you previously used key-value config
 DROP TABLE IF EXISTS settings;

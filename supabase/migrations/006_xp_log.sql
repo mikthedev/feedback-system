@@ -11,4 +11,4 @@ CREATE TABLE IF NOT EXISTS xp_log (
 CREATE INDEX IF NOT EXISTS idx_xp_log_user_id ON xp_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_xp_log_created_at ON xp_log(created_at DESC);
 
-ALTER TABLE xp_log DISABLE ROW LEVEL SECURITY;
+ALTER TABLE xp_log ENABLE ROW LEVEL SECURITY;

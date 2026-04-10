@@ -124,6 +124,26 @@ CREATE INDEX IF NOT EXISTS idx_reviews_submission_id ON reviews(submission_id);
 CREATE INDEX IF NOT EXISTS idx_users_twitch_id ON users(twitch_id);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 
+-- Chat !rate (1–10), first-in-queue submission only; one row per Twitch user per submission
+CREATE TABLE IF NOT EXISTS audience_chat_ratings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  twitch_user_id TEXT NOT NULL,
+  twitch_login TEXT,
+  score INTEGER NOT NULL CHECK (score >= 1 AND score <= 10),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE (submission_id, twitch_user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_audience_chat_ratings_submission_id
+  ON audience_chat_ratings(submission_id);
+
+DROP TRIGGER IF EXISTS update_audience_chat_ratings_updated_at ON audience_chat_ratings;
+CREATE TRIGGER update_audience_chat_ratings_updated_at
+  BEFORE UPDATE ON audience_chat_ratings
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- -----------------------------------------------------------------------------
 -- Session RPCs (open/close submissions)
 -- -----------------------------------------------------------------------------
@@ -189,6 +209,7 @@ ALTER TABLE submissions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews DISABLE ROW LEVEL SECURITY;
 ALTER TABLE submission_sessions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE app_config DISABLE ROW LEVEL SECURITY;
+ALTER TABLE audience_chat_ratings DISABLE ROW LEVEL SECURITY;
 
 -- Optional: remove legacy settings table if you previously used key-value config
 DROP TABLE IF EXISTS settings;

@@ -84,6 +84,46 @@ function ordinal(n: number): string {
   return n + (s[(v - 20) % 10] || s[v] || s[0])
 }
 
+function useCountUp(target: number, fullDurationMs: number, animEpoch: number): number {
+  const [v, setV] = useState(0)
+  const prevEpochRef = useRef<number | null>(null)
+  const fromRef = useRef(0)
+
+  useEffect(() => {
+    const epochBumped = prevEpochRef.current !== animEpoch
+    prevEpochRef.current = animEpoch
+    const from = epochBumped ? 0 : fromRef.current
+    const duration = epochBumped ? fullDurationMs : Math.min(420, fullDurationMs)
+
+    let raf = 0
+    const t0 = performance.now()
+    const step = (now: number) => {
+      const p = Math.min(1, (now - t0) / duration)
+      const eased = 1 - (1 - p) ** 3
+      const next = from + (target - from) * eased
+      setV(next)
+      if (p < 1) {
+        raf = requestAnimationFrame(step)
+      } else {
+        fromRef.current = target
+      }
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [target, fullDurationMs, animEpoch])
+  return v
+}
+
+function AnimatedAudienceAvg({ value, epoch }: { value: number; epoch: number }) {
+  const v = useCountUp(value, 1000, epoch)
+  return <span className="inline-block tabular-nums">{v.toFixed(1)}</span>
+}
+
+function AnimatedAudienceCount({ value, epoch }: { value: number; epoch: number }) {
+  const v = useCountUp(value, 900, epoch)
+  return <span className="inline-block tabular-nums">{Math.round(v)}</span>
+}
+
 interface Submission {
   id: string
   user_id: string
@@ -160,6 +200,15 @@ export default function CuratorPage() {
   const [useXpAllowed, setUseXpAllowed] = useState(false)
   const [useXpReason, setUseXpReason] = useState('')
   const [useXpLoading, setUseXpLoading] = useState(false)
+  const [audienceLiveForFirst, setAudienceLiveForFirst] = useState<{
+    vote_count: number
+    average: number | null
+  } | null>(null)
+  const [overlayAudience, setOverlayAudience] = useState<{
+    vote_count: number
+    average: number | null
+  }>({ vote_count: 0, average: null })
+  const [ratingAnimEpoch, setRatingAnimEpoch] = useState(0)
 
   const fetchXp = async () => {
     try {
@@ -390,6 +439,70 @@ export default function CuratorPage() {
     const interval = setInterval(fetchPendingSubmissions, 4000)
     return () => clearInterval(interval)
   }, [])
+
+  const frontQueueId = submissions[0]?.id ?? null
+
+  useEffect(() => {
+    if (!frontQueueId) {
+      setAudienceLiveForFirst(null)
+      return
+    }
+    let cancelled = false
+    const poll = async () => {
+      try {
+        const res = await fetch(
+          `/api/audience-rating/stats?submission_id=${encodeURIComponent(frontQueueId)}`,
+          { credentials: 'include' }
+        )
+        if (!res.ok || cancelled) return
+        const d = await res.json()
+        if (!cancelled) {
+          setAudienceLiveForFirst({
+            vote_count: typeof d.vote_count === 'number' ? d.vote_count : 0,
+            average: typeof d.average === 'number' ? d.average : null,
+          })
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    poll()
+    const interval = setInterval(poll, 1800)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [frontQueueId])
+
+  useEffect(() => {
+    if (!showRatingSliders || !selectedSubmission?.id) return
+    const sid = selectedSubmission.id
+    let cancelled = false
+    const poll = async () => {
+      try {
+        const res = await fetch(
+          `/api/audience-rating/stats?submission_id=${encodeURIComponent(sid)}`,
+          { credentials: 'include' }
+        )
+        if (!res.ok || cancelled) return
+        const d = await res.json()
+        if (!cancelled) {
+          setOverlayAudience({
+            vote_count: typeof d.vote_count === 'number' ? d.vote_count : 0,
+            average: typeof d.average === 'number' ? d.average : null,
+          })
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    poll()
+    const interval = setInterval(poll, 2000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [showRatingSliders, selectedSubmission?.id])
 
   // Update queue position ref after render (for move-up detection)
   useEffect(() => {
@@ -1009,12 +1122,12 @@ export default function CuratorPage() {
                     Back
                   </button>
 
-                  {/* Track info — matches general design */}
+                  {/* Track info — shared chip geometry + typography (border-2, min-h, label/value sizes) */}
                   <div className="pb-2 sm:pb-3 border-b border-gray-800/50">
-                    <div className="flex items-stretch flex-wrap gap-1.5 sm:gap-2">
-                      <div className="flex-1 min-w-[min(100%,8rem)] sm:min-w-[140px] flex flex-col gap-0.5 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2 py-1.5 sm:px-3 sm:py-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Song</span>
-                        <span className="text-base font-bold text-text-primary truncate">
+                    <div className="flex flex-wrap items-stretch gap-1.5 sm:gap-2">
+                      <div className="flex min-h-[4rem] min-w-0 flex-1 basis-[min(100%,10rem)] sm:basis-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
+                        <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-primary">Song</span>
+                        <span className="text-sm font-bold leading-tight text-text-primary truncate">
                           {(() => {
                             const rawSong = selectedSubmission.song_title || submissionSoundCloudMetadata[selectedSubmission.id]?.title || 'Untitled Track'
                             const artistDisplay = selectedSubmission.artist_name || submissionSoundCloudMetadata[selectedSubmission.id]?.author_name || selectedSubmission.users.display_name
@@ -1025,26 +1138,36 @@ export default function CuratorPage() {
                           })()}
                         </span>
                       </div>
-                      <div className="flex-1 min-w-[min(100%,7rem)] sm:min-w-[120px] flex flex-col gap-0.5 rounded-md sm:rounded-lg border border-gray-800/50 bg-background-lighter px-2 py-1.5 sm:px-3 sm:py-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Artist</span>
-                        <span className="text-sm font-semibold text-text-primary truncate">
+                      <div className="flex min-h-[4rem] min-w-0 flex-1 basis-[min(100%,10rem)] sm:basis-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-gray-800/50 bg-background-lighter px-2.5 py-2 sm:px-3 sm:py-2.5">
+                        <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-text-muted">Artist</span>
+                        <span className="text-sm font-bold leading-tight text-text-primary truncate">
                           {selectedSubmission.artist_name || submissionSoundCloudMetadata[selectedSubmission.id]?.author_name || selectedSubmission.users.display_name}
                         </span>
                       </div>
-                      <div className="min-w-[min(100%,5.5rem)] sm:min-w-[100px] flex flex-col gap-0.5 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2 py-1.5 sm:px-3 sm:py-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Genre</span>
-                        <span className="text-sm font-bold text-primary truncate">
+                      <div className="flex min-h-[4rem] w-[min(100%,5.5rem)] sm:min-w-[5.5rem] sm:w-auto shrink-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
+                        <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-primary">Genre</span>
+                        <span className="text-sm font-bold leading-tight text-primary truncate">
                           {selectedSubmission.genre ? (selectedSubmission.genre?.match(/\(([^)]+)\)\s*$/) ?? [null, selectedSubmission.genre])[1] : '—'}
                         </span>
                       </div>
-                      <div className="min-w-[min(100%,5.5rem)] sm:min-w-[100px] flex flex-col gap-0.5 rounded-md sm:rounded-lg border border-gray-800/50 bg-background-lighter px-2 py-1.5 sm:px-3 sm:py-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Submitter</span>
-                        <span className="text-sm text-text-secondary truncate">{selectedSubmission.users.display_name}</span>
+                      {submissions[0]?.id === selectedSubmission.id && (
+                        <div className="flex min-h-[4rem] min-w-0 flex-1 basis-[min(100%,12rem)] sm:basis-[8.5rem] flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
+                          <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-primary">
+                            {t('curator.audienceLiveVotes')}
+                          </span>
+                          <span className="text-sm font-bold leading-tight tabular-nums text-text-primary transition-all duration-300">
+                            {audienceLiveForFirst?.vote_count ?? 0}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex min-h-[4rem] min-w-0 flex-1 basis-[min(100%,8rem)] sm:basis-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-gray-800/50 bg-background-lighter px-2.5 py-2 sm:px-3 sm:py-2.5">
+                        <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-text-muted">Submitter</span>
+                        <span className="text-sm font-bold leading-tight text-text-secondary truncate">{selectedSubmission.users.display_name}</span>
                       </div>
                       {selectedSubmission.session_number != null && (
-                        <div className="flex flex-col justify-center rounded-md sm:rounded-lg border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 px-2 py-1.5 sm:px-3 sm:py-2 shrink-0">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Session</span>
-                          <span className="text-base font-bold text-primary tabular-nums">#{selectedSubmission.session_number}</span>
+                        <div className="flex min-h-[4rem] w-fit shrink-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
+                          <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-primary">Session</span>
+                          <span className="text-sm font-bold leading-tight tabular-nums text-primary">#{selectedSubmission.session_number}</span>
                         </div>
                       )}
                     </div>
@@ -1092,10 +1215,10 @@ export default function CuratorPage() {
                         className={`absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl flex items-center justify-center z-10 ${closingRatingOverlay ? 'animate-fade-out' : 'animate-fade-in'}`}
                         onAnimationEnd={() => closingRatingOverlay && (setShowRatingSliders(false), setScores({ sound_score: '0', structure_score: '0', mix_score: '0', vibe_score: '0' }), setClosingRatingOverlay(false))}
                       >
-                        <div className={`bg-background-light rounded-xl p-4 sm:p-5 max-w-2xl w-full mx-4 max-h-[90%] overflow-y-auto border-2 border-gray-700/50 shadow-2xl ${closingRatingOverlay ? 'animate-scale-out' : 'animate-scale-in'}`}>
-                          <form onSubmit={handleSubmitReview} className="space-y-4">
-                            <div className="flex items-center justify-between mb-4">
-                              <h3 className="text-lg font-bold text-text-primary">Rate Song</h3>
+                        <div className={`bg-background-light rounded-xl p-3 sm:p-4 max-w-2xl w-full mx-3 sm:mx-4 max-h-[min(92vh,720px)] overflow-y-auto border-2 border-gray-700/50 shadow-2xl ${closingRatingOverlay ? 'animate-scale-out' : 'animate-scale-in'}`}>
+                          <form onSubmit={handleSubmitReview} className="space-y-2 sm:space-y-3">
+                            <div className="flex items-center justify-between mb-1 sm:mb-2">
+                              <h3 className="text-base sm:text-lg font-bold text-text-primary">Rate Song</h3>
                               <button
                                 type="button"
                                 onClick={() => setClosingRatingOverlay(true)}
@@ -1106,8 +1229,53 @@ export default function CuratorPage() {
                                 </svg>
                               </button>
                             </div>
+
+                            <div className="rounded-lg border-2 border-primary/40 bg-primary/5 px-3 py-2.5">
+                              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                                <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+                                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/20 text-primary">
+                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                    </svg>
+                                  </span>
+                                  <div className="min-w-0">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                                      {t('curator.audienceScore')}
+                                    </p>
+                                    <p className="text-[10px] text-text-secondary leading-snug">
+                                      {t('curator.audienceScoreHint')}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap items-end gap-2 sm:gap-3">
+                                  <div className="rounded-lg border border-gray-700/50 bg-background px-2.5 py-1.5">
+                                    <span className="block text-[9px] font-semibold uppercase tracking-wide text-text-muted">
+                                      {t('curator.audienceAverage')}
+                                    </span>
+                                    <span className="text-lg sm:text-xl font-black tabular-nums leading-tight text-primary">
+                                      {overlayAudience.average == null ? (
+                                        <span className="text-text-muted">—</span>
+                                      ) : (
+                                        <>
+                                          <AnimatedAudienceAvg value={overlayAudience.average} epoch={ratingAnimEpoch} />
+                                          <span className="text-xs font-bold text-text-muted">/10</span>
+                                        </>
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="rounded-lg border border-gray-700/50 bg-background px-2.5 py-1.5">
+                                    <span className="block text-[9px] font-semibold uppercase tracking-wide text-text-muted">
+                                      {t('curator.audienceVotes')}
+                                    </span>
+                                    <span className="text-base sm:text-lg font-black tabular-nums leading-tight text-primary">
+                                      <AnimatedAudienceCount value={overlayAudience.vote_count} epoch={ratingAnimEpoch} />
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                             
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-2 sm:gap-3">
                               {[
                                 { key: 'sound_score', label: 'Sound' },
                                 { key: 'structure_score', label: 'Structure' },
@@ -1117,13 +1285,13 @@ export default function CuratorPage() {
                                 const score = parseFloat(scores[key as keyof typeof scores])
                                 
                                 return (
-                                  <div key={key} className="space-y-2 bg-background rounded-lg p-3 border border-gray-700/50">
-                                    <div className="flex justify-between items-center">
-                                      <label className="text-sm font-bold text-text-primary">
+                                  <div key={key} className="space-y-1 bg-background rounded-lg p-2 sm:p-2.5 border border-gray-700/50">
+                                    <div className="flex justify-between items-center gap-1">
+                                      <label className="text-xs sm:text-sm font-bold text-text-primary">
                                         {label}
                                       </label>
-                                      <span className="text-lg font-extrabold text-primary tabular-nums">
-                                        {scores[key as keyof typeof scores]}<span className="text-sm text-text-muted">/10</span>
+                                      <span className="text-sm sm:text-base font-extrabold text-primary tabular-nums shrink-0">
+                                        {scores[key as keyof typeof scores]}<span className="text-[10px] sm:text-xs text-text-muted">/10</span>
                                       </span>
                                     </div>
                                     
@@ -1135,7 +1303,7 @@ export default function CuratorPage() {
                                         step="0.5"
                                         value={scores[key as keyof typeof scores]}
                                         onChange={(e) => handleSliderChange(key, parseFloat(e.target.value))}
-                                        className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-gradient"
+                                        className="w-full h-1.5 sm:h-2 rounded-lg appearance-none cursor-pointer slider-gradient"
                                         style={{
                                           background: `linear-gradient(to right, 
                                             #ef4444 0%, 
@@ -1148,9 +1316,9 @@ export default function CuratorPage() {
                                       />
                                       
                                       {/* Score indicators - compact */}
-                                      <div className="flex justify-between mt-1.5">
+                                      <div className="flex justify-between mt-1">
                                         {[0, 2, 4, 6, 8, 10].map((num) => (
-                                          <span key={num} className={`text-[9px] font-bold tabular-nums transition-colors ${
+                                          <span key={num} className={`text-[8px] sm:text-[9px] font-bold tabular-nums transition-colors ${
                                             Math.abs(score - num) < 1 ? 'text-primary' : 'text-text-muted'
                                           }`}>
                                             {num}
@@ -1163,18 +1331,18 @@ export default function CuratorPage() {
                               })}
                             </div>
 
-                            <div className="flex gap-3">
+                            <div className="flex gap-2 sm:gap-3 pt-0.5">
                               <button
                                 type="submit"
                                 disabled={submitting}
-                                className="flex-1 min-h-[48px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-2.5 px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] button-press text-sm border-2 border-primary/50 touch-manipulation"
+                                className="flex-1 min-h-[44px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-2 px-3 sm:px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] button-press text-xs sm:text-sm border-2 border-primary/50 touch-manipulation"
                               >
                                 {submitting ? '…' : 'Submit Review'}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setClosingRatingOverlay(true)}
-                                className="min-h-[48px] px-4 py-2.5 border-2 border-gray-700 text-text-primary rounded-xl hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press text-sm font-bold touch-manipulation"
+                                className="min-h-[44px] px-3 sm:px-4 py-2 border-2 border-gray-700 text-text-primary rounded-xl hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press text-xs sm:text-sm font-bold touch-manipulation"
                               >
                                 Cancel
                               </button>
@@ -1202,7 +1370,13 @@ export default function CuratorPage() {
                     )}
                     <button
                       type="button"
-                      onClick={() => (showRatingSliders ? setClosingRatingOverlay(true) : setShowRatingSliders(true))}
+                      onClick={() => {
+                        if (showRatingSliders) setClosingRatingOverlay(true)
+                        else {
+                          setRatingAnimEpoch((e) => e + 1)
+                          setShowRatingSliders(true)
+                        }
+                      }}
                       className={`flex-1 min-h-[56px] px-6 py-3 text-base rounded-xl font-bold transition-all active:scale-[0.98] button-press touch-manipulation min-w-0 ${
                         showRatingSliders
                           ? 'bg-primary text-background border-2 border-primary/50 shadow-lg'

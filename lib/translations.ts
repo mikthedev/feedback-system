@@ -160,6 +160,11 @@ export const translations: Record<Locale, Record<string, string>> = {
     'curator.xpListHint':
       'The queue updates automatically; this list shows stored XP on demand. Refresh to see current totals.',
     'curator.backToPanel': 'MikeGTC Panel',
+    'curator.audienceScore': 'Audience score',
+    'curator.audienceLiveVotes': 'Live votes',
+    'curator.audienceScoreHint': 'From chat · !rate 1–10',
+    'curator.audienceAverage': 'Average',
+    'curator.audienceVotes': 'Votes',
     'common.show': 'Show',
 
     // Queue
@@ -378,6 +383,11 @@ export const translations: Record<Locale, Record<string, string>> = {
     'curator.xpListHint':
       'Черга оновлюється автоматично; цей список показує збережений XP за запитом. Натисніть оновлення, щоб побачити актуальні суми.',
     'curator.backToPanel': 'Панель MikeGTC',
+    'curator.audienceScore': 'Оцінка аудиторії',
+    'curator.audienceLiveVotes': 'Голоси наживо',
+    'curator.audienceScoreHint': 'З чату · !rate 1–10',
+    'curator.audienceAverage': 'Середнє',
+    'curator.audienceVotes': 'Голосів',
     'common.show': 'Показати',
 
     'queue.title': 'Черга',
@@ -593,6 +603,11 @@ export const translations: Record<Locale, Record<string, string>> = {
     'curator.xpListHint':
       'Die Warteschlange aktualisiert sich automatisch; diese Liste zeigt gespeicherten XP auf Abruf. Aktualisieren für aktuelle Summen.',
     'curator.backToPanel': 'MikeGTC-Panel',
+    'curator.audienceScore': 'Publikumsscore',
+    'curator.audienceLiveVotes': 'Live-Stimmen',
+    'curator.audienceScoreHint': 'Aus dem Chat · !rate 1–10',
+    'curator.audienceAverage': 'Durchschnitt',
+    'curator.audienceVotes': 'Stimmen',
     'common.show': 'Anzeigen',
 
     'queue.title': 'Warteschlange',

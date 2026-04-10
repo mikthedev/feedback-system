@@ -4,28 +4,34 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:with-chat-bot": "concurrently -c cyan,magenta -k -n next,chat \"npm run dev\" \"wait-on http://127.0.0.1:3000 && npm run twitch-chat-bot\"",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "twitch-chat-bot": "node scripts/twitch-chat-rate-bot.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.1.0",
+    "@supabase/supabase-js": "^2.38.0",
+    "dotenv": "^17.4.1",
     "next": "^14.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@supabase/supabase-js": "^2.38.0",
-    "@supabase/ssr": "^0.1.0",
     "resend": "^2.0.0",
+    "tmi.js": "^1.8.5",
     "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "typescript": "^5.0.0",
-    "tailwindcss": "^3.3.0",
-    "postcss": "^8.4.0",
     "autoprefixer": "^10.4.0",
+    "concurrently": "^9.2.1",
     "eslint": "^8.0.0",
-    "eslint-config-next": "^14.0.0"
+    "eslint-config-next": "^14.0.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5.0.0",
+    "wait-on": "^9.0.4"
   }
 }

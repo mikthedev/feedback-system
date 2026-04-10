@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { reviewSchema } from '@/lib/validators'
-import { addXp, logXp, curatorAverage, curatorXpFromAverage } from '@/lib/xp'
+import { getAudienceAggregate } from '@/lib/audience-rating'
+import {
+  addXp,
+  logXp,
+  audienceXpFromScore,
+  curatorAverage,
+  curatorXpFromAverage,
+} from '@/lib/xp'
 import { cookies } from 'next/headers'
 
 // POST - Create review (curator only)
@@ -69,10 +76,22 @@ export async function POST(request: NextRequest) {
 
     if (reviewError) throw reviewError
 
-    // Update submission status to reviewed
+    const agg = await getAudienceAggregate(supabase, validatedData.submission_id)
+    const audienceFields: {
+      audience_score: number | null
+      audience_rating_at: string | null
+    } =
+      agg.count > 0 && agg.average != null
+        ? {
+            audience_score: agg.average,
+            audience_rating_at: new Date().toISOString(),
+          }
+        : { audience_score: null, audience_rating_at: null }
+
+    // Update submission status to reviewed + persist chat audience average (if any)
     const { error: updateError } = await supabase
       .from('submissions')
-      .update({ status: 'reviewed' })
+      .update({ status: 'reviewed', ...audienceFields })
       .eq('id', validatedData.submission_id)
 
     if (updateError) throw updateError
@@ -98,6 +117,24 @@ export async function POST(request: NextRequest) {
           await logXp(supabase, submission.user_id, xpAmount, 'curator_review', `Review avg ${avg.toFixed(1)} → +${xpAmount} XP`)
         } catch (e) {
           console.error('Curator XP grant error:', e)
+        }
+      }
+    }
+
+    if (!subErr && submission?.user_id && agg.count > 0 && agg.average != null) {
+      const audXp = audienceXpFromScore(agg.average)
+      if (audXp > 0) {
+        try {
+          await addXp(supabase, submission.user_id, audXp)
+          await logXp(
+            supabase,
+            submission.user_id,
+            audXp,
+            'audience_review',
+            `Chat audience avg ${agg.average.toFixed(1)} → +${audXp} XP`
+          )
+        } catch (e) {
+          console.error('Audience XP grant error:', e)
         }
       }
     }

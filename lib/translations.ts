@@ -13,6 +13,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'home.subtitle': 'Submit your music demos and get feedback from MikeGTC',
     'home.loginTwitch': 'Login with Twitch',
     'home.connecting': 'Connecting...',
+    'home.termsOfService': 'Terms of Service',
+    'home.privacyPolicy': 'Privacy Policy',
 
     // Common
     'common.loading': 'Loading...',
@@ -242,6 +244,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'home.subtitle': 'Надсилайте свої музичні демо та отримуйте відгуки від MikeGTC',
     'home.loginTwitch': 'Увійти через Twitch',
     'home.connecting': 'Підключення...',
+    'home.termsOfService': 'Умови користування',
+    'home.privacyPolicy': 'Політика конфіденційності',
 
     'common.loading': 'Завантаження...',
     'common.submit': 'Надіслати',
@@ -462,6 +466,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'home.subtitle': 'Reiche deine Musikdemos ein und erhalte Feedback von MikeGTC',
     'home.loginTwitch': 'Mit Twitch anmelden',
     'home.connecting': 'Verbinden...',
+    'home.termsOfService': 'Nutzungsbedingungen',
+    'home.privacyPolicy': 'Datenschutzerklärung',
 
     'common.loading': 'Laden...',
     'common.submit': 'Absenden',

@@ -1342,6 +1342,22 @@ export default function Dashboard() {
                 refetchTrigger={queueRefetchTrigger}
                 onQueueLoaded={handleQueueLoaded}
               />
+              <div className="hidden sm:block mt-2 sm:mt-2.5">
+                <div className="grid grid-cols-2 gap-2 w-full">
+                  <Link
+                    href="/terms"
+                    className="inline-flex w-full items-center justify-center min-h-[44px] px-2 py-1.5 rounded-lg border-2 border-gray-600/50 bg-background-lighter text-center text-[11px] font-bold leading-tight text-text-primary transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-primary/40 hover:bg-primary/10"
+                  >
+                    {t('home.termsOfService')}
+                  </Link>
+                  <Link
+                    href="/privacy"
+                    className="inline-flex w-full items-center justify-center min-h-[44px] px-2 py-1.5 rounded-lg border-2 border-gray-600/50 bg-background-lighter text-center text-[11px] font-bold leading-tight text-text-primary transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-primary/40 hover:bg-primary/10"
+                  >
+                    {t('home.privacyPolicy')}
+                  </Link>
+                </div>
+              </div>
             </div>
             <div className="order-2 lg:order-1">
               <DashboardFooter

@@ -2,6 +2,14 @@ import { Resend } from 'resend'
 
 export const resend = new Resend(process.env.RESEND_API_KEY)
 
+/** Optional fields from the submission used to fill template variables (keys must match your Resend template). */
+export type ConfirmationEmailContext = {
+  artistName?: string | null
+  songTitle?: string | null
+  soundcloudUrl?: string | null
+  sessionNumber?: number | null
+}
+
 type TemplateVariableMeta = { key: string }
 
 function substituteDisplayName(value: unknown, displayName: string): string | number {
@@ -11,17 +19,51 @@ function substituteDisplayName(value: unknown, displayName: string): string | nu
   return s.replace(/__DISPLAY_NAME__/g, displayName)
 }
 
+function looksLikeDisplayNameKey(lower: string): boolean {
+  return (
+    lower === 'displayname' ||
+    lower === 'name' ||
+    lower === 'user_name' ||
+    lower === 'username' ||
+    lower === 'display_name'
+  )
+}
+
+function looksLikeArtistKey(lower: string): boolean {
+  return lower.includes('artist') || lower.includes('band') || lower === 'creator'
+}
+
+function looksLikeSongOrTrackKey(lower: string, key: string): boolean {
+  if (lower === 'product') return true // common placeholder name in examples; map to track title for demos
+  return (
+    lower.includes('song') ||
+    lower.includes('track') ||
+    (lower.includes('title') && !lower.includes('subtitle'))
+  )
+}
+
+function looksLikeUrlKey(lower: string): boolean {
+  return lower.includes('url') || lower.includes('link') || lower.endsWith('_href')
+}
+
+function looksLikeNumericKey(lower: string, key: string): boolean {
+  return lower === 'price' || lower === 'amount' || lower === 'session' || key === 'PRICE'
+}
+
 /**
  * Builds the `variables` payload for Resend Templates.
  *
- * - Templates with **no variables** must not send spurious keys. Omit `variables` when empty.
- *   Sending unknown keys (e.g. displayName) can cause Resend to mis-render (e.g. plain text).
- * - Use `RESEND_TEMPLATE_VARIABLES_JSON` for full control (use __DISPLAY_NAME__ in strings).
- * - When the template defines variables, we only fill keys returned by `templates.get`.
+ * **Publishing:** After you edit a template in the Resend dashboard, you must **Publish** (or call
+ * `templates.publish`). API sends only use the latest **published** version — drafts are ignored.
+ *
+ * - Templates with **no variables:** omit `variables` (empty object not sent).
+ * - `RESEND_TEMPLATE_VARIABLES_JSON` overrides everything (use __DISPLAY_NAME__ in strings).
+ * - Otherwise we fill keys returned by `templates.get`, using display name + optional submission context.
  */
 function buildTemplateVariables(
   displayName: string,
   templateVariableKeys: string[],
+  ctx?: ConfirmationEmailContext,
 ): Record<string, string | number> {
   const explicitJson = process.env.RESEND_TEMPLATE_VARIABLES_JSON?.trim()
   if (explicitJson) {
@@ -49,25 +91,42 @@ function buildTemplateVariables(
 
   for (const key of templateVariableKeys) {
     const lower = key.toLowerCase()
-    const looksLikeDisplayName =
-      lower === 'displayname' ||
-      lower === 'name' ||
-      lower === 'user_name' ||
-      lower === 'username' ||
-      lower === 'artist_name'
+    let value: string | number | undefined
 
-    const matchesPreferred = Boolean(preferredKey && key === preferredKey)
-    const matchesHeuristic = !preferredKey && looksLikeDisplayName
+    if (preferredKey && key === preferredKey) {
+      value = displayName
+    } else if (!preferredKey && looksLikeDisplayNameKey(lower)) {
+      value = displayName
+    } else if (ctx) {
+      if (looksLikeArtistKey(lower)) {
+        const v = ctx.artistName?.trim()
+        if (v) value = v
+      } else if (looksLikeSongOrTrackKey(lower, key)) {
+        const v = ctx.songTitle?.trim()
+        if (v) value = v
+      } else if (looksLikeUrlKey(lower)) {
+        const v = ctx.soundcloudUrl?.trim()
+        if (v) value = v
+      } else if (looksLikeNumericKey(lower, key)) {
+        if (typeof ctx.sessionNumber === 'number' && !Number.isNaN(ctx.sessionNumber)) {
+          value = ctx.sessionNumber
+        }
+      }
+    }
 
-    if (matchesPreferred || matchesHeuristic) {
-      variables[key] = displayName
+    if (value !== undefined && value !== '') {
+      variables[key] = value
     }
   }
 
   return variables
 }
 
-export async function sendConfirmationEmail(to: string, displayName: string) {
+export async function sendConfirmationEmail(
+  to: string,
+  displayName: string,
+  ctx?: ConfirmationEmailContext,
+) {
   try {
     const from = process.env.RESEND_FROM_EMAIL || 'noreply@example.com'
     const subject = 'Demo Submission Confirmed'
@@ -109,7 +168,7 @@ export async function sendConfirmationEmail(to: string, displayName: string) {
 
           if (t?.status && t.status !== 'published') {
             console.error(
-              `Template status is "${t.status}" (published is required for production sends). Publish in the Resend dashboard.`,
+              `Template status is "${t.status}". Only published templates are used for sends — open Resend → Templates → Publish your latest changes.`,
               { templateId },
             )
           }
@@ -137,7 +196,7 @@ export async function sendConfirmationEmail(to: string, displayName: string) {
       }
 
       try {
-        const variables = buildTemplateVariables(displayName, templateVariableKeys)
+        const variables = buildTemplateVariables(displayName, templateVariableKeys, ctx)
 
         const templatePayload: { id: string; variables?: Record<string, string | number> } = {
           id: templateId,

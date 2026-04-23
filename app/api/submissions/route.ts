@@ -348,7 +348,12 @@ export async function POST(request: NextRequest) {
     // Send confirmation email (optional - use provided email or user's email)
     const emailToSend = email || user?.email
     if (emailToSend) {
-      await sendConfirmationEmail(emailToSend, user?.display_name || 'User')
+      await sendConfirmationEmail(emailToSend, user?.display_name || 'User', {
+        artistName: submission.artist_name,
+        songTitle: submission.song_title,
+        soundcloudUrl: normalizedUrl,
+        sessionNumber: currentSessionNumber,
+      })
     }
 
     return NextResponse.json({ 

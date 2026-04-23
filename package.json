@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "twitch-chat-bot": "node scripts/twitch-chat-rate-bot.mjs"
+    "twitch-chat-bot": "node scripts/twitch-chat-rate-bot.mjs",
+    "resend:template:publish": "node scripts/resend-template-publish.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.1.0",

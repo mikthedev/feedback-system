@@ -138,8 +138,6 @@ export default function Footer() {
             </div>
             <a
               href="https://mikegtc.com/live"
-              target="_blank"
-              rel="noopener noreferrer"
               className="inline-flex items-center justify-center min-h-[40px] w-full sm:w-auto px-3.5 py-2 rounded-xl bg-gray-600 text-gray-300 font-bold text-sm active:bg-primary active:text-background transition-colors touch-manipulation hover:bg-gray-500 hover:text-white sm:min-h-[40px] sm:rounded-lg border-2 border-transparent hover:border-primary/30 sm:bg-primary sm:text-background sm:hover:bg-primary-hover sm:active:bg-primary-active"
             >
               {t('footer.backToLive')}

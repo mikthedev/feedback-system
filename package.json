@@ -2,6 +2,9 @@
   "name": "demo-feedback-system",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "26.x"
+  },
   "scripts": {
     "dev": "next dev",
     "dev:with-chat-bot": "concurrently -c cyan,magenta -k -n next,chat \"npm run dev\" \"wait-on http://127.0.0.1:3000 && npm run twitch-chat-bot\"",
@@ -24,7 +27,7 @@
     "zod": "^3.22.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.0",

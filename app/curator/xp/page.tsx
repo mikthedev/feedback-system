@@ -79,7 +79,7 @@ export default function CuratorAllUsersXpPage() {
   return (
     <div className="min-h-screen bg-background px-2.5 sm:px-4 md:px-6 py-4 sm:py-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] animate-page-transition">
       <div className="max-w-3xl mx-auto w-full min-w-0 space-y-4 sm:space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="flex flex-row items-start justify-between gap-2 sm:gap-3">
           <div className="min-w-0">
             <Link
               href="/curator"
@@ -90,7 +90,7 @@ export default function CuratorAllUsersXpPage() {
               </svg>
               {t('curator.backToPanel')}
             </Link>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-text-primary tracking-tight">
               {t('curator.allUsersXp')}{' '}
               <span className="text-text-muted font-semibold tabular-nums">({rows.length})</span>
             </h1>
@@ -100,7 +100,7 @@ export default function CuratorAllUsersXpPage() {
             type="button"
             onClick={fetchList}
             disabled={loading}
-            className="shrink-0 min-h-[44px] px-4 py-2.5 text-sm font-bold rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation w-full sm:w-auto"
+            className="shrink-0 min-h-[40px] px-3 py-2 text-xs sm:text-sm font-bold rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation"
           >
             {loading ? '…' : t('curator.refreshXp')}
           </button>

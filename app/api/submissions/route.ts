@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validateSoundCloudUrl, normalizeSoundCloudUrl } from '@/lib/validators'
 import { sendConfirmationEmail } from '@/lib/resend'
+import { placeSubmissionWithTotmSkip } from '@/lib/totm'
 import { cookies } from 'next/headers'
 
 // GET - Fetch user's active submissions (only pending from current session - excludes reviewed and carryover)
@@ -69,7 +70,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { soundcloud_url, email, description, artist_name, song_title, genre } = body
+    const {
+      soundcloud_url,
+      email,
+      description,
+      artist_name,
+      song_title,
+      genre,
+      activate_totm_skip,
+      totm_skip_id,
+    } = body
+    const wantsTotmSkip = activate_totm_skip === true || !!totm_skip_id
 
     // Server-side validation - CRITICAL for security
     if (!soundcloud_url || typeof soundcloud_url !== 'string') {
@@ -320,6 +331,49 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Resolve optional TOTM queue skip before insert (do not consume until placement succeeds)
+    let selectedSkipId: string | null = null
+    if (wantsTotmSkip) {
+      let skipQuery = supabase
+        .from('totm_queue_skips')
+        .select('id, status, earned_year, earned_month')
+        .eq('user_id', userId)
+        .eq('status', 'available')
+        .order('earned_year', { ascending: true })
+        .order('earned_month', { ascending: true })
+        .limit(1)
+
+      if (typeof totm_skip_id === 'string' && totm_skip_id.trim()) {
+        skipQuery = supabase
+          .from('totm_queue_skips')
+          .select('id, status, earned_year, earned_month')
+          .eq('id', totm_skip_id.trim())
+          .eq('user_id', userId)
+          .eq('status', 'available')
+          .limit(1)
+      }
+
+      const { data: skipRows, error: skipLookupErr } = await skipQuery
+      if (skipLookupErr) {
+        console.error('TOTM skip lookup error:', skipLookupErr)
+        return NextResponse.json(
+          { error: 'Could not verify TOTM queue skip. Submission was not created.' },
+          { status: 500 }
+        )
+      }
+      const skip = (skipRows ?? [])[0] as { id: string } | undefined
+      if (!skip) {
+        return NextResponse.json(
+          {
+            error:
+              'No available TOTM queue skip found. Uncheck the skip option or earn a skip by finishing in a monthly Top 10.',
+          },
+          { status: 400 }
+        )
+      }
+      selectedSkipId = skip.id
+    }
+
     // Create submission
     const { data: submission, error: insertError } = await supabase
       .from('submissions')
@@ -337,6 +391,25 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (insertError) throw insertError
+
+    let totmPlacement: { queuePosition: number } | null = null
+    if (selectedSkipId) {
+      const placed = await placeSubmissionWithTotmSkip(supabase, {
+        submissionId: submission.id,
+        sessionNumber: currentSessionNumber,
+        skipId: selectedSkipId,
+        userId,
+      })
+      if (!placed.ok) {
+        // Placement failed — delete the submission so limits/queue stay consistent; skip stays available
+        await supabase.from('submissions').delete().eq('id', submission.id)
+        return NextResponse.json(
+          { error: placed.error || 'TOTM queue placement failed. Your skip was not used.' },
+          { status: 400 }
+        )
+      }
+      totmPlacement = { queuePosition: placed.queuePosition }
+    }
 
     // Get user data for email
     const { data: user } = await supabase
@@ -359,7 +432,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       submission,
-      message: 'Demo submitted successfully'
+      totm_skip_activated: !!totmPlacement,
+      totm_queue_position: totmPlacement?.queuePosition ?? null,
+      message: totmPlacement
+        ? `Demo submitted with TOTM queue skip (position ${totmPlacement.queuePosition}). The skip is consumed when review begins.`
+        : 'Demo submitted successfully'
     })
   } catch (error) {
     console.error('Error creating submission:', error)

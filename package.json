@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "twitch-chat-bot": "node scripts/twitch-chat-rate-bot.mjs",
-    "resend:template:publish": "node scripts/resend-template-publish.mjs"
+    "resend:template:publish": "node scripts/resend-template-publish.mjs",
+    "test:totm": "node scripts/test-totm-selection.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.1.0",

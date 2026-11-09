@@ -1,5 +1,6 @@
 /**
  * Listens to Twitch chat (default: mikegtcoff) and forwards !rate commands to the app API.
+ * Also loads TOTM Featured Artist IDs for chat recognition (!totm + VIP badge via Helix elsewhere).
  *
  * Local dev (same machine as Next.js):
  *   1. Put AUDIENCE_RATING_CHAT_SECRET in .env.local (Next reads it too — must match).
@@ -10,7 +11,6 @@
  * Production: set APP_URL to your public site; run this process on an always-on host (not Vercel).
  *
  * Run via `npm run twitch-chat-bot` — loads `.env` then `.env.local` from the repo root (same as Next).
- * Encrypted Dotenvx files: set vars in the shell or decrypt to plaintext for local dev.
  *
  * Required env:
  *   AUDIENCE_RATING_CHAT_SECRET — same as the Next.js /api route
@@ -18,7 +18,7 @@
  *
  * Optional:
  *   TWITCH_CHAT_CHANNEL — channel login without # (default: mikegtcoff)
- *   TWITCH_IRC_USERNAME + TWITCH_IRC_OAUTH_TOKEN — followers/subs-only chat (chat:read)
+ *   TWITCH_IRC_USERNAME + TWITCH_IRC_OAUTH_TOKEN — followers/subs-only chat (chat:read); needed to reply to !totm
  *   DEBUG_CHAT_RATE=1 — verbose logs
  */
 
@@ -32,7 +32,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = join(__dirname, '..')
 const envLocalPath = join(root, '.env.local')
 const envPath = join(root, '.env')
-// Absolute paths so cwd does not matter (e.g. run from any folder).
 loadEnv({ path: envPath })
 loadEnv({ path: envLocalPath, override: true })
 
@@ -66,6 +65,34 @@ const identity =
       }
     : undefined
 
+/** TOTM Featured Artist cache (Twitch user IDs) */
+let featuredIds = new Set()
+let featuredBadge = '⭐'
+let featuredColor = '#CAF76F'
+let featuredFetchedAt = 0
+const FEATURED_TTL_MS = 5 * 60 * 1000
+
+async function refreshFeaturedArtists() {
+  try {
+    const res = await fetch(`${baseUrl}/api/totm/featured`, {
+      headers: { Authorization: `Bearer ${secret}` },
+    })
+    if (!res.ok) return
+    const data = await res.json()
+    featuredIds = new Set((data.artists || []).map((a) => String(a.twitch_user_id)))
+    if (data.badge) featuredBadge = data.badge
+    if (data.color) featuredColor = data.color
+    featuredFetchedAt = Date.now()
+    if (debug) console.log(`[chat-rate] TOTM featured artists loaded: ${featuredIds.size}`)
+  } catch (e) {
+    if (debug) console.warn('[chat-rate] featured fetch failed:', e.message || e)
+  }
+}
+
+function isFeatured(uid) {
+  return featuredIds.has(String(uid))
+}
+
 const client = new tmi.Client({
   options: {
     debug,
@@ -80,9 +107,35 @@ const client = new tmi.Client({
 client.on('message', async (_channel, tags, message, self) => {
   if (self) return
   const trimmed = (message || '').trim()
+  const uid = tags['user-id']
+
+  if (Date.now() - featuredFetchedAt > FEATURED_TTL_MS) {
+    refreshFeaturedArtists().catch(() => {})
+  }
+
+  if (/^!totm\b/i.test(trimmed)) {
+    if (!uid) return
+    const featured = isFeatured(uid)
+    const name = tags['display-name'] || tags.username || 'user'
+    try {
+      if (identity) {
+        await client.say(
+          _channel,
+          featured
+            ? `${featuredBadge} ${name} is a TOTM Featured Artist (permanent). Chat badge/colour where supported (${featuredColor}).`
+            : `@${tags.username} — not a TOTM Featured Artist yet. Enter a monthly Top 10 to earn it.`
+        )
+      } else if (debug) {
+        console.log(`[chat-rate] !totm ${name} featured=${featured}`)
+      }
+    } catch (e) {
+      console.warn('[chat-rate] !totm reply failed:', e.message || e)
+    }
+    return
+  }
+
   if (!/^!rate\b/i.test(trimmed)) return
 
-  const uid = tags['user-id']
   if (!uid) {
     if (debug) console.warn('[chat-rate] missing user-id tags; try TWITCH_IRC_OAUTH_TOKEN + TWITCH_IRC_USERNAME')
     return
@@ -106,9 +159,10 @@ client.on('message', async (_channel, tags, message, self) => {
       console.warn('[chat-rate] API', res.status, data.error || JSON.stringify(data))
       return
     }
+    const featuredPrefix = isFeatured(uid) ? `${featuredBadge} ` : ''
     if (debug || process.env.NODE_ENV !== 'production') {
       console.log(
-        `[chat-rate] ${tags.username} → ${data.score}/10 (${data.vote_count} votes, avg ${data.average ?? '—'})`
+        `[chat-rate] ${featuredPrefix}${tags.username} → ${data.score}/10 (${data.vote_count} votes, avg ${data.average ?? '—'})`
       )
     }
   } catch (e) {
@@ -122,6 +176,7 @@ client.on('connected', (addr, port) => {
 
 async function main() {
   console.log(`[chat-rate] POST target: ${baseUrl}/api/audience-rating/chat`)
+  await refreshFeaturedArtists()
 
   const isLocal = /localhost|127\.0\.0\.1/.test(baseUrl)
   if (isLocal) {

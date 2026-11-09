@@ -77,9 +77,12 @@ export default function PrivacyContent() {
   const copy = PRIVACY_COPY[locale]
 
   return (
-    <div className="min-h-screen bg-background px-4 py-10 sm:px-6">
-      <div className="mx-auto max-w-3xl rounded-2xl border-2 border-gray-700/60 bg-background-light p-6 sm:p-8">
-        <h1 className="text-3xl font-extrabold text-text-primary">{copy.title}</h1>
+    <div className="min-h-screen bg-background px-3 py-4 pt-[env(safe-area-inset-top)] sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-3xl rounded-2xl border-2 border-gray-700/60 bg-background-light p-4 sm:p-8">
+        <Link href="/" className="mb-3 inline-flex h-8 items-center rounded-lg border-2 border-gray-600 px-2.5 text-xs font-bold text-text-primary">
+          ←
+        </Link>
+        <h1 className="text-2xl font-extrabold text-text-primary sm:text-3xl">{copy.title}</h1>
         <p className="mt-2 text-sm text-text-muted">{copy.updated}</p>
 
         <div className="mt-6 space-y-5 text-sm leading-relaxed text-text-secondary sm:text-base">

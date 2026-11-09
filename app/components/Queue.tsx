@@ -207,11 +207,11 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
           <p className="text-sm font-medium text-text-secondary py-4">{t('queue.empty')}</p>
         ) : (
             <>
-            <div className="space-y-2 sm:space-y-3 max-h-[200px] sm:max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-hide">
+            <div className="space-y-1.5 sm:space-y-3 max-h-[min(58vh,480px)] sm:max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-hide">
               {visibleItems.map((item, index) => (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 min-h-[52px] sm:min-h-[56px] transition-all duration-500 relative overflow-visible ${
+                  className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:p-3 rounded-lg sm:rounded-xl border-2 min-h-[44px] sm:min-h-[56px] transition-all duration-500 relative overflow-visible ${
                     item._isNew ? 'animate-slide-in bg-primary/5 border-primary/30' : 'border-gray-700/50 hover:border-primary/40 hover:bg-background-lighter'
                   } ${
                     item._movedUp ? 'animate-queue-moved-up border-primary/40 bg-primary/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]' : ''

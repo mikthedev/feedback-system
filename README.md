@@ -33,7 +33,7 @@ A minimal MVP for a demo submission and feedback system. Users log in with Twitc
 
 ### XP system
 - **Per-user XP** stored in `users.xp`
-- **Earning XP**: time-based (+5 XP per 5 min when stream is live and submissions open), follow bonus (+10), sub/donation (+20), curator ratings (average 0–10 → 0–60 XP), audience score (0–10 → 0–20 XP)
+- **Earning XP**: time-based (+5 XP per 5 min when stream is live and submissions open), follow bonus (+25), sub/donation (+20), curator ratings (average 0–10 → 0–60 XP), audience score (0–10 → 0–20 XP)
 - **Queue movement**: spend 100 XP per position move (max 3 moves per session); tie-break by presence time
 - **Carryover bonus**: +25 XP when your carried-over submission is in the next session
 - Curator: **Clear all XP**, **Adjust XP** (tester/curator), **Grant donation XP**
@@ -81,7 +81,7 @@ XP is a fairness system that lets users improve their position in the queue. It 
 | Source | Amount | Conditions |
 |--------|--------|------------|
 | **Time XP** | +5 per 5 min | MikeGTC is live on Twitch, submissions are open, and user has a pending track in the queue. Granted when the queue is fetched (per tick of 5 min elapsed since last tick or submit time). |
-| **Follow bonus** | +10 | One-time. Granted when `/api/xp/status` detects the user follows MikeGTC and `follow_bonus_granted` is false. |
+| **Follow bonus** | +25 | One-time. Granted when `/api/xp/status` detects the user follows MikeGTC and `follow_bonus_granted` is false. |
 | **Sub** | +20 | Once per session. Auto-granted when queue is fetched if user is subscribed to MikeGTC and `sub_xp_granted` is false. |
 | **Donation** | +20 | Once per session. Curator manually grants via "Grant donation XP" in the curator panel. |
 | **Carryover** | +25 | When a pending submission moves to carryover (session closes) and later joins the next session (submissions open). |

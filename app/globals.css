@@ -480,3 +480,26 @@ body {
 .animate-xp-block-glow {
   animation: xp-block-glow 2s ease-in-out infinite;
 }
+
+/* Submit Demo + icon shimmer when a TOTM queue skip is available (phone) */
+@keyframes totm-plus-shimmer {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 0 transparent);
+    transform: scale(1);
+  }
+  40% {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(202, 247, 111, 0.85));
+    transform: scale(1.12);
+  }
+  55% {
+    opacity: 0.75;
+    filter: drop-shadow(0 0 2px rgba(202, 247, 111, 0.35));
+    transform: scale(1.02);
+  }
+}
+
+.animate-totm-plus-shimmer {
+  animation: totm-plus-shimmer 2.4s ease-in-out infinite;
+}

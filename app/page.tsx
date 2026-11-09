@@ -42,13 +42,13 @@ export default function Home() {
         <div className="mt-4 grid w-full grid-cols-2 items-stretch gap-2">
           <Link
             href="/terms"
-            className="inline-flex h-full min-h-[56px] items-center justify-center rounded-xl border-2 border-gray-600/50 bg-background-lighter px-2.5 py-2 text-center text-sm font-bold leading-tight text-text-primary transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-primary/40 hover:bg-primary/10 sm:min-h-[40px] sm:px-3"
+            className="inline-flex h-full min-h-[40px] items-center justify-center rounded-xl border-2 border-gray-600/50 bg-background-lighter px-2.5 py-2 text-center text-xs sm:text-sm font-bold leading-tight text-text-primary transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-primary/40 hover:bg-primary/10 sm:min-h-[40px] sm:px-3"
           >
             {t('home.termsOfService')}
           </Link>
           <Link
             href="/privacy"
-            className="inline-flex h-full min-h-[56px] items-center justify-center rounded-xl border-2 border-gray-600/50 bg-background-lighter px-2.5 py-2 text-center text-sm font-bold leading-tight text-text-primary transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-primary/40 hover:bg-primary/10 sm:min-h-[40px] sm:px-3"
+            className="inline-flex h-full min-h-[40px] items-center justify-center rounded-xl border-2 border-gray-600/50 bg-background-lighter px-2.5 py-2 text-center text-xs sm:text-sm font-bold leading-tight text-text-primary transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-primary/40 hover:bg-primary/10 sm:min-h-[40px] sm:px-3"
           >
             {t('home.privacyPolicy')}
           </Link>

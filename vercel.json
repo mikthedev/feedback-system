@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/totm/cron/finalize",
+      "schedule": "5 0 1 * *"
+    },
+    {
+      "path": "/api/totm/cron/availability",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}

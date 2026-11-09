@@ -106,7 +106,7 @@ export async function GET(_request: NextRequest) {
           following_mikegtcoff = await userFollowsMikegtcoff(twitchId, accessToken)
           if (following_mikegtcoff && !u?.follow_bonus_granted) {
             await addXp(supabase, userId, FOLLOW_XP)
-            await logXp(supabase, userId, FOLLOW_XP, 'follow', 'Follow MikeGTC +10 XP')
+            await logXp(supabase, userId, FOLLOW_XP, 'follow', `Follow MikeGTC +${FOLLOW_XP} XP`)
             await supabase
               .from('users')
               .update({ follow_bonus_granted: true })

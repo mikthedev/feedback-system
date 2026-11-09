@@ -9,6 +9,7 @@ import {
   curatorAverage,
   curatorXpFromAverage,
 } from '@/lib/xp'
+import { calendarMonthKey, consumeTotmSkipForSubmission, syncTotmMonth } from '@/lib/totm'
 import { cookies } from 'next/headers'
 
 // POST - Create review (curator only)
@@ -76,6 +77,13 @@ export async function POST(request: NextRequest) {
 
     if (reviewError) throw reviewError
 
+    // TOTM queue skip is consumed when review actually begins (this review create)
+    try {
+      await consumeTotmSkipForSubmission(supabase, validatedData.submission_id)
+    } catch (e) {
+      console.error('TOTM skip consume error:', e)
+    }
+
     const agg = await getAudienceAggregate(supabase, validatedData.submission_id)
     const audienceFields: {
       audience_score: number | null
@@ -137,6 +145,15 @@ export async function POST(request: NextRequest) {
           console.error('Audience XP grant error:', e)
         }
       }
+    }
+
+    // Update Top of the Month selection for the review's calendar month
+    try {
+      const reviewAt = new Date((review as { created_at?: string }).created_at || Date.now())
+      const { year, month } = calendarMonthKey(reviewAt)
+      await syncTotmMonth(supabase, year, month)
+    } catch (e) {
+      console.error('TOTM sync after review error:', e)
     }
 
     return NextResponse.json({ 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { addXp, logXp, CARRYOVER_XP } from '@/lib/xp'
+import { restoreTotmSkipIfActivatedForSubmission } from '@/lib/totm'
 import { cookies } from 'next/headers'
 
 // POST - Curator moves a submission to carryover (Skip)
@@ -56,6 +57,13 @@ export async function POST(
       .eq('id', id)
 
     if (updateError) throw updateError
+
+    // Activated TOTM skip is not consumed if review never began
+    try {
+      await restoreTotmSkipIfActivatedForSubmission(supabase, id)
+    } catch (e) {
+      console.error('TOTM skip restore on carryover error:', e)
+    }
 
     try {
       await addXp(supabase, submitterUserId, CARRYOVER_XP)

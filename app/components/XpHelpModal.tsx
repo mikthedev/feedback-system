@@ -23,9 +23,10 @@ interface XpHelpModalProps {
 const XP_BLOCK_KEYS = [
   { labelKey: 'xpHelp.timeXpLabel', subKey: 'xpHelp.timeXpSub', valueKey: null as string | null, value: '+5', color: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400', hover: 'hover:bg-emerald-500/30 hover:border-emerald-500/60 hover:ring-2 hover:ring-emerald-500/40' },
   { labelKey: 'xpHelp.carryoverLabel', subKey: 'xpHelp.carryoverSub', valueKey: null, value: '+25', color: 'bg-amber-500/20 border-amber-500/40 text-amber-400', hover: 'hover:bg-amber-500/30 hover:border-amber-500/60 hover:ring-2 hover:ring-amber-500/40' },
-  { labelKey: 'xpHelp.followLabel', subKey: 'xpHelp.followSub', valueKey: null, value: '+10', color: 'bg-blue-500/20 border-blue-500/40 text-blue-400', hover: 'hover:bg-blue-500/30 hover:border-blue-500/60 hover:ring-2 hover:ring-blue-500/40' },
+  { labelKey: 'xpHelp.followLabel', subKey: 'xpHelp.followSub', valueKey: null, value: '+25', color: 'bg-blue-500/20 border-blue-500/40 text-blue-400', hover: 'hover:bg-blue-500/30 hover:border-blue-500/60 hover:ring-2 hover:ring-blue-500/40' },
   { labelKey: 'xpHelp.subDonationLabel', subKey: 'xpHelp.subDonationSub', valueKey: null, value: '+20', color: 'bg-purple-500/20 border-purple-500/40 text-purple-400', hover: 'hover:bg-purple-500/30 hover:border-purple-500/60 hover:ring-2 hover:ring-purple-500/40' },
   { labelKey: 'xpHelp.reviewLabel', subKey: 'xpHelp.reviewSub', valueKey: null, value: '10–60', color: 'bg-primary/20 border-primary/40 text-primary', hover: 'hover:bg-primary/30 hover:border-primary/60 hover:ring-2 hover:ring-primary/50' },
+  { labelKey: 'xpHelp.communityLabel', subKey: 'xpHelp.communitySub', valueKey: null, value: '10–20', color: 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400', hover: 'hover:bg-cyan-500/30 hover:border-cyan-500/60 hover:ring-2 hover:ring-cyan-500/40' },
   { labelKey: 'xpHelp.useXpLabel', subKey: 'xpHelp.useXpSub', valueKey: 'xpHelp.valueUseXp', value: '100 XP = 1 spot', color: 'bg-gray-600/30 border-gray-600/50 text-text-primary', hover: 'hover:bg-gray-600/40 hover:border-gray-600/70 hover:ring-2 hover:ring-gray-500/30' },
 ] as const
 
@@ -113,6 +114,21 @@ export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
           </div>
 
           <div className="border-t border-gray-800/50 pt-3 sm:pt-4">
+            <p className="text-text-muted font-semibold mb-1.5 uppercase tracking-wider text-[10px] sm:mb-2.5">{t('xpHelp.communitySection')}</p>
+            <p className="text-text-secondary leading-snug text-[11px] mb-1.5 sm:text-xs sm:mb-2">{t('xpHelp.communityIntro')}</p>
+            <ul className="space-y-1.5 text-text-secondary leading-snug text-[11px] sm:space-y-2 sm:text-xs">
+              <li className="flex gap-2">
+                <span className="text-cyan-400 shrink-0">•</span>
+                <span>{t('xpHelp.communityViewersNote')}</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-cyan-400 shrink-0">•</span>
+                <span>{t('xpHelp.communityParticipantsNote')}</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="border-t border-gray-800/50 pt-3 sm:pt-4">
             <p className="text-text-muted font-semibold mb-1.5 uppercase tracking-wider text-[10px] sm:mb-2.5">{t('xpHelp.howItWorks')}</p>
             <ul className="space-y-1.5 text-text-secondary leading-snug text-[11px] sm:space-y-2 sm:text-xs">
               <li className="flex gap-2">
@@ -122,6 +138,10 @@ export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
               <li className="flex gap-2">
                 <span className="text-primary shrink-0">•</span>
                 <span>{t('xpHelp.reviewNote')}</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-primary shrink-0">•</span>
+                <span>{t('xpHelp.communityXpNote')}</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-primary shrink-0">•</span>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { addXp, logXp } from '@/lib/xp'
 import { CARRYOVER_XP } from '@/lib/xp'
+import { restoreTotmSkipIfActivatedForSubmission } from '@/lib/totm'
 import { cookies } from 'next/headers'
 
 // GET - Get submissions status (app_config.submissions_open)
@@ -131,11 +132,16 @@ export async function POST(request: NextRequest) {
         const sn = (openRow as { session_number: number }).session_number
         const { data: pending } = await supabase
           .from('submissions')
-          .select('id, user_id, carryover_bonus_granted')
+          .select('id, user_id, carryover_bonus_granted, totm_skip_id')
           .eq('status', 'pending')
           .eq('session_number', sn)
         for (const row of pending || []) {
-          const r = row as { id: string; user_id: string; carryover_bonus_granted: boolean }
+          const r = row as {
+            id: string
+            user_id: string
+            carryover_bonus_granted: boolean
+            totm_skip_id?: string | null
+          }
           if (!r.carryover_bonus_granted) {
             try {
               await addXp(supabase, r.user_id, CARRYOVER_XP)
@@ -147,6 +153,14 @@ export async function POST(request: NextRequest) {
               .from('submissions')
               .update({ carryover_bonus_granted: true })
               .eq('id', r.id)
+          }
+          // Review never began — restore activated TOTM skip (priority is lost on session end)
+          if (r.totm_skip_id) {
+            try {
+              await restoreTotmSkipIfActivatedForSubmission(supabase, r.id)
+            } catch (e) {
+              console.error('TOTM skip restore on session close error:', e)
+            }
           }
         }
         const { error: updateErr } = await supabase

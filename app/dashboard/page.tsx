@@ -8,7 +8,12 @@ import XpHelpModal, { getXpHelpDismissed } from '../components/XpHelpModal'
 import IndicatorsHelpModal from '../components/IndicatorsHelpModal'
 import DashboardFooter from '../components/DashboardFooter'
 import SoundCloudEmbed from '../components/SoundCloudEmbed'
+import ScoreBoard from '../components/ScoreBoard'
+import TotmDashboardPanel from '../components/TotmDashboardPanel'
+import TotmLeaderboardIcon, { TotmSkipIcon } from '../components/TotmLeaderboardIcon'
 import { useLanguage } from '@/app/context/LanguageContext'
+
+type DashPane = 'queue' | 'tracks' | 'results' | 'xp' | 'totm'
 
 interface User {
   id: string
@@ -50,6 +55,7 @@ export default function Dashboard() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [reviewedSubmissions, setReviewedSubmissions] = useState<Submission[]>([])
   const [showReviewed, setShowReviewed] = useState(false)
+  const [mobilePane, setMobilePane] = useState<DashPane>('queue')
   const [loadingReviewed, setLoadingReviewed] = useState(false)
   const [showAvgMetrics, setShowAvgMetrics] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -64,8 +70,6 @@ export default function Dashboard() {
   const [showIndicatorsHelpModal, setShowIndicatorsHelpModal] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const hasAutoShownXpHelpRef = useRef(false)
-  const [xpAdjustValue, setXpAdjustValue] = useState('')
-  const [xpAdjusting, setXpAdjusting] = useState(false)
   const [xp, setXp] = useState<number>(0)
   const [xpUsedThisSession, setXpUsedThisSession] = useState<number>(0)
   const [externalXpThisSession, setExternalXpThisSession] = useState<number>(0)
@@ -77,7 +81,6 @@ export default function Dashboard() {
   const [loadingXpLog, setLoadingXpLog] = useState(false)
   const [carryoverCount, setCarryoverCount] = useState(0)
   const [queueRefetchTrigger, setQueueRefetchTrigger] = useState(0)
-  const [xpAdjustMessage, setXpAdjustMessage] = useState<string | null>(null)
   const [useXpMessage, setUseXpMessage] = useState<string | null>(null)
   const [useXpBlocked, setUseXpBlocked] = useState(false)
   const [useXpLoading, setUseXpLoading] = useState(false)
@@ -90,11 +93,7 @@ export default function Dashboard() {
   const [accentColor, setAccentColor] = useState<string | null>(null)
   const lastMyPositionsRef = useRef<Record<string, number>>({})
   const [expandedDescriptionIds, setExpandedDescriptionIds] = useState<Set<string>>(new Set())
-  const [grantUsers, setGrantUsers] = useState<Array<{ id: string; display_name: string }>>([])
-  const [grantTargetId, setGrantTargetId] = useState<string>('self')
-  const [grantAmount, setGrantAmount] = useState('')
-  const [grantLoading, setGrantLoading] = useState(false)
-  const [grantMessage, setGrantMessage] = useState<string | null>(null)
+  const [totmAvailableSkips, setTotmAvailableSkips] = useState(0)
 
   const DESCRIPTION_COLLAPSE_THRESHOLD = 120
   const toggleDescriptionExpanded = (id: string) => {
@@ -264,56 +263,6 @@ export default function Dashboard() {
     }
   }
 
-  const fetchGrantUsers = async () => {
-    try {
-      const res = await fetch('/api/users', { credentials: 'include' })
-      if (!res.ok) return
-      const data = await res.json()
-      setGrantUsers(data.users ?? [])
-    } catch {
-      setGrantUsers([])
-    }
-  }
-
-  const handleGrantXp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (user?.role !== 'curator') return
-    setGrantMessage(null)
-    setGrantLoading(true)
-    try {
-      const amount = parseInt(grantAmount, 10)
-      if (Number.isNaN(amount) || amount === 0) {
-        setGrantMessage(t('dashboard.grantEnterAmount'))
-        return
-      }
-      const res = await fetch('/api/xp/grant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: grantTargetId === 'self' || !grantTargetId ? undefined : grantTargetId,
-          amount,
-        }),
-        credentials: 'include',
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setGrantMessage(data?.error ?? t('dashboard.grantFailed'))
-        return
-      }
-      setGrantMessage(data.message ?? t('dashboard.done'))
-      setGrantAmount('')
-      if (grantTargetId === 'self' || !grantTargetId) {
-        fetchXp()
-        setUser((u) => (u ? { ...u, xp: data.new_total } : null))
-        setXp(data.new_total)
-      }
-    } catch (err) {
-      setGrantMessage(t('common.somethingWentWrong'))
-    } finally {
-      setGrantLoading(false)
-    }
-  }
-
   const fetchSubmissions = async () => {
     try {
       const response = await fetch('/api/submissions')
@@ -347,9 +296,8 @@ export default function Dashboard() {
     }
   }
 
-  const fetchReviewedSubmissions = async () => {
-    // If hiding, just toggle and return
-    if (showReviewed) {
+  const fetchReviewedSubmissions = async (mode: 'toggle' | 'show' = 'toggle') => {
+    if (mode === 'toggle' && showReviewed) {
       setShowReviewed(false)
       return
     }
@@ -545,10 +493,6 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
   }, [])
 
-  useEffect(() => {
-    if (user?.role === 'curator') fetchGrantUsers()
-  }, [user?.role])
-
   // Auto-show XP help modal on first dashboard visit after login (unless already dismissed)
   useEffect(() => {
     if (loading || !user || hasAutoShownXpHelpRef.current || getXpHelpDismissed()) return
@@ -591,37 +535,6 @@ export default function Dashboard() {
     [user?.id]
   )
 
-  const handleXpAdjust = async (delta: number) => {
-    if (user?.role !== 'tester') return
-    setXpAdjustMessage(null)
-    setXpAdjusting(true)
-    try {
-      const res = await fetch('/api/xp/adjust', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ delta }),
-        credentials: 'include',
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data?.error || t('dashboard.adjustXpFailed'))
-      }
-      const data = await res.json()
-      const next = typeof data.xp === 'number' ? data.xp : parseInt(String(data.xp || 0), 10) || 0
-      setXp(Math.max(0, next))
-      setUser((u) => (u ? { ...u, xp: next } : null))
-      setXpAdjustValue('')
-      setXpAdjustMessage(t('dashboard.xpUpdatedUseXp'))
-      fetchXp()
-      fetchCanMove()
-    } catch (e) {
-      console.error('XP adjust error:', e)
-      alert(e instanceof Error ? e.message : t('dashboard.adjustXpFailed'))
-    } finally {
-      setXpAdjusting(false)
-    }
-  }
-
   const handleUseXp = async () => {
     setUseXpMessage(null)
     setUseXpBlocked(false)
@@ -651,29 +564,11 @@ export default function Dashboard() {
     }
   }
 
-  const handleXpAdjustSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const n = parseInt(xpAdjustValue, 10)
-    if (!Number.isNaN(n) && n !== 0) handleXpAdjust(n)
-  }
-
-  useEffect(() => {
-    if (!xpAdjustMessage) return
-    const t = setTimeout(() => setXpAdjustMessage(null), 6000)
-    return () => clearTimeout(t)
-  }, [xpAdjustMessage])
-
   useEffect(() => {
     if (!useXpMessage) return
     const t = setTimeout(() => setUseXpMessage(null), 6000)
     return () => clearTimeout(t)
   }, [useXpMessage])
-
-  useEffect(() => {
-    if (!grantMessage) return
-    const t = setTimeout(() => setGrantMessage(null), 5000)
-    return () => clearTimeout(t)
-  }, [grantMessage])
 
   const xpInBlock = xp % 100
 
@@ -743,6 +638,8 @@ export default function Dashboard() {
     return ''
   }
 
+  const showPane = (pane: DashPane) => (mobilePane === pane ? 'block' : 'hidden lg:block')
+
   return (
     <div className="bg-background animate-page-transition">{/* Floating Status Banner - compact */}
       <div
@@ -764,8 +661,9 @@ export default function Dashboard() {
       </div>
 
       {/* Main: top padding clears fixed banner; same px so banner and content align in width */}
-      <div className="pt-11 sm:pt-12 md:pt-14 px-2.5 sm:px-4 md:px-5 pb-3 sm:pb-5">
-        <div className="max-w-6xl mx-auto space-y-3 sm:space-y-4">
+      <div className="pt-11 sm:pt-12 md:pt-14 px-2.5 sm:px-4 md:px-5 pb-24 lg:pb-5">
+        <div className="max-w-6xl mx-auto space-y-2 sm:space-y-4">
+          <div className="hidden lg:block">
           <DashboardFooter
             xp={xp}
             xpUsedThisSession={xpUsedThisSession}
@@ -780,12 +678,13 @@ export default function Dashboard() {
             onShowIndicatorsHelp={() => setShowIndicatorsHelpModal(true)}
             compactTop
           />
+          </div>
 
           <div className="lg:flex lg:gap-5 xl:gap-6 lg:items-start">
             {/* Main column: welcome, submissions, reviewed — even space-y-4 */}
             <div className="lg:flex-1 lg:min-w-0 space-y-3 sm:space-y-4">
           {/* Welcome card */}
-          <div className="bg-background-light rounded-xl sm:rounded-2xl shadow-lg p-3.5 sm:p-6 animate-fade-in border-2 border-gray-700/60 overflow-hidden relative">
+          <div className="bg-background-light rounded-xl sm:rounded-2xl shadow-lg p-2.5 sm:p-6 animate-fade-in border-2 border-gray-700/60 overflow-hidden relative">
             <div
               className="absolute top-0 left-0 right-0 h-1 opacity-70"
               style={{
@@ -793,8 +692,8 @@ export default function Dashboard() {
               }}
               aria-hidden
             />
-            <div className="flex flex-col gap-3 sm:gap-6">
-              {/* Header: avatar, greeting, logout */}
+            <div className="flex flex-col gap-2 sm:gap-6">
+              {/* Header: avatar + name left, logout right */}
               <div className="flex items-center justify-between gap-2 sm:gap-4">
                 <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
                   {(profileImageUrl ?? user.profile_image_url) && !profileImageFailed ? (
@@ -803,23 +702,23 @@ export default function Dashboard() {
                       alt=""
                       referrerPolicy="no-referrer"
                       crossOrigin="anonymous"
-                      className="h-12 w-12 sm:h-16 sm:w-16 shrink-0 rounded-full border-2 border-primary/30 bg-background object-cover shadow-lg"
+                      className="h-11 w-11 sm:h-16 sm:w-16 shrink-0 rounded-full border-2 border-primary/30 bg-background object-cover shadow-md sm:shadow-lg"
                       onError={() => setProfileImageFailed(true)}
                     />
                   ) : (
-                    <div className="h-12 w-12 sm:h-16 sm:w-16 shrink-0 rounded-full border-2 border-primary/30 bg-background-lighter flex items-center justify-center text-primary text-lg sm:text-2xl font-black" aria-hidden>
+                    <div className="h-11 w-11 sm:h-16 sm:w-16 shrink-0 rounded-full border-2 border-primary/30 bg-background-lighter flex items-center justify-center text-primary text-lg sm:text-2xl font-black" aria-hidden>
                       {(user.display_name || '?').charAt(0).toUpperCase()}
                     </div>
                   )}
                   <div className="min-w-0">
-                    <h1 className="text-base sm:text-xl font-extrabold text-text-primary tracking-tight">
+                    <h1 className="text-base sm:text-xl font-extrabold text-text-primary tracking-tight truncate leading-tight">
                       {t('dashboard.welcome')}{' '}
                       <span className="text-primary">{user.display_name}</span>
                     </h1>
                     {user.role === 'curator' ? (
-                      <p className="text-sm text-primary font-semibold mt-0.5">{t('dashboard.mikegtcPanel')}</p>
+                      <p className="text-[11px] sm:text-sm text-primary font-semibold mt-0.5">{t('dashboard.mikegtcPanel')}</p>
                     ) : (
-                      <p className="text-sm text-text-secondary mt-0.5">{t('dashboard.submitAndTrack')}</p>
+                      <p className="hidden sm:block text-sm text-text-secondary mt-0.5">{t('dashboard.submitAndTrack')}</p>
                     )}
                   </div>
                 </div>
@@ -830,7 +729,7 @@ export default function Dashboard() {
                   title={t('common.logOut')}
                   aria-label={t('common.logOut')}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </button>
               </div>
 
@@ -842,42 +741,169 @@ export default function Dashboard() {
                 </p>
               )}
 
-              {/* Quick actions + XP */}
-              <div>
-                <p className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-wider mb-2 sm:mb-3">{t('dashboard.quickActions')}</p>
-                {/* Mobile: Submit Demo | Carryover same length, XP full width below. Desktop: flex row */}
-                <div className="flex flex-col sm:flex-row flex-wrap items-stretch gap-2 sm:gap-3 w-full">
-                  {/* Row 1 on mobile: Submit Demo + Carryover (equal width). On desktop: inline with XP */}
-                  <div className="grid grid-cols-2 sm:contents gap-2 sm:gap-3">
-                    <Link
-                      href="/submit"
-                      className="flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-[48px] px-2.5 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-xs sm:text-sm transition-all active:scale-[0.98] sm:shrink-0"
-                    >
-                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                      {t('dashboard.submitDemo')}
-                    </Link>
-                    <Link
-                      href="/carryover"
-                      className="flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-[48px] px-2.5 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-xs sm:text-sm transition-all active:scale-[0.98] sm:shrink-0"
-                    >
-                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                      {t('dashboard.carryover')} {carryoverCount > 0 ? `(${carryoverCount})` : ''}
-                    </Link>
-                  </div>
+              {/* Actions — phone: labeled tiles + XP row; desktop: inline row */}
+              <div className="space-y-2 sm:space-y-3">
+                <p className="hidden sm:block text-xs font-bold text-text-muted uppercase tracking-wider px-0.5">
+                  {t('dashboard.quickActions')}
+                </p>
+
+                {/* Phone action grid */}
+                <div className={`sm:hidden grid gap-2 ${user.role === 'curator' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                  <Link
+                    href="/submit"
+                    aria-label={
+                      totmAvailableSkips > 0
+                        ? `${t('dashboard.submitDemo')} — ${t('totm.skipsAvailableShort').replace('{n}', String(totmAvailableSkips))}`
+                        : t('dashboard.submitDemo')
+                    }
+                    className="relative flex flex-col items-center justify-center gap-1 min-h-[62px] rounded-xl bg-primary/12 hover:bg-primary/20 text-primary border-2 border-primary/35 font-bold text-[10px] leading-tight text-center px-1.5 py-2 transition-all active:scale-[0.98] touch-manipulation"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 border border-primary/30">
+                      <svg
+                        className={`w-3.5 h-3.5 ${totmAvailableSkips > 0 ? 'animate-totm-plus-shimmer' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </span>
+                    <span className="truncate max-w-full">{t('dashboard.submitDemo')}</span>
+                    {totmAvailableSkips > 0 && (
+                      <span
+                        className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary text-background border-2 border-background shadow-sm"
+                        title={t('totm.skipsAvailableShort').replace('{n}', String(totmAvailableSkips))}
+                      >
+                        <TotmSkipIcon className="h-2.5 w-2.5" />
+                      </span>
+                    )}
+                  </Link>
+                  <Link
+                    href="/carryover"
+                    aria-label={t('dashboard.carryover')}
+                    className="relative flex flex-col items-center justify-center gap-1 min-h-[62px] rounded-xl bg-background/70 hover:bg-primary/10 text-text-primary border-2 border-gray-600/50 hover:border-primary/35 font-bold text-[10px] leading-tight text-center px-1.5 py-2 transition-all active:scale-[0.98] touch-manipulation"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-background-lighter border border-gray-600/50 text-primary">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </span>
+                    <span className="truncate max-w-full">
+                      {t('dashboard.carryover')}
+                      {carryoverCount > 0 ? ` (${carryoverCount})` : ''}
+                    </span>
+                    {carryoverCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-background text-[10px] font-black leading-[18px] text-center border-2 border-background">
+                        {carryoverCount}
+                      </span>
+                    )}
+                  </Link>
                   {user.role === 'curator' && (
                     <Link
                       href="/curator"
-                      className="flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-[48px] px-2.5 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-xs sm:text-sm transition-all active:scale-[0.98] sm:shrink-0 w-full sm:w-auto"
+                      aria-label="MikeGTC"
+                      className="flex flex-col items-center justify-center gap-1 min-h-[62px] rounded-xl bg-background/70 hover:bg-primary/10 text-text-primary border-2 border-gray-600/50 hover:border-primary/35 font-bold text-[10px] leading-tight text-center px-1.5 py-2 transition-all active:scale-[0.98] touch-manipulation"
                     >
-                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                      MikeGTC
+                      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-background-lighter border border-gray-600/50 text-primary">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </span>
+                      <span className="truncate max-w-full">MikeGTC</span>
                     </Link>
                   )}
-                  {/* XP bar — progress reaches to Use XP button; on mobile full width */}
-                  <div className="flex items-stretch rounded-lg sm:rounded-xl overflow-hidden border-2 border-primary bg-primary/25 min-h-[44px] sm:min-h-[48px] w-full sm:flex-1 sm:min-w-[200px]" title={!useXpAllowed && useXpReason ? useXpReason : t('dashboard.spend100Xp')}>
-                    <div className="flex items-center gap-1.5 sm:gap-2 pl-2.5 pr-1.5 sm:pl-3 sm:pr-2 py-1.5 sm:py-2 min-w-0 flex-1 w-full">
+                </div>
+
+                {/* Phone XP bar — own full-width row */}
+                <div
+                  className="sm:hidden flex min-h-[44px] w-full items-stretch overflow-hidden rounded-xl border-2 border-primary bg-primary/20"
+                  title={!useXpAllowed && useXpReason ? useXpReason : t('dashboard.spend100Xp')}
+                >
+                  <div className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 min-w-0 flex-1">
+                    <span className="text-[9px] font-bold text-primary uppercase tracking-wider shrink-0">XP</span>
+                    <span className={`text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>
+                      {xp}
+                    </span>
+                    {xp < 9999 && (
+                      <div className="h-3 bg-background/60 rounded-full overflow-hidden flex-1 min-w-0 border border-primary/40">
+                        <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${xpInBlock}%` }} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-px bg-primary/50 self-stretch shrink-0" aria-hidden />
+                  <button
+                    type="button"
+                    onClick={handleUseXp}
+                    disabled={!useXpAllowed || useXpLoading}
+                    title={useXpReason || t('dashboard.spend100XpPosition')}
+                    className={`shrink-0 min-w-[76px] min-h-[44px] px-2.5 font-bold text-[11px] text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors flex items-center justify-center ${useXpClicking ? 'animate-use-xp-click' : 'button-press'}`}
+                  >
+                    {useXpLoading ? '…' : t('dashboard.useXp')}
+                  </button>
+                </div>
+
+                {/* Desktop / tablet inline actions */}
+                <div className="hidden sm:flex flex-row flex-wrap items-stretch gap-3 w-full">
+                  <Link
+                    href="/submit"
+                    aria-label={
+                      totmAvailableSkips > 0
+                        ? `${t('dashboard.submitDemo')} — ${t('totm.skipsAvailableShort').replace('{n}', String(totmAvailableSkips))}`
+                        : t('dashboard.submitDemo')
+                    }
+                    className="relative flex items-center justify-center gap-1.5 h-12 min-h-[48px] px-4 py-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-sm transition-all active:scale-[0.98] shrink-0"
+                  >
+                    <svg
+                      className={`w-4 h-4 shrink-0 ${totmAvailableSkips > 0 ? 'animate-totm-plus-shimmer' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>{t('dashboard.submitDemo')}</span>
+                    {totmAvailableSkips > 0 && (
+                      <span
+                        className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary text-background border-2 border-background shadow-sm"
+                        title={t('totm.skipsAvailableShort').replace('{n}', String(totmAvailableSkips))}
+                      >
+                        <TotmSkipIcon className="h-2.5 w-2.5" />
+                      </span>
+                    )}
+                  </Link>
+                  <Link
+                    href="/carryover"
+                    aria-label={t('dashboard.carryover')}
+                    className="relative flex items-center justify-center gap-1.5 h-12 min-h-[48px] px-4 py-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-sm transition-all active:scale-[0.98] shrink-0"
+                  >
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>
+                      {t('dashboard.carryover')} {carryoverCount > 0 ? `(${carryoverCount})` : ''}
+                    </span>
+                  </Link>
+                  {user.role === 'curator' && (
+                    <Link
+                      href="/curator"
+                      aria-label="MikeGTC"
+                      className="flex items-center justify-center gap-1.5 h-12 min-h-[48px] px-4 py-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border-2 border-primary/40 font-bold text-sm transition-all active:scale-[0.98] shrink-0"
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      <span>MikeGTC</span>
+                    </Link>
+                  )}
+                  <div
+                    className="flex min-h-[48px] min-w-[200px] flex-1 items-stretch overflow-hidden rounded-xl border-2 border-primary bg-primary/25"
+                    title={!useXpAllowed && useXpReason ? useXpReason : t('dashboard.spend100Xp')}
+                  >
+                    <div className="flex items-center gap-2 pl-3 pr-2 py-2 min-w-0 flex-1 w-full">
                       <span className="text-[10px] font-bold text-primary uppercase tracking-wider shrink-0">XP</span>
-                      <span className={`text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>{xp}</span>
+                      <span className={`text-base font-black text-primary tabular-nums shrink-0 ${xp >= 100 ? 'animate-xp-number-pulse' : ''}`}>
+                        {xp}
+                      </span>
                       {xp < 9999 && (
                         <div className="flex items-center gap-1.5 min-w-0 flex-1">
                           <div className="h-3.5 bg-background/60 rounded-full overflow-hidden flex-1 min-w-0 border-2 border-primary/40">
@@ -892,7 +918,7 @@ export default function Dashboard() {
                       onClick={handleUseXp}
                       disabled={!useXpAllowed || useXpLoading}
                       title={useXpReason || t('dashboard.spend100XpPosition')}
-                      className={`shrink-0 min-w-[72px] sm:min-w-[80px] min-h-[44px] sm:min-h-[48px] px-2.5 sm:px-3 font-bold text-[11px] sm:text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors flex items-center justify-center ${useXpClicking ? 'animate-use-xp-click' : 'button-press'}`}
+                      className={`shrink-0 min-w-[80px] min-h-[48px] px-3 font-bold text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors flex items-center justify-center ${useXpClicking ? 'animate-use-xp-click' : 'button-press'}`}
                     >
                       {useXpLoading ? '…' : t('dashboard.useXp')}
                     </button>
@@ -902,80 +928,33 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Curator: Grant XP to any user or self */}
-          {user.role === 'curator' && (
-            <div className="bg-primary/5 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 border-2 border-primary/40 animate-fade-in">
-              <h2 className="text-sm sm:text-base font-extrabold text-text-primary mb-0.5 sm:mb-1">{t('dashboard.grantXp')}</h2>
-              <p className="text-xs sm:text-sm text-text-secondary mb-3 sm:mb-4 font-medium">{t('dashboard.grantXpDesc')}</p>
-              <form onSubmit={handleGrantXp} className="flex flex-wrap items-center gap-2 sm:gap-4">
-                <select
-                  value={grantTargetId}
-                  onChange={(e) => setGrantTargetId(e.target.value)}
-                  className="min-h-[48px] px-4 py-2 rounded-xl bg-background-lighter border-2 border-gray-600 text-text-primary text-sm font-medium focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none"
-                >
-                  <option value="self">{t('dashboard.myself')}</option>
-                  {grantUsers.map((u) => (
-                    <option key={u.id} value={u.id}>{u.display_name}</option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  value={grantAmount}
-                  onChange={(e) => setGrantAmount(e.target.value)}
-                  placeholder="e.g. 50 or -25"
-                  className="w-24 sm:w-28 px-4 py-3 rounded-xl bg-background-lighter border-2 border-gray-600 text-text-primary text-base font-semibold focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none min-h-[48px]"
-                />
-                <button type="submit" disabled={grantLoading || !grantAmount.trim()} className="min-h-[48px] px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation border-2 border-transparent">
-                  {grantLoading ? '…' : t('common.apply')}
-                </button>
-              </form>
-              {grantMessage && (
-                <p className="mt-3 text-sm font-bold text-primary bg-primary/10 border-2 border-primary/40 rounded-lg px-4 py-2 animate-scale-in">
-                  {grantMessage}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Tester panel */}
+          {/* Lab tools: tester opens a dedicated page so it doesn’t crowd the dashboard */}
           {user.role === 'tester' && (
-            <div className="bg-amber-500/5 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 border-2 border-amber-500/40 animate-fade-in">
-              <h2 className="text-sm sm:text-base font-extrabold text-text-primary mb-0.5 sm:mb-1">{t('dashboard.adjustXp')}</h2>
-              <p className="text-xs sm:text-sm text-text-secondary mb-3 sm:mb-4 font-medium">{t('dashboard.adjustXpDesc')}</p>
-              <form onSubmit={handleXpAdjustSubmit} className="flex flex-wrap items-center gap-2 sm:gap-4">
-                <input
-                  type="number"
-                  value={xpAdjustValue}
-                  onChange={(e) => setXpAdjustValue(e.target.value)}
-                  placeholder="e.g. 50 or -25"
-                  className="w-24 sm:w-28 px-4 py-3 rounded-xl bg-background-lighter border-2 border-gray-600 text-text-primary text-base font-semibold focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none min-h-[48px]"
-                />
-                <button type="submit" disabled={xpAdjusting || !xpAdjustValue.trim()} className="min-h-[48px] px-4 py-3 rounded-xl bg-primary hover:bg-primary-hover text-background text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation border-2 border-transparent">
-                  {xpAdjusting ? '…' : t('common.apply')}
-                </button>
-                <button type="button" onClick={() => handleXpAdjust(50)} disabled={xpAdjusting} className="min-h-[48px] px-4 py-3 rounded-xl bg-background-lighter hover:bg-gray-700 border-2 border-gray-600 text-text-primary text-sm font-bold disabled:opacity-50 touch-manipulation">
-                  +50
-                </button>
-                <button type="button" onClick={() => handleXpAdjust(-50)} disabled={xpAdjusting} className="min-h-[48px] px-4 py-3 rounded-xl bg-background-lighter hover:bg-gray-700 border-2 border-gray-600 text-text-primary text-sm font-bold disabled:opacity-50 touch-manipulation">
-                  −50
-                </button>
-              </form>
-              {xpAdjustMessage && (
-                <p className="mt-4 text-sm font-bold text-primary bg-primary/10 border-2 border-primary/40 rounded-lg px-4 py-2 animate-scale-in">
-                  {xpAdjustMessage}
-                </p>
-              )}
-            </div>
+            <Link
+              href="/lab"
+              className={`${showPane('xp')} w-full min-h-[44px] sm:min-h-[48px] flex items-center justify-between gap-2 rounded-lg sm:rounded-xl bg-amber-500/[0.08] border-2 border-amber-500/35 px-3 sm:px-4 text-amber-400 font-bold text-xs sm:text-sm hover:bg-amber-500/15 transition-colors touch-manipulation`}
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+                <span className="truncate">{t('lab.title')}</span>
+              </span>
+              <span className="shrink-0 text-[11px] font-bold text-amber-400/80">{t('lab.open')}</span>
+            </Link>
           )}
 
-          <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border-2 border-gray-700/60">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+          <div className={`${showPane('tracks')} bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border-2 border-gray-700/60`}>
+            <div className="flex flex-row sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
               <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                 <div className="p-2 bg-primary/10 rounded-lg border-2 border-primary/30 shrink-0">
                   <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                  <h2 className="text-base font-extrabold text-text-primary tracking-tight truncate">{t('dashboard.yourSubmissions')}</h2>
+                  <h2 className="text-base font-extrabold text-text-primary tracking-tight truncate">
+                    <span className="sm:hidden">{t('dashboard.submissions')}</span>
+                    <span className="hidden sm:inline">{t('dashboard.yourSubmissions')}</span>
+                  </h2>
                   {submissions.length > 0 && (
                     <span className="text-sm font-bold text-text-secondary bg-background-lighter px-3 py-1 rounded-full border-2 border-gray-600 shrink-0">
                       {submissions.length}
@@ -1000,9 +979,9 @@ export default function Dashboard() {
                   </button>
                 )}
                 <button
-                  onClick={fetchReviewedSubmissions}
+                  onClick={() => fetchReviewedSubmissions('toggle')}
                   disabled={loadingReviewed}
-                  className="min-h-[40px] flex items-center justify-center gap-2 px-4 py-2 bg-background-lighter hover:bg-primary/10 border-2 border-gray-600 hover:border-primary/40 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation text-sm font-bold"
+                  className="hidden lg:flex min-h-[40px] items-center justify-center gap-2 px-4 py-2 bg-background-lighter hover:bg-primary/10 border-2 border-gray-600 hover:border-primary/40 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation text-sm font-bold"
                 >
                   {loadingReviewed ? (
                     <>
@@ -1036,25 +1015,11 @@ export default function Dashboard() {
               </div>
             </div>
             {getAverageScores() && showAvgMetrics && (
-              <div className="mb-4 hidden md:grid grid-cols-4 gap-2">
-                {[
-                  { label: 'Sound', score: getAverageScores()!.sound, bg: 'bg-[#1E2A4A]', border: 'border-[#6A707B]', text: 'text-[#64B5F6]' },
-                  { label: 'Structure', score: getAverageScores()!.structure, bg: 'bg-[#1E4A2E]', border: 'border-[#6A707B]', text: 'text-[#66BB6A]' },
-                  { label: 'Mix', score: getAverageScores()!.mix, bg: 'bg-[#4A1E3A]', border: 'border-[#6A707B]', text: 'text-[#F48FB1]' },
-                  { label: 'Vibe', score: getAverageScores()!.vibe, bg: 'bg-[#4A3A1E]', border: 'border-[#6A707B]', text: 'text-[#FFD54F]' },
-                ].map(({ label, score, bg, border, text }) => (
-                  <div 
-                    key={label} 
-                    className={`${bg} border-2 ${border} rounded-lg px-2 py-2 text-center flex flex-col items-center justify-center min-h-[56px]`}
-                    title={label}
-                  >
-                    <div className={`text-[8px] ${text} font-bold uppercase mb-1 opacity-90 leading-none`}>{label}</div>
-                    <div className={`text-base font-black ${text} tabular-nums leading-none flex items-baseline justify-center gap-0.5`}>
-                      <span>{score}</span>
-                      <span className="text-xs opacity-70 leading-none">/10</span>
-                    </div>
-                  </div>
-                ))}
+              <div className="mb-3">
+                <ScoreBoard
+                  scores={getAverageScores()!}
+                  averageLabel={t('dashboard.averageRatingLabel')}
+                />
               </div>
             )}
           {submissions.length === 0 ? (
@@ -1081,7 +1046,12 @@ export default function Dashboard() {
                           </p>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-[11px] font-medium text-text-muted truncate sm:hidden">
+                        {new Date(submission.created_at).toLocaleDateString()}
+                        {submission.session_number != null ? ` · #${submission.session_number}` : ''}
+                        {submission.genre ? ` · ${(submission.genre.match(/\(([^)]+)\)\s*$/) ?? [null, submission.genre])[1]}` : ''}
+                      </p>
+                      <div className="hidden sm:flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-1.5 rounded-lg border border-gray-800/50 bg-background-lighter px-2.5 py-1">
                           <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted">Date</span>
                           <span className="text-xs font-semibold text-text-primary">{new Date(submission.created_at).toLocaleDateString()}</span>
@@ -1147,8 +1117,8 @@ export default function Dashboard() {
           </div>
 
           {/* Previous Reviewed Submissions Section */}
-          {showReviewed && (
-            <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border-2 border-gray-700/60">
+          {(showReviewed || mobilePane === 'results') && (
+            <div className={`${showPane('results')} bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border-2 border-gray-700/60`}>
               <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
                 <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg border-2 border-primary/30 shrink-0">
                   <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -1166,9 +1136,7 @@ export default function Dashboard() {
                 <div className="space-y-2 sm:space-y-3">
                   {reviewedSubmissions.map((submission, index) => {
                     const review = submission.reviews?.[0]
-                    const avgScore = review ? ((Number(review.sound_score) + Number(review.structure_score) + Number(review.mix_score) + Number(review.vibe_score)) / 4).toFixed(1) : null
-                    const audienceRating = submission.audience_score !== null && submission.audience_score !== undefined ? Number(submission.audience_score).toFixed(1) : '0.0'
-                    
+
                     return (
                     <div
                       key={submission.id}
@@ -1190,7 +1158,12 @@ export default function Dashboard() {
                               </p>
                             )}
                           </div>
-                          <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-[11px] font-medium text-text-muted truncate sm:hidden">
+                            {new Date(submission.created_at).toLocaleDateString()}
+                            {submission.session_number != null ? ` · #${submission.session_number}` : ''}
+                            {submission.genre ? ` · ${(submission.genre.match(/\(([^)]+)\)\s*$/) ?? [null, submission.genre])[1]}` : ''}
+                          </p>
+                          <div className="hidden sm:flex flex-wrap items-center gap-2">
                             <div className="flex items-center gap-1.5 rounded-lg border border-gray-800/50 bg-background-lighter px-2.5 py-1">
                               <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted">Date</span>
                               <span className="text-xs font-semibold text-text-primary">{new Date(submission.created_at).toLocaleDateString()}</span>
@@ -1210,57 +1183,30 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      {/* Description - Special field like scores if text exists */}
-                      {submission.description && (() => {
-                        const isLong = submission.description.length > DESCRIPTION_COLLAPSE_THRESHOLD
-                        const isExpanded = expandedDescriptionIds.has(submission.id)
-                        const showToggle = isLong
-                        const showFull = !showToggle || isExpanded
-                        return (
-                          <div className="mb-2 sm:mb-3 p-2.5 sm:p-3 bg-background rounded-lg sm:rounded-xl border-2 border-gray-700/50">
-                            <div className="mb-1.5">
-                              <div className="text-[8px] text-text-secondary font-bold uppercase tracking-wider mb-1 opacity-90">{t('common.description')}</div>
-                            </div>
-                            <p className={`text-xs sm:text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed ${showFull ? '' : 'line-clamp-2'}`}>
-                              {submission.description}
-                            </p>
-                            {showToggle && (
-                              <button
-                                type="button"
-                                onClick={(e) => { e.preventDefault(); toggleDescriptionExpanded(submission.id) }}
-                                className="mt-1.5 sm:mt-2 text-xs font-bold text-primary hover:underline touch-manipulation min-h-[40px] sm:min-h-0 flex items-center"
-                              >
-                                {isExpanded ? t('common.hide') : t('common.showMore')}
-                              </button>
-                            )}
-                          </div>
-                        )
-                      })()}
-
-                      {/* Scores Display */}
                       {review && (
-                        <div className="mb-2 sm:mb-3">
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
-                            {[
-                              { label: 'Sound', score: review.sound_score, bg: 'bg-[#1E2A4A]', border: 'border-[#6A707B]', text: 'text-[#64B5F6]' },
-                              { label: 'Structure', score: review.structure_score, bg: 'bg-[#1E4A2E]', border: 'border-[#6A707B]', text: 'text-[#66BB6A]' },
-                              { label: 'Mix', score: review.mix_score, bg: 'bg-[#4A1E3A]', border: 'border-[#6A707B]', text: 'text-[#F48FB1]' },
-                              { label: 'Vibe', score: review.vibe_score, bg: 'bg-[#4A3A1E]', border: 'border-[#6A707B]', text: 'text-[#FFD54F]' },
-                            ].map(({ label, score, bg, border, text }) => (
-                              <div 
-                                key={label} 
-                                className={`${bg} border-2 ${border} rounded-md sm:rounded-lg px-1.5 py-1.5 sm:px-2 sm:py-2 text-center flex flex-col items-center justify-center min-h-[48px] sm:min-h-[56px]`}
-                                title={label}
-                              >
-                                <div className={`text-[7px] sm:text-[8px] ${text} font-bold uppercase mb-0.5 sm:mb-1 opacity-90 leading-none`}>{label}</div>
-                                <div className={`text-sm sm:text-base font-black ${text} tabular-nums leading-none flex items-baseline justify-center gap-0.5`}>
-                                  <span>{score}</span>
-                                  <span className="text-[10px] sm:text-xs opacity-70 leading-none">/10</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                        <div className="mb-2">
+                          <ScoreBoard
+                            scores={{
+                              sound: review.sound_score,
+                              structure: review.structure_score,
+                              mix: review.mix_score,
+                              vibe: review.vibe_score,
+                            }}
+                            averageLabel={t('dashboard.averageRatingLabel')}
+                            audienceLabel={t('dashboard.audienceRatingLabel')}
+                            audience={submission.audience_score ?? 0}
+                          />
                         </div>
+                      )}
+                      {submission.description && (
+                        <details className="mb-2 rounded-lg border-2 border-gray-700/50 bg-background px-2.5 py-1.5">
+                          <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-wider text-text-secondary">
+                            {t('common.description')}
+                          </summary>
+                          <p className="mt-1.5 whitespace-pre-wrap text-xs leading-relaxed text-text-secondary">
+                            {submission.description}
+                          </p>
+                        </details>
                       )}
 
                       {/* SoundCloud embed */}
@@ -1273,51 +1219,11 @@ export default function Dashboard() {
                           embedUrl={getEmbedUrl(submission.soundcloud_url)}
                         />
                       </div>
-
-                      {/* Rating Display - Below embed */}
-                      {avgScore && (
-                        <div className="mt-2 sm:mt-3">
-                          <div className="flex flex-row gap-1.5 sm:gap-2">
-                            <div className="flex-1 min-w-0 bg-primary/5 rounded-lg p-2 border border-primary/20">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5 mb-1">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></div>
-                                    <span className="text-[9px] text-primary font-bold uppercase tracking-wider truncate">{t('dashboard.averageRatingLabel')}</span>
-                                  </div>
-                                  <div className="flex items-baseline gap-1 mb-0.5">
-                                    <span className="text-lg font-black text-primary tabular-nums">{avgScore}</span>
-                                    <span className="text-[10px] text-text-secondary font-semibold opacity-60">/ 10</span>
-                                  </div>
-                                  <p className="text-[9px] text-text-secondary font-medium leading-tight">
-                                    {t('dashboard.averageRating')}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex-1 min-w-0 bg-[#FFD54F]/5 rounded-lg p-2 border border-[#FFD54F]/20">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5 mb-1">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#FFD54F] flex-shrink-0"></div>
-                                    <span className="text-[9px] text-[#FFD54F] font-bold uppercase tracking-wider truncate">{t('dashboard.audienceRatingLabel')}</span>
-                                  </div>
-                                  <div className="flex items-baseline gap-1 mb-0.5">
-                                    <span className="text-lg font-black text-[#FFD54F] tabular-nums">{audienceRating}</span>
-                                    <span className="text-[10px] text-text-secondary font-semibold opacity-60">/ 10</span>
-                                  </div>
-                                  <p className="text-[9px] text-text-secondary font-medium leading-tight">
-                                    {t('dashboard.audienceRating')}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )})}
                 </div>
+              ) : loadingReviewed ? (
+                <p className="py-6 text-center text-sm font-medium text-text-secondary">{t('dashboard.loading')}</p>
               ) : (
                 <div className="text-center py-8">
                   <div className="inline-flex p-3 bg-background-lighter rounded-full mb-3 border-2 border-gray-600">
@@ -1334,9 +1240,10 @@ export default function Dashboard() {
 
             </div>
 
-          {/* Sidebar: on phone Queue above XP footer; on lg XP footer above Queue */}
-          <aside className="flex flex-col gap-3 sm:gap-4 mt-3 sm:mt-4 lg:mt-0 lg:w-80 xl:w-96 lg:shrink-0 lg:sticky lg:top-16">
-            <div className="order-1 lg:order-2">
+          {/* Sidebar: on phone Queue above XP footer; on lg XP footer above Queue.
+              TOTM button sits between How XP works (XP footer) and Queue. */}
+          <aside className="flex flex-col gap-2 sm:gap-4 mt-2 sm:mt-4 lg:mt-0 lg:w-80 xl:w-96 lg:shrink-0 lg:sticky lg:top-16">
+            <div className={`${showPane('queue')} order-1 lg:order-3`}>
               <Queue
                 currentUserId={user?.id}
                 refetchTrigger={queueRefetchTrigger}
@@ -1359,26 +1266,119 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <div className="order-2 lg:order-1">
-              <DashboardFooter
-                xp={xp}
-                xpUsedThisSession={xpUsedThisSession}
-                usedCap={user?.role === 'tester' ? null : 300}
-                externalXpThisSession={externalXpThisSession}
-                timeXpActive={xpStatus?.time_xp_active ?? null}
-                followingMikegtcoff={xpStatus?.following_mikegtcoff ?? null}
-                carryoverCount={carryoverCount}
-                xpLog={xpLog}
-                loadingLog={loadingXpLog}
-                onShowXpHelp={() => setShowXpHelpModal(true)}
-                useXpAllowed={useXpAllowed}
-                useXpReason={useXpReason}
+
+            {/* Desktop / shared: TOTM between XP and Queue */}
+            <div className={`${showPane('totm')} order-2 lg:order-2 space-y-2`}>
+              <Link
+                href="/totm"
+                className="w-full min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-2 rounded-lg sm:rounded-xl bg-primary/10 border-2 border-primary/40 text-primary font-bold text-xs sm:text-sm hover:bg-primary/20 hover:border-primary/50 transition-colors touch-manipulation"
+              >
+                <TotmLeaderboardIcon className="h-4 w-4 sm:h-[18px] sm:w-[18px] shrink-0" />
+                <span className="lg:inline">{t('totm.title')}</span>
+              </Link>
+              <TotmDashboardPanel
+                onAvailableSkipsChange={setTotmAvailableSkips}
               />
+            </div>
+
+            <div className={`${showPane('xp')} order-3 lg:order-1 space-y-2`}>
+              {/* Phone: single cohesive XP panel */}
+              <div className="lg:hidden">
+                <DashboardFooter
+                  xp={xp}
+                  xpUsedThisSession={xpUsedThisSession}
+                  usedCap={user?.role === 'tester' ? null : 300}
+                  externalXpThisSession={externalXpThisSession}
+                  timeXpActive={xpStatus?.time_xp_active ?? null}
+                  followingMikegtcoff={xpStatus?.following_mikegtcoff ?? null}
+                  carryoverCount={carryoverCount}
+                  xpLog={xpLog}
+                  loadingLog={loadingXpLog}
+                  onShowXpHelp={() => setShowXpHelpModal(true)}
+                  onShowIndicatorsHelp={() => setShowIndicatorsHelpModal(true)}
+                  useXpAllowed={useXpAllowed}
+                  useXpReason={useXpReason}
+                  phoneLayout
+                />
+              </div>
+              {/* Desktop sidebar XP panel */}
+              <div className="hidden lg:block">
+                <DashboardFooter
+                  xp={xp}
+                  xpUsedThisSession={xpUsedThisSession}
+                  usedCap={user?.role === 'tester' ? null : 300}
+                  externalXpThisSession={externalXpThisSession}
+                  timeXpActive={xpStatus?.time_xp_active ?? null}
+                  followingMikegtcoff={xpStatus?.following_mikegtcoff ?? null}
+                  carryoverCount={carryoverCount}
+                  xpLog={xpLog}
+                  loadingLog={loadingXpLog}
+                  onShowXpHelp={() => setShowXpHelpModal(true)}
+                  useXpAllowed={useXpAllowed}
+                  useXpReason={useXpReason}
+                />
+              </div>
             </div>
           </aside>
           </div>
         </div>
       </div>
+
+      <nav
+        className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-gray-700/60 bg-background-light/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(0,0,0,0.25)]"
+        aria-label="Sections"
+      >
+        <div className="grid grid-cols-5 px-1 pt-1">
+          {([
+            { id: 'queue' as const, label: t('queue.title'), icon: 'queue' as const },
+            { id: 'tracks' as const, label: t('dashboard.submissions'), icon: 'tracks' as const },
+            { id: 'results' as const, label: t('dashboard.results'), icon: 'results' as const },
+            { id: 'totm' as const, label: t('totm.navShort'), icon: 'totm' as const },
+            { id: 'xp' as const, label: 'XP', icon: 'xp' as const },
+          ]).map((item) => {
+            const active = mobilePane === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setMobilePane(item.id)
+                  if (item.id === 'results') void fetchReviewedSubmissions('show')
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                className={`flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 py-1.5 text-[10px] font-bold leading-none touch-manipulation rounded-lg transition-colors ${
+                  active
+                    ? 'bg-primary/12 text-primary'
+                    : 'text-text-muted'
+                }`}
+                aria-current={active ? 'page' : undefined}
+              >
+                {item.icon === 'totm' ? (
+                  <TotmLeaderboardIcon className="h-4 w-4 shrink-0" />
+                ) : (
+                  <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d={
+                        item.icon === 'queue'
+                          ? 'M4 6h16M4 12h16M4 18h10'
+                          : item.icon === 'tracks'
+                            ? 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                            : item.icon === 'results'
+                              ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                              : 'M13 10V3L4 14h7v7l9-11h-7z'
+                      }
+                    />
+                  </svg>
+                )}
+                <span className="max-w-full truncate">{item.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </nav>
 
       <XpHelpModal isOpen={showXpHelpModal} onClose={() => setShowXpHelpModal(false)} />
       <IndicatorsHelpModal

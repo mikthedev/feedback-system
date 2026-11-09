@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense, useMemo, memo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useLanguage } from '@/app/context/LanguageContext'
+import TotmLeaderboardIcon, { TotmSkipIcon } from '../components/TotmLeaderboardIcon'
 
 /** Memoized SoundCloud preview — only re-renders when embed-related props change, so typing in description or selecting genre won't restart the player */
 const SoundCloudPreview = memo(function SoundCloudPreview({
@@ -157,6 +158,11 @@ function SubmitPageContent() {
   const [suggestedGenreFromSoundCloud, setSuggestedGenreFromSoundCloud] = useState<string | null>(null)
   const [showGenrePrompt, setShowGenrePrompt] = useState(false)
   const [pendingSubmit, setPendingSubmit] = useState(false)
+  const [availableTotmSkips, setAvailableTotmSkips] = useState<
+    Array<{ id: string; label: string; earned_year: number; earned_month: number }>
+  >([])
+  const [activateTotmSkip, setActivateTotmSkip] = useState(false)
+  const [selectedTotmSkipId, setSelectedTotmSkipId] = useState<string>('')
 
   const fetchSubmissionsStatus = async () => {
     try {
@@ -183,6 +189,26 @@ function SubmitPageContent() {
       setUser(data.user)
     } catch (error) {
       router.push('/')
+    }
+  }
+
+  const fetchTotmSkips = async () => {
+    try {
+      const res = await fetch('/api/totm/me', { credentials: 'include' })
+      if (!res.ok) return
+      const data = await res.json()
+      const skips = (data.available_skips || []).map(
+        (s: { id: string; label: string; earned_year: number; earned_month: number }) => ({
+          id: s.id,
+          label: s.label,
+          earned_year: s.earned_year,
+          earned_month: s.earned_month,
+        })
+      )
+      setAvailableTotmSkips(skips)
+      if (skips[0]) setSelectedTotmSkipId(skips[0].id)
+    } catch {
+      /* ignore */
     }
   }
 
@@ -241,6 +267,7 @@ function SubmitPageContent() {
   useEffect(() => {
     fetchUser()
     fetchSubmissionsStatus()
+    fetchTotmSkips()
     if (submissionId) {
       fetchSubmissionForEdit(submissionId)
     }
@@ -377,6 +404,11 @@ function SubmitPageContent() {
           artist_name: artistName.trim() || undefined,
           song_title: songTitle.trim() || undefined,
           genre: genrePayload || undefined,
+          ...(
+            !isEditing && activateTotmSkip && selectedTotmSkipId
+              ? { activate_totm_skip: true, totm_skip_id: selectedTotmSkipId }
+              : {}
+          ),
         }),
       })
 
@@ -560,6 +592,93 @@ function SubmitPageContent() {
           )}
 
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-3 sm:space-y-4">
+            {!isEditing && availableTotmSkips.length > 0 && (
+              <div
+                className={`relative overflow-hidden rounded-xl sm:rounded-2xl border-2 transition-all duration-300 ${
+                  activateTotmSkip
+                    ? 'border-primary/60 bg-gradient-to-br from-primary/20 via-primary/10 to-background-lighter shadow-[0_0_0_1px_rgba(202,247,111,0.15)]'
+                    : 'border-primary/35 bg-gradient-to-br from-primary/[0.12] via-background-lighter to-background-light'
+                }`}
+              >
+                <div
+                  className="pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full bg-primary/10 blur-2xl"
+                  aria-hidden
+                />
+                <button
+                  type="button"
+                  disabled={loading || !submissionsOpen}
+                  onClick={() => setActivateTotmSkip((v) => !v)}
+                  className="relative w-full text-left p-3.5 sm:p-4 touch-manipulation disabled:opacity-50"
+                  aria-pressed={activateTotmSkip}
+                >
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 transition-colors ${
+                        activateTotmSkip
+                          ? 'border-primary/50 bg-primary text-background'
+                          : 'border-primary/40 bg-primary/15 text-primary'
+                      }`}
+                    >
+                      <TotmSkipIcon className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 border border-primary/30 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-primary">
+                          <TotmLeaderboardIcon className="h-3 w-3" />
+                          {t('totm.earnedBadge')}
+                        </span>
+                        {availableTotmSkips[0] && (
+                          <span className="text-[10px] font-bold text-text-muted">
+                            {availableTotmSkips.find((s) => s.id === selectedTotmSkipId)?.label ||
+                              availableTotmSkips[0].label}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1.5 text-sm sm:text-[15px] font-extrabold text-text-primary leading-snug">
+                        {t('totm.activateSkip')}
+                      </p>
+                      <p className="mt-1 text-xs text-text-secondary font-medium leading-snug">
+                        {t('totm.activateSkipHint')}
+                      </p>
+                    </div>
+                    <span
+                      className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+                        activateTotmSkip
+                          ? 'border-primary bg-primary text-background'
+                          : 'border-gray-500 bg-transparent text-transparent'
+                      }`}
+                      aria-hidden
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                  </div>
+                </button>
+                {activateTotmSkip && (
+                  <div className="relative border-t border-primary/20 px-3.5 sm:px-4 pb-3.5 sm:pb-4 pt-3 space-y-2.5 animate-fade-in">
+                    {availableTotmSkips.length > 1 && (
+                      <select
+                        value={selectedTotmSkipId}
+                        onChange={(e) => setSelectedTotmSkipId(e.target.value)}
+                        className="w-full min-h-[44px] px-3 py-2 rounded-xl bg-background/80 border-2 border-primary/30 text-text-primary text-sm font-medium"
+                        disabled={loading}
+                      >
+                        {availableTotmSkips.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <p className="text-[11px] sm:text-xs font-semibold text-primary/90 leading-snug flex items-start gap-1.5">
+                      <TotmLeaderboardIcon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      <span>{t('totm.activateSkipConfirm')}</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
             <div>
               <label htmlFor="soundcloud_url" className="block text-sm font-bold text-text-primary mb-1.5 sm:mb-2">
                 {t('submit.soundcloudUrl')} <span className="text-primary">*</span>
@@ -698,9 +817,11 @@ function SubmitPageContent() {
                   )}
                 </div>
 
-                {/* Other genres */}
-                <div className="p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 border-gray-700/60 bg-background/50">
-                  <p className="text-xs sm:text-sm font-bold text-text-secondary mb-2 sm:mb-3">{t('submit.genreOtherMain')}</p>
+                <details className="rounded-lg border-2 border-gray-700/60 bg-background/50 sm:rounded-xl">
+                  <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-bold text-text-secondary sm:px-4 sm:py-3 sm:text-sm [&::-webkit-details-marker]:hidden">
+                    {t('submit.genreOtherMain')}
+                  </summary>
+                  <div className="px-3 pb-3 sm:px-4 sm:pb-4">
                   <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {GENRE_MAIN_OPTIONS.filter((o) => o.value !== 'Other' && !GENRES_WITH_SUB.includes(o.value as typeof GENRES_WITH_SUB[number])).map((opt) => {
                       const selected = genreMain === opt.value
@@ -742,7 +863,8 @@ function SubmitPageContent() {
                       <span className="block truncate">{t('submit.genreOther')}</span>
                     </button>
                   </div>
-                </div>
+                  </div>
+                </details>
 
                 {genreMain === 'Other' && (
                   <div className="mt-3 sm:mt-4 p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 border-gray-700/60 bg-background/50 animate-fade-in">
@@ -841,7 +963,7 @@ function SubmitPageContent() {
               )}
             </div>
 
-            <div className="flex flex-col gap-2.5 pt-3 sm:pt-4 sm:flex-row sm:gap-4">
+            <div className="sticky bottom-0 z-20 -mx-3 flex flex-col gap-2 border-t-2 border-gray-700/60 bg-background-light/95 px-3 py-2 backdrop-blur sm:static sm:mx-0 sm:flex-row sm:gap-4 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pt-4">
               <button
                 type="submit"
                 disabled={loading || !soundcloudUrl.trim() || (!submissionsOpen && !isEditing)}

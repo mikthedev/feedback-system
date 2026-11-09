@@ -15,7 +15,7 @@ export const TIME_XP_PER_TICK = 5
 export const TIME_TICK_MINUTES = 5
 
 export const CARRYOVER_XP = 25
-export const FOLLOW_XP = 10
+export const FOLLOW_XP = 25
 export const SUB_OR_DONATION_XP = 20
 
 /** Mean of sound, structure, mix, vibe (0–10). */

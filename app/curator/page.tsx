@@ -4,6 +4,7 @@ import { useState, useEffect, memo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import XpHelpModal from '../components/XpHelpModal'
+import SessionPreviewModal from '../components/SessionPreviewModal'
 import { useLanguage } from '@/app/context/LanguageContext'
 
 // Memoized embed component to prevent re-renders when scores change
@@ -184,6 +185,7 @@ export default function CuratorPage() {
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [sessionsToDelete, setSessionsToDelete] = useState<number[]>([])
+  const [previewSessionNumber, setPreviewSessionNumber] = useState<number | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [showXpHelpModal, setShowXpHelpModal] = useState(false)
   const [skipping, setSkipping] = useState(false)
@@ -778,32 +780,46 @@ export default function CuratorPage() {
     <div className="bg-background px-2.5 sm:px-3 md:px-4 py-3 sm:py-4 animate-page-transition pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-7xl mx-auto w-full min-w-0">
         <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 mb-3 sm:mb-4 animate-fade-in border border-gray-800/50">
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
-            <h1 className="text-base font-bold text-text-primary truncate min-w-0 sm:text-xl md:text-2xl">MikeGTC Panel</h1>
-            <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-stretch sm:w-auto sm:gap-2 sm:shrink-0">
-              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <div className="flex flex-row flex-wrap items-center gap-2 sm:justify-between">
+            <h1 className="text-base font-bold text-text-primary truncate min-w-0 flex-1 sm:flex-none sm:text-xl md:text-2xl">MikeGTC Panel</h1>
+            <div className="flex flex-row items-center gap-1.5 sm:gap-2 min-w-0 sm:ml-auto">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setShowSettings(!showSettings)}
-                  className="flex-1 sm:flex-none min-h-[44px] min-w-[7rem] px-3 py-2 text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
+                  aria-label={showSettings ? 'Hide settings' : 'Settings'}
+                  className="inline-flex h-9 w-9 sm:h-10 sm:w-auto sm:min-w-[7rem] sm:px-3 items-center justify-center text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border-2 border-gray-700 active:scale-[0.98] button-press touch-manipulation"
                 >
-                  {showSettings ? 'Hide' : 'Settings'}
+                  <svg className="w-4 h-4 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  <span className="hidden sm:inline">{showSettings ? 'Hide' : 'Settings'}</span>
                 </button>
                 <Link
                   href="/curator/xp"
-                  className="flex-1 sm:flex-none min-h-[44px] min-w-[7rem] px-3 py-2 text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation text-center inline-flex items-center justify-center"
+                  aria-label={t('curator.navAllUsersXp')}
+                  className="inline-flex h-9 w-9 sm:h-10 sm:w-auto sm:min-w-[7rem] sm:px-3 items-center justify-center text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border-2 border-gray-700 active:scale-[0.98] button-press touch-manipulation"
                 >
-                  {t('curator.navAllUsersXp')}
+                  <svg className="w-4 h-4 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a3 3 0 10-2.83-4" /></svg>
+                  <span className="hidden sm:inline">{t('curator.navAllUsersXp')}</span>
+                </Link>
+                <Link
+                  href="/lab"
+                  aria-label={t('lab.nav')}
+                  className="inline-flex h-9 w-9 sm:h-10 sm:w-auto sm:min-w-[7rem] sm:px-3 items-center justify-center text-xs sm:text-sm font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border-2 border-amber-500/35 rounded-lg transition-all duration-200 active:scale-[0.98] button-press touch-manipulation"
+                >
+                  <svg className="w-4 h-4 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                  <span className="hidden sm:inline">{t('lab.nav')}</span>
                 </Link>
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="flex-1 sm:flex-none min-h-[44px] min-w-[7rem] px-3 py-2 text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border border-gray-700 active:scale-[0.98] button-press touch-manipulation"
+                  aria-label="Dashboard"
+                  className="inline-flex h-9 w-9 sm:h-10 sm:w-auto sm:min-w-[7rem] sm:px-3 items-center justify-center text-xs sm:text-sm font-semibold bg-background-lighter hover:bg-gray-800 text-text-primary rounded-lg transition-all duration-200 border-2 border-gray-700 active:scale-[0.98] button-press touch-manipulation"
                 >
-                  Dashboard
+                  <svg className="w-4 h-4 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l9-9 9 9M5 10v10h14V10" /></svg>
+                  <span className="hidden sm:inline">Dashboard</span>
                 </button>
               </div>
               {/* XP bar — full width on phone, fixed width on larger screens */}
               <div
-                className="flex items-stretch rounded-lg overflow-hidden border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 h-[44px] w-full sm:w-[220px] sm:min-w-[200px] sm:max-w-[220px] shadow-sm"
+                className="flex items-stretch rounded-lg overflow-hidden border-2 border-primary/40 bg-gradient-to-r from-primary/15 to-primary/10 h-9 sm:h-[44px] w-[148px] sm:w-[220px] sm:min-w-[200px] sm:max-w-[220px] shadow-sm"
                 title={!useXpAllowed && useXpReason ? useXpReason : t('dashboard.spend100Xp')}
               >
                 <div className="flex items-center gap-2 pl-2.5 pr-2 py-2 min-w-0 flex-1">
@@ -830,7 +846,7 @@ export default function CuratorPage() {
                   onClick={handleUseXp}
                   disabled={!useXpAllowed || useXpLoading}
                   title={useXpReason || t('dashboard.spend100XpPosition')}
-                  className="shrink-0 min-w-[68px] sm:min-w-[64px] h-[44px] px-2.5 sm:px-3 font-bold text-[11px] sm:text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors button-press"
+                  className="shrink-0 min-w-[52px] sm:min-w-[64px] h-9 sm:h-[44px] px-2 sm:px-3 font-bold text-[11px] sm:text-xs text-background bg-primary hover:bg-primary-hover active:bg-primary-active disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation transition-colors button-press"
                 >
                   {useXpLoading ? '…' : 'Use XP'}
                 </button>
@@ -898,18 +914,38 @@ export default function CuratorPage() {
                     {sessions.map((session) => (
                       <div
                         key={session.id}
-                        className="flex items-center justify-between p-2 bg-background rounded text-xs border border-gray-800/50"
+                        className="flex items-center justify-between gap-2 p-2 bg-background rounded text-xs border border-gray-800/50"
                       >
-                        <span className="font-medium text-text-primary">
-                          #{session.session_number} ({session.submission_count || 0})
-                        </span>
                         <button
-                          onClick={() => handleDeleteSessions([session.session_number])}
-                          disabled={deleting || showDeleteConfirm}
-                          className="px-2 py-0.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-button text-xs transition-all duration-200 disabled:opacity-50 active:scale-[0.98] button-press"
+                          type="button"
+                          onClick={() => setPreviewSessionNumber(session.session_number)}
+                          className="font-medium text-text-primary text-left hover:text-primary transition-colors truncate"
+                          title="Preview session"
                         >
-                          ×
+                          #{session.session_number} ({session.submission_count || 0})
+                          {!session.ended_at && (
+                            <span className="ml-1.5 text-[10px] font-semibold text-emerald-400">live</span>
+                          )}
                         </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewSessionNumber(session.session_number)}
+                            disabled={deleting || showDeleteConfirm}
+                            className="px-2 py-0.5 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 border border-cyan-500/30 rounded-button text-xs transition-all duration-200 disabled:opacity-50 active:scale-[0.98] button-press"
+                            title="Preview session"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSessions([session.session_number])}
+                            disabled={deleting || showDeleteConfirm}
+                            className="px-2 py-0.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-button text-xs transition-all duration-200 disabled:opacity-50 active:scale-[0.98] button-press"
+                            title="Delete session"
+                          >
+                            ×
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -933,9 +969,18 @@ export default function CuratorPage() {
           {/* Pending submissions sidebar - compact, on the left */}
           <div className={`${selectedSubmission ? 'hidden lg:block' : 'block'} lg:w-56 xl:w-64 lg:shrink-0 space-y-3 sm:space-y-4`}>
             <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-2.5 sm:p-3 animate-fade-in border-2 border-gray-700/60">
-              <h2 className="text-xs sm:text-sm font-extrabold text-text-primary mb-2 sm:mb-3 tracking-tight">
-                {t('queue.title')} ({submissions.length})
-              </h2>
+              <div className="mb-2 flex items-center justify-between gap-2 sm:mb-3">
+                <h2 className="text-xs sm:text-sm font-extrabold text-text-primary tracking-tight">
+                  {t('queue.title')} ({submissions.length})
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowSubmitters((open) => !open)}
+                  className="lg:hidden inline-flex h-8 items-center rounded-lg border-2 border-gray-600 px-2 text-[11px] font-bold text-text-primary"
+                >
+                  {t('curator.submitters')}
+                </button>
+              </div>
               {submissions.length === 0 ? (
                 <p className="text-xs text-text-secondary font-medium">{t('curator.noPendingSubmissions')}</p>
               ) : (
@@ -1037,7 +1082,7 @@ export default function CuratorPage() {
             </div>
 
             {/* Submitters field - shows users in queue order */}
-            <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-2.5 sm:p-3 animate-fade-in border-2 border-gray-700/60">
+            <div className={`${showSubmitters ? 'block' : 'hidden lg:block'} bg-background-light rounded-lg sm:rounded-xl shadow-lg p-2.5 sm:p-3 animate-fade-in border-2 border-gray-700/60`}>
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <h2 className="text-xs sm:text-sm font-extrabold text-text-primary tracking-tight">
                   {t('curator.submitters')} ({getQueueSubmitters().length})
@@ -1124,8 +1169,8 @@ export default function CuratorPage() {
 
                   {/* Track info — shared chip geometry + typography (border-2, min-h, label/value sizes) */}
                   <div className="pb-2 sm:pb-3 border-b border-gray-800/50">
-                    <div className="flex flex-wrap items-stretch gap-1.5 sm:gap-2">
-                      <div className="flex min-h-[4rem] min-w-0 flex-1 basis-[min(100%,10rem)] sm:basis-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
+                    <div className="flex flex-nowrap items-stretch gap-1.5 overflow-x-auto scrollbar-hide sm:flex-wrap sm:overflow-visible sm:gap-2">
+                      <div className="flex min-h-[2.75rem] w-[9.25rem] shrink-0 sm:min-h-[4rem] sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
                         <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-primary">Song</span>
                         <span className="text-sm font-bold leading-tight text-text-primary truncate">
                           {(() => {
@@ -1138,20 +1183,20 @@ export default function CuratorPage() {
                           })()}
                         </span>
                       </div>
-                      <div className="flex min-h-[4rem] min-w-0 flex-1 basis-[min(100%,10rem)] sm:basis-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-gray-800/50 bg-background-lighter px-2.5 py-2 sm:px-3 sm:py-2.5">
+                      <div className="flex min-h-[2.75rem] w-[9.25rem] shrink-0 sm:min-h-[4rem] sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-gray-800/50 bg-background-lighter px-2.5 py-2 sm:px-3 sm:py-2.5">
                         <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-text-muted">Artist</span>
                         <span className="text-sm font-bold leading-tight text-text-primary truncate">
                           {selectedSubmission.artist_name || submissionSoundCloudMetadata[selectedSubmission.id]?.author_name || selectedSubmission.users.display_name}
                         </span>
                       </div>
-                      <div className="flex min-h-[4rem] w-[min(100%,5.5rem)] sm:min-w-[5.5rem] sm:w-auto shrink-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
+                      <div className="flex min-h-[2.75rem] w-[5.5rem] shrink-0 sm:min-h-[4rem] flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
                         <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-primary">Genre</span>
                         <span className="text-sm font-bold leading-tight text-primary truncate">
                           {selectedSubmission.genre ? (selectedSubmission.genre?.match(/\(([^)]+)\)\s*$/) ?? [null, selectedSubmission.genre])[1] : '—'}
                         </span>
                       </div>
                       {submissions[0]?.id === selectedSubmission.id && (
-                        <div className="flex min-h-[4rem] min-w-0 flex-1 basis-[min(100%,12rem)] sm:basis-[8.5rem] flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
+                        <div className="flex min-h-[2.75rem] w-[8.5rem] shrink-0 sm:min-h-[4rem] sm:w-auto sm:basis-[8.5rem] flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
                           <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-primary">
                             {t('curator.audienceLiveVotes')}
                           </span>
@@ -1160,12 +1205,12 @@ export default function CuratorPage() {
                           </span>
                         </div>
                       )}
-                      <div className="flex min-h-[4rem] min-w-0 flex-1 basis-[min(100%,8rem)] sm:basis-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-gray-800/50 bg-background-lighter px-2.5 py-2 sm:px-3 sm:py-2.5">
+                      <div className="flex min-h-[2.75rem] w-[8.5rem] shrink-0 sm:min-h-[4rem] sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-gray-800/50 bg-background-lighter px-2.5 py-2 sm:px-3 sm:py-2.5">
                         <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-text-muted">Submitter</span>
                         <span className="text-sm font-bold leading-tight text-text-secondary truncate">{selectedSubmission.users.display_name}</span>
                       </div>
                       {selectedSubmission.session_number != null && (
-                        <div className="flex min-h-[4rem] w-fit shrink-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
+                        <div className="flex min-h-[2.75rem] w-fit shrink-0 sm:min-h-[4rem] flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
                           <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-primary">Session</span>
                           <span className="text-sm font-bold leading-tight tabular-nums text-primary">#{selectedSubmission.session_number}</span>
                         </div>
@@ -1427,6 +1472,11 @@ export default function CuratorPage() {
       </div>
 
       <XpHelpModal isOpen={showXpHelpModal} onClose={() => setShowXpHelpModal(false)} />
+
+      <SessionPreviewModal
+        sessionNumber={previewSessionNumber}
+        onClose={() => setPreviewSessionNumber(null)}
+      />
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

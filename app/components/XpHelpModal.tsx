@@ -21,23 +21,69 @@ interface XpHelpModalProps {
 }
 
 const XP_BLOCK_KEYS = [
-  { labelKey: 'xpHelp.timeXpLabel', subKey: 'xpHelp.timeXpSub', valueKey: null as string | null, value: '+5', color: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400', hover: 'hover:bg-emerald-500/30 hover:border-emerald-500/60 hover:ring-2 hover:ring-emerald-500/40' },
-  { labelKey: 'xpHelp.carryoverLabel', subKey: 'xpHelp.carryoverSub', valueKey: null, value: '+25', color: 'bg-amber-500/20 border-amber-500/40 text-amber-400', hover: 'hover:bg-amber-500/30 hover:border-amber-500/60 hover:ring-2 hover:ring-amber-500/40' },
-  { labelKey: 'xpHelp.followLabel', subKey: 'xpHelp.followSub', valueKey: null, value: '+25', color: 'bg-blue-500/20 border-blue-500/40 text-blue-400', hover: 'hover:bg-blue-500/30 hover:border-blue-500/60 hover:ring-2 hover:ring-blue-500/40' },
-  { labelKey: 'xpHelp.subDonationLabel', subKey: 'xpHelp.subDonationSub', valueKey: null, value: '+20', color: 'bg-purple-500/20 border-purple-500/40 text-purple-400', hover: 'hover:bg-purple-500/30 hover:border-purple-500/60 hover:ring-2 hover:ring-purple-500/40' },
-  { labelKey: 'xpHelp.reviewLabel', subKey: 'xpHelp.reviewSub', valueKey: null, value: '10–60', color: 'bg-primary/20 border-primary/40 text-primary', hover: 'hover:bg-primary/30 hover:border-primary/60 hover:ring-2 hover:ring-primary/50' },
-  { labelKey: 'xpHelp.communityLabel', subKey: 'xpHelp.communitySub', valueKey: null, value: '10–20', color: 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400', hover: 'hover:bg-cyan-500/30 hover:border-cyan-500/60 hover:ring-2 hover:ring-cyan-500/40' },
-  { labelKey: 'xpHelp.useXpLabel', subKey: 'xpHelp.useXpSub', valueKey: 'xpHelp.valueUseXp', value: '100 XP = 1 spot', color: 'bg-gray-600/30 border-gray-600/50 text-text-primary', hover: 'hover:bg-gray-600/40 hover:border-gray-600/70 hover:ring-2 hover:ring-gray-500/30' },
+  {
+    labelKey: 'xpHelp.timeXpLabel',
+    subKey: 'xpHelp.timeXpSub',
+    valueKey: null as string | null,
+    value: '+5',
+    accent: 'border-emerald-500/35 bg-emerald-500/[0.08] text-emerald-400',
+  },
+  {
+    labelKey: 'xpHelp.carryoverLabel',
+    subKey: 'xpHelp.carryoverSub',
+    valueKey: null,
+    value: '+25',
+    accent: 'border-amber-500/35 bg-amber-500/[0.08] text-amber-400',
+  },
+  {
+    labelKey: 'xpHelp.followLabel',
+    subKey: 'xpHelp.followSub',
+    valueKey: null,
+    value: '+25',
+    accent: 'border-sky-500/35 bg-sky-500/[0.08] text-sky-400',
+  },
+  {
+    labelKey: 'xpHelp.subDonationLabel',
+    subKey: 'xpHelp.subDonationSub',
+    valueKey: null,
+    value: '+20',
+    accent: 'border-fuchsia-500/35 bg-fuchsia-500/[0.08] text-fuchsia-400',
+  },
+  {
+    labelKey: 'xpHelp.reviewLabel',
+    subKey: 'xpHelp.reviewSub',
+    valueKey: null,
+    value: '10–60',
+    accent: 'border-primary/40 bg-primary/[0.08] text-primary',
+  },
+  {
+    labelKey: 'xpHelp.communityLabel',
+    subKey: 'xpHelp.communitySub',
+    valueKey: null,
+    value: '10–20',
+    accent: 'border-cyan-500/35 bg-cyan-500/[0.08] text-cyan-400',
+  },
+  {
+    labelKey: 'xpHelp.useXpLabel',
+    subKey: 'xpHelp.useXpSub',
+    valueKey: 'xpHelp.valueUseXp',
+    value: '100 XP = 1 spot',
+    accent: 'border-gray-600/50 bg-background/50 text-text-primary',
+  },
 ] as const
 
 export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
   const { t } = useLanguage()
-  const blocks = useMemo(() => XP_BLOCK_KEYS.map((b) => ({
-    ...b,
-    label: t(b.labelKey),
-    sub: t(b.subKey),
-    displayValue: b.valueKey ? t(b.valueKey) : b.value,
-  })), [t])
+  const blocks = useMemo(
+    () =>
+      XP_BLOCK_KEYS.map((b) => ({
+        ...b,
+        label: t(b.labelKey),
+        sub: t(b.subKey),
+        displayValue: b.valueKey ? t(b.valueKey) : b.value,
+      })),
+    [t]
+  )
 
   const handleDismiss = () => {
     setXpHelpDismissed()
@@ -47,115 +93,130 @@ export default function XpHelpModal({ isOpen, onClose }: XpHelpModalProps) {
   useEffect(() => {
     if (!isOpen) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setXpHelpDismissed()
-        onClose()
-      }
+      if (e.key === 'Escape') handleDismiss()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- dismiss closes modal
   }, [isOpen, onClose])
-
-  const handleBackdrop = (e: React.MouseEvent) => {
-    if (e.target !== e.currentTarget) return
-    handleDismiss()
-  }
 
   if (!isOpen) return null
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-3 bg-black/60 backdrop-blur-sm animate-fade-in"
-      onClick={handleBackdrop}
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/65 backdrop-blur-sm animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleDismiss()
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="xp-help-title"
     >
       <div
-        className="relative w-full max-w-md max-h-[82vh] sm:max-h-[90vh] overflow-hidden rounded-xl bg-background-light border-2 border-gray-700/60 shadow-xl animate-scale-in flex flex-col"
+        className="relative w-full max-w-4xl max-h-[92vh] sm:max-h-[90vh] overflow-hidden rounded-t-2xl sm:rounded-2xl bg-background-light border-2 border-gray-700/60 shadow-2xl animate-scale-in flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-800/50 shrink-0 sm:px-4 sm:py-3">
-          <h2 id="xp-help-title" className="text-sm font-bold text-text-primary flex items-center gap-1.5 sm:text-base sm:gap-2">
-            <span className="text-primary drop-shadow-[0_0_8px_rgba(255,85,0,0.4)]">⚡</span> {t('xp.howXpWorks')}
-          </h2>
-          <button
-            type="button"
-            onClick={handleDismiss}
-            className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-background-lighter transition-colors duration-200 touch-manipulation"
-            aria-label={t('common.close')}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+        <div className="shrink-0 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-gray-700/50">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2
+                id="xp-help-title"
+                className="text-lg sm:text-xl font-extrabold text-text-primary tracking-tight"
+              >
+                {t('xp.howXpWorks')}
+              </h2>
+              <p className="mt-1.5 text-xs sm:text-sm text-text-secondary leading-relaxed max-w-2xl">
+                {t('xpHelp.intro1')}
+              </p>
+              <p className="mt-1 text-xs sm:text-sm text-text-muted leading-relaxed">
+                {t('xpHelp.intro2')}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDismiss}
+              className="shrink-0 h-9 w-9 flex items-center justify-center rounded-xl border border-gray-600/50 text-text-muted hover:text-text-primary hover:bg-background-lighter transition-colors touch-manipulation"
+              aria-label={t('common.close')}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-3 py-3 space-y-3 scrollbar-thin text-sm sm:px-4 sm:py-4 sm:space-y-5 sm:text-sm">
-          <div className="space-y-1.5 text-text-secondary leading-snug text-xs sm:space-y-2 sm:text-sm">
-            <p>{t('xpHelp.intro1')}</p>
-            <p>{t('xpHelp.intro2')}</p>
-          </div>
-
-          <div>
-            <p className="text-text-muted font-semibold mb-1.5 uppercase tracking-wider text-[10px] sm:mb-2.5">{t('xpHelp.typesLabel')}</p>
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+        <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 sm:py-5 space-y-5 sm:space-y-6 scrollbar-thin">
+          <section>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2.5">
+              {t('xpHelp.typesLabel')}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
               {blocks.map((b) => (
                 <div
                   key={b.labelKey}
-                  className={`rounded-lg border p-2 transition-all duration-200 ease-out hover:scale-[1.03] hover:shadow-lg cursor-default sm:p-2.5 ${b.color} ${b.hover}`}
+                  className={`rounded-xl border px-3.5 py-3 ${b.accent}`}
                 >
-                  <p className="font-bold text-sm leading-tight sm:text-base">{b.displayValue}</p>
-                  <p className="font-medium opacity-95 text-[11px] mt-0.5 sm:text-xs">{b.label}</p>
-                  {b.sub && <p className="text-[10px] opacity-85 mt-0.5 leading-snug sm:mt-1">{b.sub}</p>}
+                  <p className="text-xl sm:text-2xl font-black tabular-nums leading-none">
+                    {b.displayValue}
+                  </p>
+                  <p className="mt-2 text-sm font-bold text-text-primary">{b.label}</p>
+                  {b.sub && (
+                    <p className="mt-1 text-[11px] sm:text-xs text-text-secondary leading-snug">
+                      {b.sub}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
-          </div>
+          </section>
 
-          <div className="border-t border-gray-800/50 pt-3 sm:pt-4">
-            <p className="text-text-muted font-semibold mb-1.5 uppercase tracking-wider text-[10px] sm:mb-2.5">{t('xpHelp.communitySection')}</p>
-            <p className="text-text-secondary leading-snug text-[11px] mb-1.5 sm:text-xs sm:mb-2">{t('xpHelp.communityIntro')}</p>
-            <ul className="space-y-1.5 text-text-secondary leading-snug text-[11px] sm:space-y-2 sm:text-xs">
-              <li className="flex gap-2">
-                <span className="text-cyan-400 shrink-0">•</span>
-                <span>{t('xpHelp.communityViewersNote')}</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-cyan-400 shrink-0">•</span>
-                <span>{t('xpHelp.communityParticipantsNote')}</span>
-              </li>
-            </ul>
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+            <section className="rounded-xl border border-gray-700/50 bg-background/35 p-3.5 sm:p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-400/90 mb-2">
+                {t('xpHelp.communitySection')}
+              </p>
+              <p className="text-sm text-text-secondary leading-relaxed mb-3">
+                {t('xpHelp.communityIntro')}
+              </p>
+              <ul className="space-y-2.5">
+                <li className="rounded-lg border border-cyan-500/20 bg-cyan-500/[0.06] px-3 py-2.5 text-xs sm:text-sm text-text-secondary leading-snug">
+                  {t('xpHelp.communityViewersNote')}
+                </li>
+                <li className="rounded-lg border border-cyan-500/20 bg-cyan-500/[0.06] px-3 py-2.5 text-xs sm:text-sm text-text-secondary leading-snug">
+                  {t('xpHelp.communityParticipantsNote')}
+                </li>
+              </ul>
+            </section>
 
-          <div className="border-t border-gray-800/50 pt-3 sm:pt-4">
-            <p className="text-text-muted font-semibold mb-1.5 uppercase tracking-wider text-[10px] sm:mb-2.5">{t('xpHelp.howItWorks')}</p>
-            <ul className="space-y-1.5 text-text-secondary leading-snug text-[11px] sm:space-y-2 sm:text-xs">
-              <li className="flex gap-2">
-                <span className="text-primary shrink-0">•</span>
-                <span>{t('xpHelp.followNote')}</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-primary shrink-0">•</span>
-                <span>{t('xpHelp.reviewNote')}</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-primary shrink-0">•</span>
-                <span>{t('xpHelp.communityXpNote')}</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-primary shrink-0">•</span>
-                <span>{t('xpHelp.useXpNote')}</span>
-              </li>
-            </ul>
+            <section className="rounded-xl border border-gray-700/50 bg-background/35 p-3.5 sm:p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2">
+                {t('xpHelp.howItWorks')}
+              </p>
+              <ul className="space-y-2.5">
+                {[
+                  t('xpHelp.followNote'),
+                  t('xpHelp.reviewNote'),
+                  t('xpHelp.communityXpNote'),
+                  t('xpHelp.useXpNote'),
+                ].map((note) => (
+                  <li
+                    key={note}
+                    className="flex gap-2.5 text-xs sm:text-sm text-text-secondary leading-snug"
+                  >
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+                    <span>{note}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
           </div>
         </div>
 
-        <div className="px-3 py-2 border-t border-gray-800/50 shrink-0 sm:px-4 sm:py-3">
+        <div className="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-700/50 bg-background-light">
           <button
             type="button"
             onClick={handleDismiss}
-            className="w-full py-2 rounded-lg bg-primary hover:bg-primary-hover text-background font-medium text-sm transition-colors duration-200 touch-manipulation sm:py-2.5"
+            className="w-full sm:w-auto sm:min-w-[160px] sm:mx-auto sm:flex h-11 rounded-xl bg-primary hover:bg-primary-hover text-background font-bold text-sm transition-colors touch-manipulation items-center justify-center"
           >
             {t('xpHelp.gotIt')}
           </button>

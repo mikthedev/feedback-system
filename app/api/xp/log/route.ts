@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = createAdminClient()
-    const limit = Math.min(Number(request.nextUrl.searchParams.get('limit')) || 50, 100)
+    const limit = Math.min(Number(request.nextUrl.searchParams.get('limit')) || 50, 300)
 
     const { data, error } = await supabase
       .from('xp_log')

@@ -1,11 +1,12 @@
 /**
- * Twitch Helix helpers for mikegtcoff channel (stream status, follow, sub).
- * App token for streams/users; user token for follow/sub checks.
+ * Twitch Helix helpers for mikegtcoff channel (stream status, follow, sub, VODs).
+ * App token for streams/users/videos; user token for follow/sub checks.
  */
 
-const TWITCH_CHANNEL_LOGIN = 'mikegtcoff'
+export const TWITCH_CHANNEL_LOGIN = 'mikegtcoff'
 const HELIX_BASE = 'https://api.twitch.tv/helix'
 const OAUTH_TOKEN_URL = 'https://id.twitch.tv/oauth2/token'
+const FEEDBACK_SESSION_TITLE = 'feedback session'
 
 let appTokenCache: { token: string; expiresAt: number } | null = null
 let broadcasterIdCache: string | null = null
@@ -68,11 +69,98 @@ export async function getMikegtcoffBroadcasterId(): Promise<string> {
   return broadcasterIdCache
 }
 
+export type MikegtcoffStream = {
+  id: string
+  title: string
+  viewer_count: number
+  started_at: string
+  thumbnail_url: string
+  game_name: string
+}
+
+export type MikegtcoffVod = {
+  id: string
+  title: string
+  url: string
+  thumbnail_url: string
+  duration: string
+  view_count: number
+  published_at: string
+}
+
 /** True when mikegtcoff is currently live */
 export async function isMikegtcoffLive(): Promise<boolean> {
+  const stream = await getMikegtcoffStream()
+  return stream !== null
+}
+
+/** Current mikegtcoff stream, or null when offline */
+export async function getMikegtcoffStream(): Promise<MikegtcoffStream | null> {
   const bid = await getMikegtcoffBroadcasterId()
-  const data = await helixGet<{ data: unknown[] }>(`/streams?user_id=${bid}`)
-  return Array.isArray(data.data) && data.data.length > 0
+  const data = await helixGet<{
+    data: Array<{
+      id: string
+      title: string
+      viewer_count: number
+      started_at: string
+      thumbnail_url: string
+      game_name?: string
+    }>
+  }>(`/streams?user_id=${bid}`)
+  const stream = data.data?.[0]
+  if (!stream) return null
+  return {
+    id: stream.id,
+    title: stream.title ?? '',
+    viewer_count: stream.viewer_count ?? 0,
+    started_at: stream.started_at ?? '',
+    thumbnail_url: stream.thumbnail_url ?? '',
+    game_name: stream.game_name ?? '',
+  }
+}
+
+function normalizeTwitchThumbnail(url: string, width = 640, height = 360): string {
+  return url
+    .replace(/%?\{width\}/gi, String(width))
+    .replace(/%?\{height\}/gi, String(height))
+}
+
+/**
+ * Archive VODs from mikegtcoff whose titles include "Feedback Session".
+ * Uses Helix videos (type=archive) with an app access token.
+ */
+export async function getMikegtcoffFeedbackSessionVods(
+  limit = 12
+): Promise<MikegtcoffVod[]> {
+  const bid = await getMikegtcoffBroadcasterId()
+  const pageSize = Math.min(Math.max(limit * 3, 20), 100)
+  const data = await helixGet<{
+    data: Array<{
+      id: string
+      title: string
+      url: string
+      thumbnail_url: string
+      duration: string
+      view_count: number
+      published_at: string
+      type?: string
+    }>
+  }>(`/videos?user_id=${bid}&type=archive&first=${pageSize}`)
+
+  const matches = (data.data ?? [])
+    .filter((v) => (v.title ?? '').toLowerCase().includes(FEEDBACK_SESSION_TITLE))
+    .slice(0, limit)
+    .map((v) => ({
+      id: v.id,
+      title: v.title ?? '',
+      url: v.url ?? `https://www.twitch.tv/videos/${v.id}`,
+      thumbnail_url: normalizeTwitchThumbnail(v.thumbnail_url ?? ''),
+      duration: v.duration ?? '',
+      view_count: v.view_count ?? 0,
+      published_at: v.published_at ?? '',
+    }))
+
+  return matches
 }
 
 /** Whether the given Twitch user follows mikegtcoff. Requires user access token (user:read:follows). */

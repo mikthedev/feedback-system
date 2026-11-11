@@ -34,6 +34,10 @@ interface DashboardFooterProps {
   useXpReason?: string
   /** Phone XP pane: single cohesive mobile layout (indicators + stats + status + log). */
   phoneLayout?: boolean
+  /** Hide Used/Stored summary cards (when those stats live in the welcome card). */
+  hideSummary?: boolean
+  /** Standalone dashboard windows. */
+  panel?: 'status' | 'tools'
 }
 
 const INDICATOR_STYLE =
@@ -163,14 +167,24 @@ function IndicatorRow({
   )
 }
 
+const XP_LOG_PREVIEW = 6
+
+function formatXpLogLabel(entry: XpLogEntry, t: (key: string) => string) {
+  const key = `xpLog.source.${entry.source}`
+  const translated = t(key)
+  return translated !== key ? translated : entry.description || entry.source
+}
+
 function XpLogList({
   xpLog,
   loadingLog,
   t,
+  preview = false,
 }: {
   xpLog: XpLogEntry[]
   loadingLog: boolean
   t: (key: string) => string
+  preview?: boolean
 }) {
   if (loadingLog) {
     return <p className="text-sm text-text-muted py-3 font-medium">{t('xp.loading')}</p>
@@ -178,57 +192,55 @@ function XpLogList({
   if (xpLog.length === 0) {
     return <p className="text-sm text-text-muted py-3 font-medium">{t('xp.noEvents')}</p>
   }
+
+  const visible = preview ? xpLog.slice(0, XP_LOG_PREVIEW) : xpLog
+  const hasMore = preview && xpLog.length > XP_LOG_PREVIEW
+
   return (
-    <ul className="space-y-1.5 max-h-48 overflow-y-auto scrollbar-thin pr-1">
-      {xpLog.map((entry) => {
-        const isPositive = entry.amount > 0
-        const isNegative = entry.amount < 0
-        return (
-          <li
-            key={entry.id}
-            className={`flex flex-wrap items-start gap-x-2 gap-y-1 px-3 py-2 rounded-lg border transition-colors ${
-              isPositive
-                ? 'bg-primary/5 border-primary/20'
-                : isNegative
-                  ? 'bg-red-500/5 border-red-500/20'
-                  : 'bg-amber-500/5 border-amber-500/20'
-            }`}
-          >
-            <span className="text-[11px] text-text-muted shrink-0 tabular-nums font-medium uppercase tracking-wider">
-              {new Date(entry.created_at).toLocaleString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
-            {entry.amount !== 0 ? (
+    <div>
+      <ul className="divide-y divide-gray-700/40 rounded-xl border border-gray-700/45 overflow-hidden bg-background/30">
+        {visible.map((entry) => {
+          const isPositive = entry.amount > 0
+          const isNegative = entry.amount < 0
+          return (
+            <li
+              key={entry.id}
+              className="flex items-center gap-3 px-3 py-2.5 hover:bg-background-lighter/40 transition-colors"
+            >
               <span
-                className={`shrink-0 font-bold tabular-nums ${
-                  isPositive ? 'text-primary' : 'text-red-400'
+                className={`shrink-0 min-w-[3.25rem] text-right text-sm font-black tabular-nums ${
+                  isPositive ? 'text-primary' : isNegative ? 'text-red-400' : 'text-amber-400'
                 }`}
               >
-                {entry.amount > 0 ? '+' : ''}
-                {entry.amount}
+                {entry.amount === 0 ? '—' : `${entry.amount > 0 ? '+' : ''}${entry.amount}`}
               </span>
-            ) : (
-              <span className="text-amber-400/80 font-medium tabular-nums shrink-0">—</span>
-            )}
-            <span
-              className={`text-sm min-w-0 break-words font-medium ${
-                isPositive ? 'text-text-secondary' : isNegative ? 'text-red-300/90' : 'text-amber-200/90'
-              }`}
-            >
-              {(() => {
-                const key = `xpLog.source.${entry.source}`
-                const translated = t(key)
-                return translated !== key ? translated : entry.description || entry.source
-              })()}
-            </span>
-          </li>
-        )
-      })}
-    </ul>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-text-primary truncate">
+                  {formatXpLogLabel(entry, t)}
+                </p>
+                <p className="text-[11px] text-text-muted tabular-nums font-medium mt-0.5">
+                  {new Date(entry.created_at).toLocaleString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+      {hasMore && (
+        <Link
+          href="/xp/log"
+          className="mt-2.5 w-full min-h-[40px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-primary/35 bg-primary/10 text-primary text-xs font-bold hover:bg-primary/15 transition-colors touch-manipulation"
+        >
+          {t('xp.viewFullLog')}
+          <span className="text-text-muted font-medium tabular-nums">({xpLog.length})</span>
+        </Link>
+      )}
+    </div>
   )
 }
 
@@ -249,12 +261,123 @@ export default function DashboardFooter({
   useXpAllowed,
   useXpReason,
   phoneLayout = false,
+  hideSummary = false,
+  panel,
 }: DashboardFooterProps) {
   const { t } = useLanguage()
   const xpToNext = 100 - (xp % 100)
   const hasReviewXp = xpLog.some(
     (e) => e.source === 'curator_review' || e.source === 'audience_review'
   )
+
+  if (panel === 'status') {
+    if (typeof useXpAllowed !== 'boolean') return null
+    return (
+      <div
+        className={`bg-background-light rounded-xl sm:rounded-2xl shadow-lg border-2 overflow-hidden animate-fade-in w-full ${
+          useXpAllowed ? 'border-primary/40' : 'border-gray-700/60'
+        }`}
+      >
+        <div
+          className={`px-3.5 sm:px-4 py-3.5 flex items-start gap-3 ${
+            useXpAllowed ? 'bg-primary/[0.06]' : 'bg-background-light'
+          }`}
+        >
+          <span
+            className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${
+              useXpAllowed
+                ? 'border-primary/35 bg-primary/15 text-primary'
+                : 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+            }`}
+            aria-hidden
+          >
+            {useXpAllowed ? (
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            )}
+          </span>
+          <div className="min-w-0 flex-1 pt-0.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1">
+              {t('xp.statusTitle')}
+            </p>
+            <p
+              className={`text-sm font-semibold leading-snug ${
+                useXpAllowed ? 'text-primary' : 'text-text-primary'
+              }`}
+            >
+              {useXpAllowed
+                ? t('dashboard.useXpStatusReady')
+                : useXpReason || t('xpHelp.unknownReason')}
+            </p>
+            {!useXpAllowed && xp < 9999 && xpToNext > 0 && useXpReason && !/session/i.test(useXpReason) && (
+              <p className="mt-1 text-xs text-text-muted font-medium">
+                {t('dashboard.useXpToGoLine').replace(/\{n\}/g, String(xpToNext))}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (panel === 'tools') {
+    return (
+      <div className="bg-background-light rounded-xl sm:rounded-2xl shadow-lg border-2 border-gray-700/60 overflow-hidden animate-fade-in w-full">
+        <div className="px-3.5 sm:px-4 pt-3.5 sm:pt-4 pb-3">
+          <button
+            type="button"
+            onClick={onShowXpHelp}
+            className="w-full min-h-[44px] flex items-center justify-center gap-2 rounded-xl bg-primary/10 border-2 border-primary/40 text-primary font-bold text-sm hover:bg-primary/20 hover:border-primary/50 transition-colors touch-manipulation"
+          >
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            {t('xp.howXpWorks')}
+          </button>
+        </div>
+
+        <details className="group border-t-2 border-gray-700/50">
+          <summary className="list-none flex items-center justify-between gap-2 px-3.5 sm:px-4 py-2.5 sm:py-3 cursor-pointer text-xs sm:text-sm font-bold text-text-secondary hover:text-text-primary hover:bg-gray-800/20 active:bg-gray-800/30 min-h-[44px] touch-manipulation">
+            <span className="flex items-center gap-2">
+              <span>{t('xp.xpLog')}</span>
+              {xpLog.length > 0 && (
+                <span className="text-xs text-text-muted font-medium tabular-nums">
+                  {xpLog.length} {xpLog.length === 1 ? t('xp.event') : t('xp.events')}
+                </span>
+              )}
+            </span>
+            <svg
+              className="w-5 h-5 shrink-0 transition-transform group-open:rotate-180 text-text-muted"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </summary>
+          <div className="px-3.5 sm:px-4 pb-3.5 pt-1 border-t border-gray-800/30 bg-background/30">
+            <XpLogList xpLog={xpLog} loadingLog={loadingLog} t={t} preview />
+          </div>
+        </details>
+      </div>
+    )
+  }
 
   if (compactTop) {
     return (
@@ -420,7 +543,7 @@ export default function DashboardFooter({
               </svg>
             </summary>
             <div className="px-3 pb-3 border-t border-gray-700/40">
-              <XpLogList xpLog={xpLog} loadingLog={loadingLog} t={t} />
+              <XpLogList xpLog={xpLog} loadingLog={loadingLog} t={t} preview />
             </div>
           </details>
         </div>
@@ -430,35 +553,36 @@ export default function DashboardFooter({
 
   return (
     <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border-2 border-gray-700/60 w-full">
-      {/* XP summary — 2 stat cards in a row */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-4">
-        <div className="rounded-md sm:rounded-lg bg-background/80 border-2 border-gray-700/50 p-2 sm:p-3 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px]">
-          <span className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-wider">
-            {t('xp.used')}
-          </span>
-          <span
-            className="mt-0.5 sm:mt-1 text-base sm:text-lg font-extrabold text-text-primary tabular-nums"
-            title={usedCap == null ? 'No limit for testers' : undefined}
-          >
-            {xpUsedThisSession}
-            {usedCap != null ? (
-              <span className="text-text-muted font-semibold">/{usedCap}</span>
-            ) : (
-              <span className="text-text-muted font-semibold text-xs ml-0.5">
-                ({t('common.noLimit')})
-              </span>
-            )}
-          </span>
+      {!hideSummary && (
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-4">
+          <div className="rounded-md sm:rounded-lg bg-background/80 border-2 border-gray-700/50 p-2 sm:p-3 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px]">
+            <span className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-wider">
+              {t('xp.used')}
+            </span>
+            <span
+              className="mt-0.5 sm:mt-1 text-base sm:text-lg font-extrabold text-text-primary tabular-nums"
+              title={usedCap == null ? 'No limit for testers' : undefined}
+            >
+              {xpUsedThisSession}
+              {usedCap != null ? (
+                <span className="text-text-muted font-semibold">/{usedCap}</span>
+              ) : (
+                <span className="text-text-muted font-semibold text-xs ml-0.5">
+                  ({t('common.noLimit')})
+                </span>
+              )}
+            </span>
+          </div>
+          <div className="rounded-md sm:rounded-lg bg-background/80 border-2 border-gray-700/50 p-2 sm:p-3 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px]">
+            <span className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-wider">
+              {t('xp.stored')}
+            </span>
+            <span className="mt-0.5 sm:mt-1 text-base sm:text-lg font-extrabold text-primary tabular-nums">
+              {xp}
+            </span>
+          </div>
         </div>
-        <div className="rounded-md sm:rounded-lg bg-background/80 border-2 border-gray-700/50 p-2 sm:p-3 flex flex-col items-center justify-center min-h-[64px] sm:min-h-[72px]">
-          <span className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-wider">
-            {t('xp.stored')}
-          </span>
-          <span className="mt-0.5 sm:mt-1 text-base sm:text-lg font-extrabold text-primary tabular-nums">
-            {xp}
-          </span>
-        </div>
-      </div>
+      )}
 
       {/* How XP works */}
       <button
@@ -560,7 +684,7 @@ export default function DashboardFooter({
           </svg>
         </summary>
         <div className="px-4 pb-4 pt-2 border-t border-gray-800/30 bg-background/30">
-          <XpLogList xpLog={xpLog} loadingLog={loadingLog} t={t} />
+          <XpLogList xpLog={xpLog} loadingLog={loadingLog} t={t} preview />
         </div>
       </details>
     </div>

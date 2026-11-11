@@ -481,6 +481,112 @@ body {
   animation: xp-block-glow 2s ease-in-out infinite;
 }
 
+/* XP battery fill — soft shimmer across the charge */
+@keyframes xp-battery-shimmer {
+  0% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(230%);
+  }
+}
+
+@keyframes xp-battery-glow {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.12);
+  }
+}
+
+@keyframes xp-battery-pulse {
+  0%, 100% {
+    box-shadow: inset 0 0 0 0 rgba(202, 247, 111, 0), 0 0 0 0 rgba(202, 247, 111, 0);
+  }
+  50% {
+    box-shadow: inset 0 0 10px rgba(202, 247, 111, 0.2), 0 0 10px rgba(202, 247, 111, 0.14);
+  }
+}
+
+.xp-battery {
+  position: relative;
+  overflow: hidden;
+  border-radius: 9999px;
+  background:
+    linear-gradient(180deg, rgba(40, 40, 40, 0.95), rgba(14, 14, 14, 0.98));
+  border: 1px solid rgba(202, 247, 111, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.xp-battery-ready {
+  animation: xp-battery-pulse 2.2s ease-in-out infinite;
+  border-color: rgba(202, 247, 111, 0.5);
+}
+
+.xp-battery-fill {
+  position: absolute;
+  inset: 1.5px auto 1.5px 1.5px;
+  border-radius: 9999px;
+  background:
+    linear-gradient(
+      90deg,
+      #7aad2e 0%,
+      #CAF76F 38%,
+      #f0ffb0 58%,
+      #CAF76F 78%,
+      #9ed645 100%
+    );
+  background-size: 200% 100%;
+  box-shadow:
+    0 0 10px rgba(202, 247, 111, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: width 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  animation: xp-battery-glow 3.2s ease-in-out infinite;
+}
+
+.xp-battery-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.55) 48%,
+    transparent 66%
+  );
+  animation: xp-battery-shimmer 2.4s ease-in-out infinite;
+}
+
+.xp-battery-cells {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.xp-battery-cells span {
+  border-right: 1px solid rgba(10, 10, 10, 0.4);
+}
+
+.xp-battery-cells span:last-child {
+  border-right: none;
+}
+
+.xp-battery-cap {
+  width: 5px;
+  height: 10px;
+  border-radius: 0 3px 3px 0;
+  background: rgba(202, 247, 111, 0.35);
+  border: 1px solid rgba(202, 247, 111, 0.4);
+  border-left: none;
+  flex-shrink: 0;
+}
+
 /* Submit Demo + icon shimmer when a TOTM queue skip is available (phone) */
 @keyframes totm-plus-shimmer {
   0%, 100% {

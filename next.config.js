@@ -14,7 +14,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors *; frame-src https://w.soundcloud.com https://soundcloud.com;",
+            value: "frame-ancestors *; frame-src https://w.soundcloud.com https://soundcloud.com https://player.twitch.tv https://embed.twitch.tv https://www.twitch.tv;",
           },
         ],
       },

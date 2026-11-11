@@ -49,6 +49,8 @@ type TotmDashboardPanelProps = {
   refreshKey?: number
   onMembershipChange?: (inTotm: boolean) => void
   onAvailableSkipsChange?: (count: number) => void
+  /** Lighter chrome when nested inside another card. */
+  embedded?: boolean
 }
 
 const FEATURED_HIDDEN_KEY = 'dfs_hide_featured_artist'
@@ -71,6 +73,7 @@ export default function TotmDashboardPanel({
   refreshKey = 0,
   onMembershipChange,
   onAvailableSkipsChange,
+  embedded = false,
 }: TotmDashboardPanelProps) {
   const { t } = useLanguage()
   const [data, setData] = useState<TotmMe | null>(null)
@@ -145,7 +148,7 @@ export default function TotmDashboardPanel({
 
   if (loading) {
     return (
-      <div className="rounded-lg border border-gray-700/50 bg-background-light/80 px-3 py-2">
+      <div className={embedded ? 'px-0 py-1' : 'rounded-lg border border-gray-700/50 bg-background-light/80 px-3 py-2'}>
         <p className="text-[11px] text-text-muted font-medium">{t('common.loading')}</p>
       </div>
     )
@@ -159,7 +162,13 @@ export default function TotmDashboardPanel({
   if (featured?.song_title) featuredMetaParts.push(featured.song_title)
 
   return (
-    <section className="rounded-lg sm:rounded-xl border border-gray-700/50 bg-background-light/90 p-2 sm:p-2.5 space-y-2 animate-fade-in">
+    <section
+      className={
+        embedded
+          ? 'space-y-2 animate-fade-in'
+          : 'rounded-lg sm:rounded-xl border border-gray-700/50 bg-background-light/90 p-2 sm:p-2.5 space-y-2 animate-fade-in'
+      }
+    >
       {showFeatured && featured && (
         <div className="flex items-start gap-2 rounded-md bg-primary/[0.07] border border-primary/25 px-2.5 py-1.5">
           <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">

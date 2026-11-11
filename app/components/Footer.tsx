@@ -159,7 +159,17 @@ export default function Footer() {
                 >
                   michael.bbox@gmail.com
                 </a>
-                <span className="text-sm text-text-muted font-medium">{t('footer.copyright')}</span>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-muted">
+                  <span className="font-medium">{t('footer.copyright')}</span>
+                  <span className="text-gray-700" aria-hidden>·</span>
+                  <Link href="/terms" className="hover:text-primary transition-colors">
+                    {t('footer.termsShort')}
+                  </Link>
+                  <span className="text-gray-700" aria-hidden>·</span>
+                  <Link href="/privacy" className="hover:text-primary transition-colors">
+                    {t('footer.privacyShort')}
+                  </Link>
+                </div>
               </div>
               <div className="flex flex-row items-center gap-2 flex-shrink-0 w-full lg:w-auto">
                 <div className="relative" ref={desktopDropdownRef}>

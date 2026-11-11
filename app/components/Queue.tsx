@@ -38,12 +38,14 @@ interface QueueProps {
   onQueueLoaded?: (items: QueueLoadedItem[]) => void
   /** Optional: show compact styling (e.g. in curator panel) */
   compact?: boolean
+  /** Render without outer card chrome (parent provides the window). */
+  embedded?: boolean
 }
 
 const QUEUE_COLLAPSED_THRESHOLD = 5
 const QUEUE_COLLAPSED_VISIBLE = 3
 
-export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, compact = false }: QueueProps) {
+export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, compact = false, embedded = false }: QueueProps) {
   const { t } = useLanguage()
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -183,18 +185,18 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
   const visibleItems = isCollapsed ? processedQueue.slice(0, QUEUE_COLLAPSED_VISIBLE) : processedQueue
   const hiddenCount = processedQueue.length - QUEUE_COLLAPSED_VISIBLE
 
-  return (
-    <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border-2 border-gray-700/60 w-full">
-      <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+  const body = (
+    <>
+      <div className={`flex items-center gap-2 sm:gap-3 ${embedded ? 'mb-3' : 'mb-3 sm:mb-4'}`}>
         <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg border-2 border-primary/30 shrink-0">
           <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
         </div>
-        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
           <h3 className="text-sm sm:text-base font-extrabold text-text-primary tracking-tight">{t('queue.title')}</h3>
           {processedQueue.length > 0 && (
-            <span className="text-xs sm:text-sm font-bold text-text-secondary bg-background-lighter px-2 py-0.5 sm:px-3 sm:py-1 rounded-full border-2 border-gray-600">
+            <span className="text-xs sm:text-sm font-bold text-text-secondary bg-background-lighter px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-gray-600">
               {processedQueue.length}
             </span>
           )}
@@ -202,16 +204,56 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
       </div>
       <div>
         {loading && processedQueue.length === 0 ? (
-          <p className="text-sm font-medium text-text-secondary py-4">{t('queue.loading')}</p>
+          <div className="space-y-2 sm:space-y-2.5 py-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <div
+                key={n}
+                className="flex items-center gap-2.5 sm:gap-3 p-2 sm:p-3 rounded-xl border-2 border-gray-700/40 bg-background/25 min-h-[48px] sm:min-h-[58px] opacity-70"
+              >
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+                  <span className="text-xs font-extrabold text-primary/40 tabular-nums">{n}</span>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-background-lighter border-2 border-gray-700/50 flex-shrink-0" />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="h-3 w-[70%] rounded bg-gray-700/45" />
+                  <div className="h-2.5 w-[40%] rounded bg-gray-700/35" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : processedQueue.length === 0 ? (
-          <p className="text-sm font-medium text-text-secondary py-4">{t('queue.empty')}</p>
+          <div className="space-y-2 sm:space-y-2.5">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <div
+                key={n}
+                className="flex items-center gap-2.5 sm:gap-3 p-2 sm:p-3 rounded-xl border-2 border-dashed border-gray-700/45 bg-background/20 min-h-[48px] sm:min-h-[58px]"
+              >
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 border-2 border-primary/25 flex items-center justify-center">
+                  <span className="text-xs font-extrabold text-primary/45 tabular-nums">{n}</span>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-background-lighter border-2 border-gray-700/45 flex-shrink-0 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-text-muted/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-text-muted/55 truncate">
+                    {n === 1 ? t('queue.emptySlotTitle') : '—'}
+                  </p>
+                  <p className="text-xs text-text-muted/45 truncate mt-0.5 font-medium">
+                    {n === 1 ? t('queue.empty') : '—'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
             <>
-            <div className="space-y-1.5 sm:space-y-3 max-h-[min(58vh,480px)] sm:max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-hide">
+            <div className="space-y-2 sm:space-y-2.5 max-h-[min(70vh,640px)] sm:max-h-[min(65vh,560px)] overflow-y-auto overflow-x-hidden scrollbar-hide pr-0.5">
               {visibleItems.map((item, index) => (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:p-3 rounded-lg sm:rounded-xl border-2 min-h-[44px] sm:min-h-[56px] transition-all duration-500 relative overflow-visible ${
+                  className={`flex items-center gap-2.5 sm:gap-3 p-2 sm:p-3 rounded-xl border-2 min-h-[48px] sm:min-h-[58px] transition-all duration-500 relative overflow-visible ${
                     item._isNew ? 'animate-slide-in bg-primary/5 border-primary/30' : 'border-gray-700/50 hover:border-primary/40 hover:bg-background-lighter'
                   } ${
                     item._movedUp ? 'animate-queue-moved-up border-primary/40 bg-primary/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]' : ''
@@ -228,8 +270,8 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
                       </svg>
                     </div>
                   )}
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center">
-                    <span className="text-[11px] font-extrabold text-primary">{item.queueNumber}</span>
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center">
+                    <span className="text-xs font-extrabold text-primary tabular-nums">{item.queueNumber}</span>
                   </div>
                   {currentUserId && item.user_id === currentUserId && (
                     <span className="flex-shrink-0 px-2 py-0.5 text-[11px] font-bold bg-primary/20 text-primary rounded-md border-2 border-primary/40">{t('queue.you')}</span>
@@ -246,19 +288,19 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
                     <img
                       src={item.artwork}
                       alt={item.displayTitle}
-                      className="w-9 h-9 rounded-lg object-cover flex-shrink-0 border-2 border-gray-600"
+                      className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border-2 border-gray-600"
                       onError={(e) => { e.currentTarget.style.display = 'none' }}
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-lg bg-background-lighter border-2 border-gray-600 flex-shrink-0 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-lg bg-background-lighter border-2 border-gray-600 flex-shrink-0 flex items-center justify-center">
                       <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                       </svg>
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm font-bold text-text-primary truncate" title={item.displayTitle}>{item.displayTitle}</p>
-                    <p className="text-[11px] sm:text-xs text-text-secondary truncate mt-0.5 font-medium">{item.displayArtist}</p>
+                    <p className="text-sm font-bold text-text-primary truncate" title={item.displayTitle}>{item.displayTitle}</p>
+                    <p className="text-xs text-text-secondary truncate mt-0.5 font-medium">{item.displayArtist}</p>
                   </div>
                 </div>
               ))}
@@ -267,7 +309,7 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
               <button
                 type="button"
                 onClick={() => setQueueExpanded((e) => !e)}
-                className="mt-2 sm:mt-3 w-full min-h-[40px] flex items-center justify-center gap-2 rounded-lg sm:rounded-xl bg-background-lighter hover:bg-gray-700/50 border-2 border-gray-600 text-text-primary text-xs sm:text-sm font-bold transition-colors touch-manipulation"
+                className="mt-2.5 sm:mt-3 w-full min-h-[40px] flex items-center justify-center gap-2 rounded-lg sm:rounded-xl bg-background-lighter hover:bg-gray-700/50 border-2 border-gray-600 text-text-primary text-xs sm:text-sm font-bold transition-colors touch-manipulation"
               >
                 {isCollapsed ? (
                   <>{t('queue.showMore').replace('{n}', String(hiddenCount))}</>
@@ -279,6 +321,16 @@ export default function Queue({ currentUserId, refetchTrigger, onQueueLoaded, co
             </>
         )}
       </div>
+    </>
+  )
+
+  if (embedded) {
+    return <div className="w-full animate-fade-in">{body}</div>
+  }
+
+  return (
+    <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 animate-fade-in border-2 border-gray-700/60 w-full">
+      {body}
     </div>
   )
 }

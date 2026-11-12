@@ -55,7 +55,7 @@ export async function GET(_request: NextRequest) {
     if (!currentSession?.session_number) {
       return NextResponse.json({
         allowed: false,
-        reason: 'No open session.',
+        reason: 'NO_OPEN_SESSION',
       })
     }
 

@@ -447,7 +447,9 @@ export async function POST(request: NextRequest) {
     )
 
     // Verify public payload sees the Top 10
-    const publicPayload = await getPublicTotmPayload(supabase)
+    const publicPayload = await getPublicTotmPayload(supabase, {
+      includeSimulation: true,
+    })
     const visibleCount = publicPayload.current?.entries?.length ?? 0
 
     return NextResponse.json({

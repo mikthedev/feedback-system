@@ -317,9 +317,25 @@ export default function DashboardFooter({
             >
               {useXpAllowed
                 ? t('dashboard.useXpStatusReady')
-                : useXpReason || t('xpHelp.unknownReason')}
+                : (() => {
+                    const reason = useXpReason || ''
+                    if (
+                      reason === 'NO_OPEN_SESSION' ||
+                      /no open session/i.test(reason) ||
+                      /submissions are closed/i.test(reason)
+                    ) {
+                      return t('xp.noOpenSession')
+                    }
+                    return reason || t('xpHelp.unknownReason')
+                  })()}
             </p>
-            {!useXpAllowed && xp < 9999 && xpToNext > 0 && useXpReason && !/session/i.test(useXpReason) && (
+            {!useXpAllowed &&
+              xp < 9999 &&
+              xpToNext > 0 &&
+              useXpReason &&
+              useXpReason !== 'NO_OPEN_SESSION' &&
+              !/session/i.test(useXpReason) &&
+              !/submissions are closed/i.test(useXpReason) && (
               <p className="mt-1 text-xs text-text-muted font-medium">
                 {t('dashboard.useXpToGoLine').replace(/\{n\}/g, String(xpToNext))}
               </p>

@@ -21,7 +21,10 @@ import {
   sendTotmTrackUnavailableEmail,
 } from '@/lib/totm-email'
 import { grantTwitchVipIfConfigured } from '@/lib/twitch-vip'
-import { checkSoundCloudAvailability } from '@/lib/soundcloud-availability'
+import {
+  checkSoundCloudAvailability,
+  TOTM_SIM_URL_PREFIX,
+} from '@/lib/soundcloud-availability'
 
 export {
   TOTM_MIN_REVIEWS,
@@ -766,7 +769,20 @@ export async function checkActiveTotmSoundCloudAvailability(
   return { checked, removed }
 }
 
-export async function getPublicTotmPayload(supabase: SupabaseClient) {
+export type PublicTotmPayloadOptions = {
+  /** When false (default), omit simulation tracks — Lab seed is curator/tester only. */
+  includeSimulation?: boolean
+}
+
+function isTotmSimulationUrl(url: string) {
+  return url.startsWith(TOTM_SIM_URL_PREFIX)
+}
+
+export async function getPublicTotmPayload(
+  supabase: SupabaseClient,
+  options: PublicTotmPayloadOptions = {}
+) {
+  const includeSimulation = options.includeSimulation === true
   const currentKey = calendarMonthKey()
   await ensureMonth(supabase, currentKey.year, currentKey.month)
 
@@ -812,14 +828,11 @@ export async function getPublicTotmPayload(supabase: SupabaseClient) {
 
     const { data: entries } = await query
 
-    // Active month with no visible entries after removals — still show month shell if review threshold met
-    result.push({
-      year: month.year,
-      month: month.month,
-      status: month.status,
-      review_count: month.review_count,
-      label: formatMonthLabel(month.year, month.month),
-      entries: (entries ?? []).map((e: any) => ({
+    const mapped = (entries ?? [])
+      .filter((e: { soundcloud_url: string }) =>
+        includeSimulation ? true : !isTotmSimulationUrl(e.soundcloud_url)
+      )
+      .map((e: any) => ({
         rank: e.rank,
         artist_name: e.artist_name,
         song_title: e.song_title,
@@ -828,7 +841,21 @@ export async function getPublicTotmPayload(supabase: SupabaseClient) {
         soundcloud_url: e.soundcloud_url,
         soundcloud_unavailable: !!e.soundcloud_unavailable,
         removed_from_active: !!e.removed_from_active,
-      })),
+      }))
+
+    // Simulation-only months stay hidden from the public board
+    if (!includeSimulation && mapped.length === 0) {
+      continue
+    }
+
+    // Active month with no visible entries after removals — still show month shell if review threshold met
+    result.push({
+      year: month.year,
+      month: month.month,
+      status: month.status,
+      review_count: month.review_count,
+      label: formatMonthLabel(month.year, month.month),
+      entries: mapped,
     })
   }
 
@@ -851,6 +878,31 @@ export async function getPublicTotmPayload(supabase: SupabaseClient) {
       label: formatMonthLabel(c.year, c.month),
       entries: [],
     })
+  }
+
+  // Current month may be "active" only via simulation — surface collecting shell for public viewers
+  if (
+    !includeSimulation &&
+    !result.some((r) => r.year === currentKey.year && r.month === currentKey.month)
+  ) {
+    const { data: currentRow } = await supabase
+      .from('totm_months')
+      .select('id, year, month, status, review_count')
+      .eq('year', currentKey.year)
+      .eq('month', currentKey.month)
+      .maybeSingle()
+
+    if (currentRow) {
+      const c = currentRow as MonthRow
+      result.unshift({
+        year: c.year,
+        month: c.month,
+        status: 'collecting',
+        review_count: c.review_count,
+        label: formatMonthLabel(c.year, c.month),
+        entries: [],
+      })
+    }
   }
 
   return {
@@ -930,6 +982,73 @@ export async function getUserTotmDashboard(
     }
   })
 
+  // Live badge: only while the user's track is in the active (non-finalized) Top 10
+  const currentKey = calendarMonthKey()
+  const liveHistory = history.find(
+    (h) =>
+      h.year === currentKey.year &&
+      h.month === currentKey.month &&
+      h.month_status === 'active' &&
+      !h.removed_from_active
+  )
+
+  let inTotmPayload: {
+    year: number
+    month: number
+    label: string
+    rank: number
+    song_title: string | null
+    artist_name: string | null
+  } | null = null
+
+  if (liveHistory) {
+    inTotmPayload = {
+      year: liveHistory.year,
+      month: liveHistory.month,
+      label: liveHistory.label,
+      rank: liveHistory.rank,
+      song_title: liveHistory.song_title,
+      artist_name: liveHistory.artist_name,
+    }
+  } else {
+    // History join may miss if entry exists but order/filter edge — query directly
+    const { data: currentMonth } = await supabase
+      .from('totm_months')
+      .select('id, year, month, status')
+      .eq('year', currentKey.year)
+      .eq('month', currentKey.month)
+      .eq('status', 'active')
+      .maybeSingle()
+
+    if (currentMonth) {
+      const cm = currentMonth as { id: string; year: number; month: number }
+      const { data: liveEntry } = await supabase
+        .from('totm_entries')
+        .select('rank, song_title, artist_name')
+        .eq('totm_month_id', cm.id)
+        .eq('user_id', userId)
+        .eq('removed_from_active', false)
+        .maybeSingle()
+
+      if (liveEntry) {
+        const le = liveEntry as {
+          rank: number
+          song_title: string | null
+          artist_name: string | null
+        }
+        inTotmPayload = {
+          year: cm.year,
+          month: cm.month,
+          label: formatMonthLabel(cm.year, cm.month),
+          rank: le.rank,
+          song_title: le.song_title,
+          artist_name: le.artist_name,
+        }
+      }
+    }
+  }
+
+  // Featured Artist record: auto (first Top 10 entry → Twitch VIP) or curator grant (shown on profile)
   let featuredPayload: {
     awarded_at: string
     year: number | null
@@ -937,6 +1056,8 @@ export async function getUserTotmDashboard(
     label: string | null
     rank: number | null
     song_title: string | null
+    /** Curator-granted Featured shows on dashboard; auto entry only drives Twitch VIP. */
+    show_on_profile: boolean
   } | null = null
 
   if (featured) {
@@ -945,6 +1066,8 @@ export async function getUserTotmDashboard(
       first_totm_month_id: string | null
       first_submission_id: string | null
     }
+    // Auto sync always sets first_totm_month_id; curator grant leaves it null
+    const showOnProfile = f.first_totm_month_id == null
 
     let year: number | null = null
     let month: number | null = null
@@ -952,12 +1075,10 @@ export async function getUserTotmDashboard(
     let rank: number | null = null
     let songTitle: string | null = null
 
-    // Prefer the month that first earned Featured Artist
     const fromFirstMonth = f.first_totm_month_id
       ? history.find((h) => h.totm_month_id === f.first_totm_month_id)
       : null
 
-    // Else earliest history entry (last in created_at-desc list)
     const fallback = fromFirstMonth ?? (history.length > 0 ? history[history.length - 1]! : null)
 
     if (fallback) {
@@ -998,10 +1119,12 @@ export async function getUserTotmDashboard(
       label,
       rank,
       song_title: songTitle,
+      show_on_profile: showOnProfile,
     }
   }
 
   return {
+    in_totm: inTotmPayload,
     featured_artist: featuredPayload,
     twitch_id: twitchId,
     skips: (skips ?? []).map((s: any) => ({

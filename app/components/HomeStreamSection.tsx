@@ -142,14 +142,9 @@ function VodPlaceholder({ index }: { index: number }) {
             <path d="M8 5v14l11-7z" />
           </svg>
         </span>
-        <div>
-          <p className="text-xs font-extrabold text-text-secondary tracking-tight">
-            {t('home.vodPlaceholderTitle')}
-          </p>
-          <p className="mt-0.5 text-[11px] text-text-muted leading-snug max-w-[12.5rem] mx-auto">
-            {t('home.vodPlaceholderBody')}
-          </p>
-        </div>
+        <p className="text-xs font-extrabold text-text-secondary tracking-tight">
+          {t('home.vodPlaceholderTitle')}
+        </p>
       </div>
       <div className="space-y-2 border-t border-gray-700/40 px-3 py-2.5">
         <div className="h-2.5 w-[78%] rounded bg-gray-700/45" />

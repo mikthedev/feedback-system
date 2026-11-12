@@ -23,6 +23,26 @@ export default function TotmLeaderboardIcon({
   )
 }
 
+/** Medal icon for “in Top of the Month” profile badge. */
+export function TotmMedalIcon({ className = 'h-5 w-5' }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="14" r="5.25" />
+      <circle cx="12" cy="14" r="2.25" />
+      <path d="M8.5 9.5 7 3.5h3.2L12 8l1.8-4.5H17L15.5 9.5" />
+    </svg>
+  )
+}
+
 /** Compact skip / priority badge icon for queue skip rewards. */
 export function TotmSkipIcon({ className = 'h-3.5 w-3.5' }: { className?: string }) {
   return (

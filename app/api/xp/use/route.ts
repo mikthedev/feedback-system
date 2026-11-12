@@ -61,7 +61,7 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({
         success: true,
         movesApplied: 0,
-        message: 'No open session.',
+        message: 'NO_OPEN_SESSION',
       })
     }
 

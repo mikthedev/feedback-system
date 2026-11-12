@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLanguage } from '@/app/context/LanguageContext'
-import TotmLeaderboardIcon from './TotmLeaderboardIcon'
+import { TotmMedalIcon } from './TotmLeaderboardIcon'
+import TotmBadgeExplainModal from './TotmBadgeExplainModal'
+import TotmBadgeConfetti from './TotmBadgeConfetti'
 
 type Skip = {
   id: string
@@ -21,16 +23,22 @@ type HistoryEntry = {
   song_title: string | null
 }
 
+type InTotm = {
+  year: number
+  month: number
+  label: string
+  rank: number
+  song_title: string | null
+  artist_name: string | null
+}
+
 type FeaturedArtist = {
   awarded_at: string
-  year: number | null
-  month: number | null
-  label: string | null
-  rank: number | null
-  song_title: string | null
+  show_on_profile?: boolean
 }
 
 type TotmMe = {
+  in_totm: InTotm | null
   featured_artist: FeaturedArtist | null
   skips: Skip[]
   available_skips: Skip[]
@@ -53,20 +61,36 @@ type TotmDashboardPanelProps = {
   embedded?: boolean
 }
 
-const FEATURED_HIDDEN_KEY = 'dfs_hide_featured_artist'
-
-function isInTotm(data: TotmMe | null): boolean {
-  if (!data) return false
-  return !!(data.featured_artist || data.skips.length > 0 || data.history.length > 0)
+function hasSeenConfetti(key: string): boolean {
+  if (typeof window === 'undefined') return true
+  try {
+    return localStorage.getItem(key) === '1'
+  } catch {
+    return true
+  }
 }
 
-function loadFeaturedHidden(): boolean {
-  if (typeof window === 'undefined') return false
+function markConfettiSeen(key: string) {
   try {
-    return localStorage.getItem(FEATURED_HIDDEN_KEY) === '1'
+    localStorage.setItem(key, '1')
   } catch {
-    return false
+    /* ignore */
   }
+}
+
+/** One celebration per live month placement, and one per curator Featured grant. */
+function totmConfettiKey(opts: {
+  inTotm: InTotm | null
+  featured: FeaturedArtist | null
+}): string | null {
+  if (opts.inTotm) {
+    return `dfs_totm_confetti:live:${opts.inTotm.year}-${opts.inTotm.month}`
+  }
+  if (opts.featured?.show_on_profile) {
+    const id = opts.featured.awarded_at || 'granted'
+    return `dfs_totm_confetti:featured:${id}`
+  }
+  return null
 }
 
 export default function TotmDashboardPanel({
@@ -80,21 +104,11 @@ export default function TotmDashboardPanel({
   const [preview, setPreview] = useState<PublicEntry[]>([])
   const [previewLabel, setPreviewLabel] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [featuredHidden, setFeaturedHidden] = useState(false)
-
-  useEffect(() => {
-    setFeaturedHidden(loadFeaturedHidden())
-  }, [])
-
-  const setFeaturedHiddenPersist = (hidden: boolean) => {
-    setFeaturedHidden(hidden)
-    try {
-      if (hidden) localStorage.setItem(FEATURED_HIDDEN_KEY, '1')
-      else localStorage.removeItem(FEATURED_HIDDEN_KEY)
-    } catch {
-      /* ignore */
-    }
-  }
+  const [explainOpen, setExplainOpen] = useState(false)
+  const [confettiActive, setConfettiActive] = useState(false)
+  const [confettiOrigin, setConfettiOrigin] = useState<DOMRect | null>(null)
+  const medalRef = useRef<HTMLButtonElement>(null)
+  const lastConfettiKeyRef = useRef<string | null>(null)
 
   const fetchPublicPreview = useCallback(async () => {
     try {
@@ -125,7 +139,9 @@ export default function TotmDashboardPanel({
       }
       const json = (await res.json()) as TotmMe
       setData(json)
-      onMembershipChange?.(isInTotm(json))
+      const hasProfileBadge =
+        !!json.in_totm || !!(json.featured_artist?.show_on_profile)
+      onMembershipChange?.(hasProfileBadge)
       onAvailableSkipsChange?.(json.available_skips?.length ?? 0)
     } catch {
       setData(null)
@@ -142,9 +158,40 @@ export default function TotmDashboardPanel({
     void fetchPublicPreview()
   }, [fetchMe, fetchPublicPreview, refreshKey])
 
+  const inTotm = data?.in_totm ?? null
   const featured = data?.featured_artist ?? null
-  const showFeatured = !!featured && !featuredHidden
-  const showFeaturedRestore = !!featured && featuredHidden
+  const showBadge = !!(inTotm || featured?.show_on_profile)
+  const confettiKey = totmConfettiKey({ inTotm, featured })
+
+  useEffect(() => {
+    if (!showBadge || loading || !confettiKey) return
+    if (hasSeenConfetti(confettiKey)) return
+    if (lastConfettiKeyRef.current === confettiKey) return
+
+    let cancelled = false
+    let attempts = 0
+
+    const tryBurst = () => {
+      if (cancelled) return
+      const el = medalRef.current
+      if (!el) {
+        if (attempts++ < 8) {
+          window.requestAnimationFrame(tryBurst)
+        }
+        return
+      }
+      lastConfettiKeyRef.current = confettiKey
+      markConfettiSeen(confettiKey)
+      setConfettiOrigin(el.getBoundingClientRect())
+      setConfettiActive(true)
+    }
+
+    const frame = window.requestAnimationFrame(tryBurst)
+    return () => {
+      cancelled = true
+      window.cancelAnimationFrame(frame)
+    }
+  }, [showBadge, loading, confettiKey])
 
   if (loading) {
     return (
@@ -154,12 +201,11 @@ export default function TotmDashboardPanel({
     )
   }
 
-  if (!showFeatured && !showFeaturedRestore && preview.length === 0) return null
+  if (!showBadge && preview.length === 0) return null
 
-  const featuredMetaParts: string[] = []
-  if (featured?.rank != null) featuredMetaParts.push(`#${featured.rank}`)
-  if (featured?.label) featuredMetaParts.push(featured.label)
-  if (featured?.song_title) featuredMetaParts.push(featured.song_title)
+  const songMeta = inTotm
+    ? [inTotm.song_title?.trim() || t('totm.untitled'), inTotm.label].join(' · ')
+    : null
 
   return (
     <section
@@ -169,52 +215,45 @@ export default function TotmDashboardPanel({
           : 'rounded-lg sm:rounded-xl border border-gray-700/50 bg-background-light/90 p-2 sm:p-2.5 space-y-2 animate-fade-in'
       }
     >
-      {showFeatured && featured && (
-        <div className="flex items-start gap-2 rounded-md bg-primary/[0.07] border border-primary/25 px-2.5 py-1.5">
-          <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
-            <TotmLeaderboardIcon className="h-3.5 w-3.5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] sm:text-xs font-bold text-primary leading-tight">
-              {t('totm.featuredBadge')}
-            </p>
-            <p className="text-[10px] text-text-muted font-medium leading-tight">
-              {t('totm.featuredBrief')}
-            </p>
-            {featuredMetaParts.length > 0 && (
-              <p className="mt-0.5 text-[10px] sm:text-[11px] font-bold text-text-secondary leading-tight truncate">
-                {featuredMetaParts.join(' · ')}
-              </p>
+      {showBadge && (
+        <div
+          className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2.5"
+          role="status"
+          aria-label={t('totm.inTotmBadge')}
+        >
+          <button
+            ref={medalRef}
+            type="button"
+            onClick={() => setExplainOpen(true)}
+            title={t('totm.explainOpenHint')}
+            aria-label={t('totm.explainOpenHint')}
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-primary/35 bg-background-light text-primary transition-transform duration-150 hover:scale-110 hover:border-primary/60 hover:bg-primary/15 active:scale-95 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+          >
+            <TotmMedalIcon className="h-5 w-5" />
+            {inTotm && (
+              <span className="absolute -bottom-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded border border-primary/40 bg-background-light px-1 text-[9px] font-black text-primary tabular-nums leading-none pointer-events-none">
+                #{inTotm.rank}
+              </span>
             )}
-          </div>
+          </button>
           <button
             type="button"
-            onClick={() => setFeaturedHiddenPersist(true)}
-            title={t('totm.hideFeatured')}
-            aria-label={t('totm.hideFeatured')}
-            className="shrink-0 mt-0.5 min-h-[28px] min-w-[28px] px-1.5 rounded-md text-text-muted hover:text-text-primary hover:bg-background/50 text-[10px] font-bold touch-manipulation"
+            onClick={() => setExplainOpen(true)}
+            className="min-w-0 flex-1 text-left touch-manipulation rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
-            {t('totm.hide')}
+            <p className="text-[12px] sm:text-[13px] font-extrabold tracking-tight text-text-primary leading-snug">
+              {t('totm.inTotmBadge')}
+            </p>
+            <p className="mt-0.5 text-[11px] text-text-secondary font-medium leading-snug">
+              {inTotm ? t('totm.inTotmBrief') : t('totm.featuredProfileBrief')}
+            </p>
+            {songMeta && (
+              <p className="mt-1 text-[11px] font-semibold text-text-muted truncate leading-tight">
+                {songMeta}
+              </p>
+            )}
           </button>
         </div>
-      )}
-
-      {showFeaturedRestore && (
-        <button
-          type="button"
-          onClick={() => setFeaturedHiddenPersist(false)}
-          className="w-full flex items-center justify-between gap-2 rounded-md border border-gray-700/40 bg-background/30 px-2.5 py-1.5 text-left touch-manipulation hover:border-primary/30 hover:bg-primary/[0.05] transition-colors"
-        >
-          <span className="text-[10px] font-bold text-text-muted truncate">
-            {t('totm.featuredBadge')}
-            {featured?.rank != null || featured?.label
-              ? ` · ${[featured?.rank != null ? `#${featured.rank}` : null, featured?.label]
-                  .filter(Boolean)
-                  .join(' · ')}`
-              : ''}
-          </span>
-          <span className="shrink-0 text-[10px] font-bold text-primary">{t('totm.showFeatured')}</span>
-        </button>
       )}
 
       {preview.length > 0 && (
@@ -252,6 +291,20 @@ export default function TotmDashboardPanel({
           </ul>
         </div>
       )}
+
+      <TotmBadgeExplainModal
+        isOpen={explainOpen}
+        onClose={() => setExplainOpen(false)}
+        rank={inTotm?.rank ?? null}
+        songTitle={inTotm?.song_title ?? null}
+        monthLabel={inTotm?.label ?? null}
+      />
+
+      <TotmBadgeConfetti
+        active={confettiActive}
+        origin={confettiOrigin}
+        onDone={() => setConfettiActive(false)}
+      />
     </section>
   )
 }

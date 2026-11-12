@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calendarMonthKey, previousCalendarMonth, formatMonthLabel } from '@/lib/totm'
+import { grantTwitchVipIfConfigured } from '@/lib/twitch-vip'
 
 async function requireCurator() {
   const cookieStore = await cookies()
@@ -171,12 +172,22 @@ export async function POST(request: NextRequest) {
         user_id: target.id,
         awarded_at: nowIso,
         featured_email_sent_at: nowIso,
+        // Leave first_totm_month_id null so the badge shows on the user's profile
       })
       if (error) throw error
+
+      const vip = await grantTwitchVipIfConfigured(target.twitch_id)
+      if (vip.granted) {
+        await auth.supabase
+          .from('totm_featured_artists')
+          .update({ twitch_vip_granted_at: nowIso })
+          .eq('user_id', target.id)
+      }
 
       return NextResponse.json({
         success: true,
         message: `Featured Artist granted to ${target.display_name}.`,
+        twitch_vip: vip.granted,
       })
     }
 

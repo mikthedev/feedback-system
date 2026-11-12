@@ -50,18 +50,19 @@ export default function Footer() {
     setDropdownOpen(false)
   }
 
-  // Dashboard has a fixed bottom tab bar on phone
-  const clearMobileDock = pathname === '/dashboard'
+  // Dashboard phone uses its own bottom tabs + XP utilities — hide the global phone footer there
+  const hidePhoneFooter = pathname === '/dashboard'
 
   return (
     <footer
       className={`relative w-full mt-auto bg-background ${
-        clearMobileDock
-          ? 'pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-[env(safe-area-inset-bottom)]'
+        hidePhoneFooter
+          ? 'pb-0 lg:pb-[env(safe-area-inset-bottom)]'
           : 'pb-[env(safe-area-inset-bottom)]'
       }`}
     >
-      {/* Phone: polished utility bar — Live centered, side actions balanced */}
+      {/* Phone utility bar — skipped on dashboard */}
+      {!hidePhoneFooter && (
       <div className="sm:hidden border-t border-gray-700/60 bg-background-light/85 backdrop-blur-sm">
         <div className="px-2.5 py-2">
           <div className="rounded-xl border border-gray-700/45 bg-background/50 p-1.5">
@@ -146,6 +147,7 @@ export default function Footer() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Desktop / tablet: existing richer footer */}
       <div className="hidden sm:block">
@@ -161,14 +163,6 @@ export default function Footer() {
                 </a>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-muted">
                   <span className="font-medium">{t('footer.copyright')}</span>
-                  <span className="text-gray-700" aria-hidden>·</span>
-                  <Link href="/terms" className="hover:text-primary transition-colors">
-                    {t('footer.termsShort')}
-                  </Link>
-                  <span className="text-gray-700" aria-hidden>·</span>
-                  <Link href="/privacy" className="hover:text-primary transition-colors">
-                    {t('footer.privacyShort')}
-                  </Link>
                 </div>
               </div>
               <div className="flex flex-row items-center gap-2 flex-shrink-0 w-full lg:w-auto">

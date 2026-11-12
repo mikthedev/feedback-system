@@ -566,7 +566,7 @@ body {
   grid-template-columns: repeat(10, 1fr);
   gap: 0;
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
 }
 
 .xp-battery-cells span {
@@ -608,4 +608,36 @@ body {
 
 .animate-totm-plus-shimmer {
   animation: totm-plus-shimmer 2.4s ease-in-out infinite;
+}
+
+@keyframes totm-confetti-burst {
+  0% {
+    opacity: 0.85;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  30% {
+    opacity: 0.75;
+    transform: translate(
+        calc(var(--tx) * 0.6),
+        calc(var(--ty) * 0.65)
+      )
+      rotate(calc(var(--rot) * 0.4))
+      scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(
+        var(--tx),
+        calc(var(--ty) + var(--fall))
+      )
+      rotate(var(--rot))
+      scale(0.9);
+  }
+}
+
+.totm-confetti-piece {
+  will-change: transform, opacity;
+  animation-name: totm-confetti-burst;
+  animation-timing-function: cubic-bezier(0.25, 0.7, 0.3, 1);
+  animation-fill-mode: forwards;
 }

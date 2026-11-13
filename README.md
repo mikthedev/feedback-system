@@ -23,9 +23,17 @@ A minimal MVP for a demo submission and feedback system. Users log in with Twitc
 - Demo submission (SoundCloud URLs only), with optional description, artist name, song title
 - Server-side URL validation (abuse-resistant)
 - Edit pending submissions via `/submit?edit=<id>`
-- Curator panel: review pending submissions (sound, structure, mix, vibe 0–10), submit reviews
 - User dashboard: view own submissions, scores, and reviewed tracks
 - SoundCloud oEmbed for in-app playback
+
+### Curator panel (review experience)
+- **Submitter intro**: selecting a track opens a staged reveal (avatar, name, song, genre). Optional submitter message adapts layout — compact when empty/short, expanded when long
+- **Rate Song overlay**: sound / structure / mix / vibe knobs (0–10). Scores persist if you hide the overlay and reopen (until Submit, Skip, or switching tracks)
+- **Knob feedback**: real click sample with pitch rising by score (musical semitone steps)
+- **Live audience score**: compact live average + vote count in the Rate Song window (chat `!rate 1–10`), polled while rating
+- **Post-submit handoff**: after Submit Review, animated leave → “Next up” → enter transition into the next queue track (no skip-ahead without reviewing)
+- **Queue cleared**: when the last track is finished, a short celebration marks an empty queue
+- Skip still moves a track to carryover without the handoff sequence
 
 ### Sessions & carryover
 - **Submission sessions**: curator can open/close submissions. When closed, the current session ends.

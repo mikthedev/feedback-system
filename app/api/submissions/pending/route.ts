@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
         *,
         users!submissions_user_id_fkey (
           display_name,
-          twitch_id
+          twitch_id,
+          profile_image_url
         )
       `)
       .eq('status', 'pending')

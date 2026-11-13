@@ -6,6 +6,7 @@ import Link from 'next/link'
 import XpHelpModal from '../components/XpHelpModal'
 import SessionPreviewModal from '../components/SessionPreviewModal'
 import { useLanguage } from '@/app/context/LanguageContext'
+import { playKnobTick, preloadKnobSound } from '@/lib/knob-sound'
 
 // Memoized embed component to prevent re-renders when scores change
 const SoundCloudEmbed = memo(({ 
@@ -139,6 +140,7 @@ interface Submission {
   users: {
     display_name: string
     twitch_id: string
+    profile_image_url?: string | null
   }
   moves_used_this_session?: number
 }
@@ -190,9 +192,25 @@ export default function CuratorPage() {
   const [showXpHelpModal, setShowXpHelpModal] = useState(false)
   const [skipping, setSkipping] = useState(false)
   const [showRatingSliders, setShowRatingSliders] = useState(false)
-  const [showDescriptionOverlay, setShowDescriptionOverlay] = useState(false)
-  const [closingDescriptionOverlay, setClosingDescriptionOverlay] = useState(false)
   const [closingRatingOverlay, setClosingRatingOverlay] = useState(false)
+  const [showSubmitterIntro, setShowSubmitterIntro] = useState(false)
+  const [closingSubmitterIntro, setClosingSubmitterIntro] = useState(false)
+  const [introKey, setIntroKey] = useState(0)
+  const [handoff, setHandoff] = useState<{
+    phase: 'leaving' | 'between' | 'entering'
+    fromName: string
+    toName: string
+    toAvatar: string | null
+  } | null>(null)
+  const handoffLockRef = useRef(false)
+  const [queueCleared, setQueueCleared] = useState(false)
+  const queueClearedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const triggerQueueCleared = () => {
+    setQueueCleared(true)
+    if (queueClearedTimerRef.current) clearTimeout(queueClearedTimerRef.current)
+    queueClearedTimerRef.current = setTimeout(() => setQueueCleared(false), 5200)
+  }
   const [showSubmitters, setShowSubmitters] = useState(false)
   const [hoveredUserId, setHoveredUserId] = useState<string | null>(null)
   const [grantingXpForUserId, setGrantingXpForUserId] = useState<string | null>(null)
@@ -202,10 +220,6 @@ export default function CuratorPage() {
   const [useXpAllowed, setUseXpAllowed] = useState(false)
   const [useXpReason, setUseXpReason] = useState('')
   const [useXpLoading, setUseXpLoading] = useState(false)
-  const [audienceLiveForFirst, setAudienceLiveForFirst] = useState<{
-    vote_count: number
-    average: number | null
-  } | null>(null)
   const [overlayAudience, setOverlayAudience] = useState<{
     vote_count: number
     average: number | null
@@ -356,14 +370,15 @@ export default function CuratorPage() {
     }
   }
 
-  const fetchPendingSubmissions = async () => {
+  const fetchPendingSubmissions = async (): Promise<Submission[]> => {
     try {
       const response = await fetch('/api/submissions/pending', { credentials: 'include' })
       if (response.ok) {
         const data = await response.json()
-        setSubmissions(data.submissions || [])
-        
-        const artworkPromises = (data.submissions || []).map(async (submission: Submission) => {
+        const list: Submission[] = data.submissions || []
+        setSubmissions(list)
+
+        const artworkPromises = list.map(async (submission: Submission) => {
           try {
             const embedResponse = await fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(submission.soundcloud_url)}`)
             if (embedResponse.ok) {
@@ -408,10 +423,12 @@ export default function CuratorPage() {
         })
         setSubmissionArtworks(artworkMap)
         setSubmissionSoundCloudMetadata(metadataMap)
+        return list
       }
     } catch (error) {
       console.error('Error fetching submissions:', error)
     }
+    return []
   }
 
   useEffect(() => {
@@ -421,6 +438,9 @@ export default function CuratorPage() {
     fetchSessions()
     fetchXp()
     fetchCanMove()
+    return () => {
+      if (queueClearedTimerRef.current) clearTimeout(queueClearedTimerRef.current)
+    }
   }, [])
 
   useEffect(() => {
@@ -442,42 +462,9 @@ export default function CuratorPage() {
     return () => clearInterval(interval)
   }, [])
 
-  const frontQueueId = submissions[0]?.id ?? null
-
-  useEffect(() => {
-    if (!frontQueueId) {
-      setAudienceLiveForFirst(null)
-      return
-    }
-    let cancelled = false
-    const poll = async () => {
-      try {
-        const res = await fetch(
-          `/api/audience-rating/stats?submission_id=${encodeURIComponent(frontQueueId)}`,
-          { credentials: 'include' }
-        )
-        if (!res.ok || cancelled) return
-        const d = await res.json()
-        if (!cancelled) {
-          setAudienceLiveForFirst({
-            vote_count: typeof d.vote_count === 'number' ? d.vote_count : 0,
-            average: typeof d.average === 'number' ? d.average : null,
-          })
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-    poll()
-    const interval = setInterval(poll, 1800)
-    return () => {
-      cancelled = true
-      clearInterval(interval)
-    }
-  }, [frontQueueId])
-
   useEffect(() => {
     if (!showRatingSliders || !selectedSubmission?.id) return
+    preloadKnobSound()
     const sid = selectedSubmission.id
     let cancelled = false
     const poll = async () => {
@@ -527,7 +514,80 @@ export default function CuratorPage() {
   const handleSliderChange = (field: string, value: number) => {
     // Round to nearest 0.5
     const rounded = Math.round(value * 2) / 2
+    const prev = parseFloat(scores[field as keyof typeof scores])
     setScores({ ...scores, [field]: rounded.toString() })
+    if (rounded !== prev) playKnobTick(rounded)
+  }
+
+  const dismissSubmitterIntro = () => {
+    if (closingSubmitterIntro) return
+    setClosingSubmitterIntro(true)
+  }
+
+  const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+
+  const selectSubmission = async (submission: Submission, opts?: { showIntro?: boolean }) => {
+    setScores({
+      sound_score: '0',
+      structure_score: '0',
+      mix_score: '0',
+      vibe_score: '0',
+    })
+    setShowRatingSliders(false)
+    setClosingRatingOverlay(false)
+    setClosingSubmitterIntro(false)
+    setShowSubmitterIntro(opts?.showIntro !== false)
+    setIntroKey((k) => k + 1)
+    setQueueCleared(false)
+    if (queueClearedTimerRef.current) {
+      clearTimeout(queueClearedTimerRef.current)
+      queueClearedTimerRef.current = null
+    }
+    setSelectedSubmission(submission)
+    setError('')
+    setSuccess(false)
+    setEmbedData(null)
+    try {
+      const embedResponse = await fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(submission.soundcloud_url)}`)
+      if (embedResponse.ok) {
+        const embedResult = await embedResponse.json()
+        setEmbedData({ html: embedResult.html, thumbnail_url: embedResult.thumbnail_url })
+      } else {
+        setEmbedData({ error: 'Failed to load embed' })
+      }
+    } catch {
+      setEmbedData({ error: 'Failed to load embed' })
+    }
+  }
+
+  const runHandoffTo = async (
+    target: Submission,
+    opts?: { fromName?: string }
+  ) => {
+    if (handoffLockRef.current) return
+    handoffLockRef.current = true
+
+    const fromName = opts?.fromName ?? selectedSubmission?.users.display_name ?? ''
+    const toName = target.users.display_name
+    const toAvatar =
+      (typeof target.users.profile_image_url === 'string' && target.users.profile_image_url.trim()) ||
+      submissionArtworks[target.id] ||
+      null
+
+    setShowRatingSliders(false)
+    setShowSubmitterIntro(false)
+    setClosingSubmitterIntro(false)
+    setClosingRatingOverlay(false)
+
+    setHandoff({ phase: 'leaving', fromName, toName, toAvatar })
+    await sleep(380)
+    setHandoff({ phase: 'between', fromName, toName, toAvatar })
+    await sleep(560)
+    await selectSubmission(target, { showIntro: true })
+    setHandoff({ phase: 'entering', fromName, toName, toAvatar })
+    await sleep(420)
+    setHandoff(null)
+    handoffLockRef.current = false
   }
 
   const handleSubmitReview = async (e: React.FormEvent) => {
@@ -561,23 +621,33 @@ export default function CuratorPage() {
         return
       }
 
+      const fromName = selectedSubmission.users.display_name
       setSuccess('Review submitted successfully!')
-      setSelectedSubmission(null)
       setShowRatingSliders(false)
+      setShowSubmitterIntro(false)
+      setClosingSubmitterIntro(false)
+      setClosingRatingOverlay(false)
       setScores({
         sound_score: '0',
         structure_score: '0',
         mix_score: '0',
         vibe_score: '0',
       })
-      
-      // Refresh submissions list
-      fetchPendingSubmissions()
+
+      const list = await fetchPendingSubmissions()
+      const next = list[0] ?? null
+      setSubmitting(false)
+
+      if (next) {
+        await runHandoffTo(next, { fromName })
+      } else {
+        setSelectedSubmission(null)
+        triggerQueueCleared()
+      }
 
       setTimeout(() => setSuccess(false), 3000)
     } catch (error) {
       setError('An error occurred. Please try again.')
-    } finally {
       setSubmitting(false)
     }
   }
@@ -636,15 +706,18 @@ export default function CuratorPage() {
         return
       }
       setSuccess('Track moved to carryover.')
-      setSelectedSubmission(null)
       setShowRatingSliders(false)
+      setShowSubmitterIntro(false)
+      setClosingSubmitterIntro(false)
       setScores({
         sound_score: '0',
         structure_score: '0',
         mix_score: '0',
         vibe_score: '0',
       })
-      fetchPendingSubmissions()
+      setSelectedSubmission(null)
+      const list = await fetchPendingSubmissions()
+      if (list.length === 0) triggerQueueCleared()
       setTimeout(() => setSuccess(false), 3000)
     } catch (e) {
       setError('An error occurred. Please try again.')
@@ -992,32 +1065,9 @@ export default function CuratorPage() {
                     return (
                     <div
                       key={submission.id}
-                      onClick={async () => {
-                        setScores({
-                          sound_score: '0',
-                          structure_score: '0',
-                          mix_score: '0',
-                          vibe_score: '0',
-                        })
-                        setShowRatingSliders(false)
-                        setShowDescriptionOverlay(false)
-                        setClosingDescriptionOverlay(false)
-                        setClosingRatingOverlay(false)
-                        setSelectedSubmission(submission)
-                        setError('')
-                        setSuccess(false)
-                        setEmbedData(null)
-                        try {
-                          const embedResponse = await fetch(`/api/soundcloud/oembed?url=${encodeURIComponent(submission.soundcloud_url)}`)
-                          if (embedResponse.ok) {
-                            const embedResult = await embedResponse.json()
-                            setEmbedData({ html: embedResult.html, thumbnail_url: embedResult.thumbnail_url })
-                          } else {
-                            setEmbedData({ error: 'Failed to load embed' })
-                          }
-                        } catch {
-                          setEmbedData({ error: 'Failed to load embed' })
-                        }
+                      onClick={() => {
+                        if (handoff) return
+                        void selectSubmission(submission, { showIntro: true })
                       }}
                       className={`flex items-center gap-2 border-2 rounded-lg p-2 cursor-pointer transition-all duration-500 relative overflow-visible ${
                         selectedSubmission?.id === submission.id
@@ -1148,16 +1198,182 @@ export default function CuratorPage() {
             <div className={`${selectedSubmission ? 'block' : 'hidden lg:block'} flex-1 min-w-0`}>
             <div className="bg-background-light rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-5 animate-fade-in border-2 border-gray-700/60">
               {selectedSubmission ? (
-                <div className="space-y-3 sm:space-y-4">
+                <div className={`relative space-y-3 sm:space-y-4 ${
+                  handoff || (
+                    showSubmitterIntro &&
+                    (() => {
+                      const m = selectedSubmission.description?.trim() || ''
+                      return m.length > 180 || m.split(/\n/).length > 3
+                    })()
+                  ) ? 'min-h-[26rem] sm:min-h-[30rem]' : ''
+                }`}>
+                  {/* Full-panel handoff after Submit Review */}
+                  {handoff && (
+                    <div className="absolute inset-0 z-40 rounded-lg sm:rounded-xl bg-black/80 backdrop-blur-md flex items-center justify-center overflow-hidden">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-primary/25 to-transparent animate-handoff-sweep" />
+                      {handoff.phase === 'leaving' && (
+                        <div className="animate-handoff-leave text-center px-4">
+                          <p className="text-xl sm:text-2xl font-black text-text-primary/80">{handoff.fromName || '—'}</p>
+                        </div>
+                      )}
+                      {(handoff.phase === 'between' || handoff.phase === 'entering') && (
+                        <div className={`${handoff.phase === 'entering' ? 'animate-handoff-enter' : 'animate-handoff-between'} text-center px-4 max-w-sm`}>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary mb-3">{t('curator.nextUp')}</p>
+                          <div className="flex items-center justify-center mb-3">
+                            <svg className="w-5 h-5 text-primary animate-handoff-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                          </div>
+                          <div className="mx-auto mb-3 w-16 h-16 sm:w-20 sm:h-20 relative">
+                            <div className="absolute inset-0 rounded-full bg-primary/30 blur-xl" />
+                            {handoff.toAvatar ? (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img src={handoff.toAvatar} alt="" className="relative w-full h-full rounded-full object-cover border-2 border-primary/70" />
+                            ) : (
+                              <div className="relative w-full h-full rounded-full border-2 border-primary/70 bg-primary/15 flex items-center justify-center">
+                                <span className="text-2xl font-black text-primary">{(handoff.toName || '?').charAt(0).toUpperCase()}</span>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xl sm:text-2xl font-black text-text-primary tracking-tight">{handoff.toName}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Full-panel submitter intro — room for message */}
+                  {showSubmitterIntro && !handoff && (() => {
+                    const rawSong = selectedSubmission.song_title || submissionSoundCloudMetadata[selectedSubmission.id]?.title || 'Untitled Track'
+                    const artistDisplay = selectedSubmission.artist_name || submissionSoundCloudMetadata[selectedSubmission.id]?.author_name || selectedSubmission.users.display_name
+                    const songName = artistDisplay && rawSong.endsWith(' by ' + artistDisplay)
+                      ? rawSong.slice(0, -(3 + artistDisplay.length)).trim() || rawSong
+                      : rawSong
+                    const genreLabel = selectedSubmission.genre
+                      ? (selectedSubmission.genre.match(/\(([^)]+)\)\s*$/) ?? [null, selectedSubmission.genre])[1]
+                      : null
+                    const avatarSrc =
+                      (typeof selectedSubmission.users.profile_image_url === 'string' && selectedSubmission.users.profile_image_url.trim()) ||
+                      submissionArtworks[selectedSubmission.id] ||
+                      null
+                    const initial = (selectedSubmission.users.display_name || '?').charAt(0).toUpperCase()
+                    const message = selectedSubmission.description?.trim() || ''
+                    const messageLen = message.length
+                    const messageMode: 'none' | 'short' | 'long' =
+                      !message ? 'none' : messageLen > 180 || message.split(/\n/).length > 3 ? 'long' : 'short'
+
+                    return (
+                      <div
+                        key={`intro-${introKey}`}
+                        className={`absolute inset-0 z-30 rounded-lg sm:rounded-xl bg-black/75 backdrop-blur-md p-3 sm:p-5 ${
+                          messageMode === 'long' ? 'flex flex-col' : 'flex items-center justify-center'
+                        } ${closingSubmitterIntro ? 'animate-fade-out' : 'animate-fade-in'}`}
+                        onAnimationEnd={(e) => {
+                          if (e.target !== e.currentTarget || !closingSubmitterIntro) return
+                          setShowSubmitterIntro(false)
+                          setClosingSubmitterIntro(false)
+                        }}
+                      >
+                        <div
+                          className={`w-full max-w-xl mx-auto flex flex-col ${
+                            messageMode === 'long' ? 'flex-1 min-h-0' : ''
+                          } ${closingSubmitterIntro ? 'animate-scale-out' : ''}`}
+                        >
+                          <div className="animate-intro-avatar flex items-center gap-3 sm:gap-4 shrink-0 mb-3 sm:mb-4">
+                            <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
+                              <div className="absolute inset-0 rounded-full bg-primary/25 blur-lg" />
+                              {avatarSrc ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img
+                                  src={avatarSrc}
+                                  alt=""
+                                  className="relative w-full h-full rounded-full object-cover border-2 border-primary/60 shadow-lg shadow-primary/20"
+                                />
+                              ) : (
+                                <div className="relative w-full h-full rounded-full border-2 border-primary/60 bg-primary/15 flex items-center justify-center shadow-lg shadow-primary/20">
+                                  <span className="text-xl font-black text-primary">{initial}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 text-left">
+                              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary/90 mb-0.5">
+                                {t('curator.introFrom')}
+                              </p>
+                              <h3 className="text-lg sm:text-xl font-black text-text-primary tracking-tight truncate">
+                                {selectedSubmission.users.display_name}
+                              </h3>
+                            </div>
+                          </div>
+
+                          <div
+                            className="animate-intro-rise shrink-0 rounded-xl border-2 border-gray-700/60 bg-background-light/95 px-3 py-2.5 sm:px-4 sm:py-3 mb-3 text-left"
+                            style={{ animationDelay: '160ms' }}
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted">Song</span>
+                                <p className="text-sm sm:text-base font-bold text-text-primary leading-snug">{songName}</p>
+                              </div>
+                              {genreLabel && (
+                                <span className="inline-flex text-[10px] font-bold text-primary px-2 py-0.5 rounded-md bg-primary/15 border border-primary/35 shrink-0 mt-1">
+                                  {genreLabel}
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 text-[11px] text-text-secondary font-medium truncate">{artistDisplay}</p>
+                          </div>
+
+                          {messageMode === 'short' && (
+                            <div
+                              className="animate-intro-message shrink-0 rounded-xl border-2 border-primary/35 bg-gradient-to-b from-primary/15 to-primary/5 px-3 py-2.5 sm:px-4 sm:py-3 text-left mb-3"
+                              style={{ animationDelay: '280ms' }}
+                            >
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-primary">
+                                {t('curator.introMessage')}
+                              </span>
+                              <p className="mt-1 text-sm sm:text-[15px] text-text-primary/95 whitespace-pre-wrap break-words leading-relaxed">
+                                {message}
+                              </p>
+                            </div>
+                          )}
+
+                          {messageMode === 'long' && (
+                            <div
+                              className="animate-intro-message flex-1 min-h-[7.5rem] flex flex-col rounded-xl border-2 border-primary/35 bg-gradient-to-b from-primary/15 to-primary/5 px-3 py-3 sm:px-4 sm:py-3.5 text-left mb-3"
+                              style={{ animationDelay: '280ms' }}
+                            >
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-primary shrink-0 mb-1.5">
+                                {t('curator.introMessage')}
+                              </span>
+                              <p className="flex-1 min-h-0 overflow-y-auto text-sm sm:text-[15px] text-text-primary/95 whitespace-pre-wrap break-words leading-relaxed scrollbar-thin">
+                                {message}
+                              </p>
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={dismissSubmitterIntro}
+                            className="animate-intro-rise shrink-0 min-h-[48px] w-full sm:w-auto sm:min-w-[10rem] sm:self-center px-8 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-background font-bold text-sm border-2 border-primary/50 shadow-lg shadow-primary/20 active:scale-[0.98] button-press touch-manipulation"
+                            style={{ animationDelay: messageMode === 'none' ? '240ms' : '400ms' }}
+                          >
+                            {t('curator.introOk')}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
                   {/* Back button on mobile */}
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedSubmission(null)
                       setShowRatingSliders(false)
-                      setShowDescriptionOverlay(false)
-                      setClosingDescriptionOverlay(false)
                       setClosingRatingOverlay(false)
+                      setShowSubmitterIntro(false)
+                      setClosingSubmitterIntro(false)
+                      setHandoff(null)
+                      handoffLockRef.current = false
                     }}
                     className="lg:hidden flex items-center gap-2 -ml-1 px-1 min-h-[44px] text-text-secondary hover:text-primary transition-colors font-medium text-sm touch-manipulation"
                   >
@@ -1167,7 +1383,7 @@ export default function CuratorPage() {
                     Back
                   </button>
 
-                  {/* Track info — shared chip geometry + typography (border-2, min-h, label/value sizes) */}
+                  {/* Track info chips */}
                   <div className="pb-2 sm:pb-3 border-b border-gray-800/50">
                     <div className="flex flex-nowrap items-stretch gap-1.5 overflow-x-auto scrollbar-hide sm:flex-wrap sm:overflow-visible sm:gap-2">
                       <div className="flex min-h-[2.75rem] w-[9.25rem] shrink-0 sm:min-h-[4rem] sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
@@ -1189,22 +1405,12 @@ export default function CuratorPage() {
                           {selectedSubmission.artist_name || submissionSoundCloudMetadata[selectedSubmission.id]?.author_name || selectedSubmission.users.display_name}
                         </span>
                       </div>
-                      <div className="flex min-h-[2.75rem] w-[5.5rem] shrink-0 sm:min-h-[4rem] flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
+                      <div className="flex min-h-[2.75rem] w-fit min-w-[7.5rem] max-w-[14rem] shrink-0 sm:min-h-[4rem] flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
                         <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-primary">Genre</span>
-                        <span className="text-sm font-bold leading-tight text-primary truncate">
+                        <span className="text-sm font-bold leading-tight text-primary whitespace-nowrap">
                           {selectedSubmission.genre ? (selectedSubmission.genre?.match(/\(([^)]+)\)\s*$/) ?? [null, selectedSubmission.genre])[1] : '—'}
                         </span>
                       </div>
-                      {submissions[0]?.id === selectedSubmission.id && (
-                        <div className="flex min-h-[2.75rem] w-[8.5rem] shrink-0 sm:min-h-[4rem] sm:w-auto sm:basis-[8.5rem] flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-primary/40 bg-primary/5 px-2.5 py-2 sm:px-3 sm:py-2.5">
-                          <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-primary">
-                            {t('curator.audienceLiveVotes')}
-                          </span>
-                          <span className="text-sm font-bold leading-tight tabular-nums text-text-primary transition-all duration-300">
-                            {audienceLiveForFirst?.vote_count ?? 0}
-                          </span>
-                        </div>
-                      )}
                       <div className="flex min-h-[2.75rem] w-[8.5rem] shrink-0 sm:min-h-[4rem] sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0 flex-col justify-center gap-1 rounded-md sm:rounded-lg border-2 border-gray-800/50 bg-background-lighter px-2.5 py-2 sm:px-3 sm:py-2.5">
                         <span className="text-[10px] font-bold uppercase leading-none tracking-wider text-text-muted">Submitter</span>
                         <span className="text-sm font-bold leading-tight text-text-secondary truncate">{selectedSubmission.users.display_name}</span>
@@ -1227,47 +1433,26 @@ export default function CuratorPage() {
                       soundcloudUrl={selectedSubmission.soundcloud_url}
                       getEmbedUrl={getEmbedUrl}
                     />
-                    
-                    {/* Description overlay (same style as sliders), hidden by default */}
-                    {selectedSubmission.description && showDescriptionOverlay && (
-                      <div
-                        className={`absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl flex items-center justify-center z-10 ${closingDescriptionOverlay ? 'animate-fade-out' : 'animate-fade-in'}`}
-                        onAnimationEnd={() => closingDescriptionOverlay && (setShowDescriptionOverlay(false), setClosingDescriptionOverlay(false))}
-                      >
-                        <div className={`bg-background-light rounded-xl p-4 sm:p-5 max-w-2xl w-full mx-4 max-h-[90%] overflow-y-auto border-2 border-gray-700/50 shadow-2xl ${closingDescriptionOverlay ? 'animate-scale-out' : 'animate-scale-in'}`}>
-                          <div className="flex justify-end mb-3">
-                            <button
-                              type="button"
-                              onClick={() => setClosingDescriptionOverlay(true)}
-                              className="text-text-secondary hover:text-primary transition-colors p-1"
-                              aria-label="Close"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                          <p className="text-sm text-text-secondary break-words whitespace-pre-wrap leading-relaxed">
-                            {selectedSubmission.description}
-                          </p>
-                        </div>
-                      </div>
-                    )}
 
                     {/* Floating rating sliders overlay */}
-                    {showRatingSliders && (
+                    {showRatingSliders && !showSubmitterIntro && !handoff && (
                       <div
                         className={`absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl flex items-center justify-center z-10 ${closingRatingOverlay ? 'animate-fade-out' : 'animate-fade-in'}`}
-                        onAnimationEnd={() => closingRatingOverlay && (setShowRatingSliders(false), setScores({ sound_score: '0', structure_score: '0', mix_score: '0', vibe_score: '0' }), setClosingRatingOverlay(false))}
+                        onAnimationEnd={() => {
+                          if (!closingRatingOverlay) return
+                          setShowRatingSliders(false)
+                          setClosingRatingOverlay(false)
+                        }}
                       >
                         <div className={`bg-background-light rounded-xl p-3 sm:p-4 max-w-2xl w-full mx-3 sm:mx-4 max-h-[min(92vh,720px)] overflow-y-auto border-2 border-gray-700/50 shadow-2xl ${closingRatingOverlay ? 'animate-scale-out' : 'animate-scale-in'}`}>
-                          <form onSubmit={handleSubmitReview} className="space-y-2 sm:space-y-3">
-                            <div className="flex items-center justify-between mb-1 sm:mb-2">
+                          <form onSubmit={handleSubmitReview} className="space-y-2.5 sm:space-y-3">
+                            <div className="flex items-center justify-between gap-2">
                               <h3 className="text-base sm:text-lg font-bold text-text-primary">Rate Song</h3>
                               <button
                                 type="button"
                                 onClick={() => setClosingRatingOverlay(true)}
-                                className="text-text-secondary hover:text-primary transition-colors"
+                                className="shrink-0 text-text-secondary hover:text-primary transition-colors p-0.5"
+                                aria-label="Close"
                               >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1275,48 +1460,32 @@ export default function CuratorPage() {
                               </button>
                             </div>
 
-                            <div className="rounded-lg border-2 border-primary/40 bg-primary/5 px-3 py-2.5">
-                              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                                <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
-                                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/20 text-primary">
-                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
-                                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                  </span>
-                                  <div className="min-w-0">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                                      {t('curator.audienceScore')}
-                                    </p>
-                                    <p className="text-[10px] text-text-secondary leading-snug">
-                                      {t('curator.audienceScoreHint')}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex flex-wrap items-end gap-2 sm:gap-3">
-                                  <div className="rounded-lg border border-gray-700/50 bg-background px-2.5 py-1.5">
-                                    <span className="block text-[9px] font-semibold uppercase tracking-wide text-text-muted">
-                                      {t('curator.audienceAverage')}
-                                    </span>
-                                    <span className="text-lg sm:text-xl font-black tabular-nums leading-tight text-primary">
-                                      {overlayAudience.average == null ? (
-                                        <span className="text-text-muted">—</span>
-                                      ) : (
-                                        <>
-                                          <AnimatedAudienceAvg value={overlayAudience.average} epoch={ratingAnimEpoch} />
-                                          <span className="text-xs font-bold text-text-muted">/10</span>
-                                        </>
-                                      )}
-                                    </span>
-                                  </div>
-                                  <div className="rounded-lg border border-gray-700/50 bg-background px-2.5 py-1.5">
-                                    <span className="block text-[9px] font-semibold uppercase tracking-wide text-text-muted">
-                                      {t('curator.audienceVotes')}
-                                    </span>
-                                    <span className="text-base sm:text-lg font-black tabular-nums leading-tight text-primary">
-                                      <AnimatedAudienceCount value={overlayAudience.vote_count} epoch={ratingAnimEpoch} />
-                                    </span>
-                                  </div>
-                                </div>
+                            {/* Audience live score — matches metric card style */}
+                            <div className="audience-score-live flex items-center justify-between gap-2 bg-background rounded-lg p-2 sm:p-2.5 border border-gray-700/50">
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span className="relative flex h-1.5 w-1.5 shrink-0">
+                                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-40" />
+                                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                                </span>
+                                <span className="text-xs sm:text-sm font-bold text-text-primary truncate">
+                                  {t('curator.audienceScore')}
+                                </span>
+                              </div>
+                              <div className="flex shrink-0 items-baseline gap-2">
+                                <span className="text-sm sm:text-base font-extrabold text-primary tabular-nums">
+                                  {overlayAudience.average == null ? (
+                                    <span className="text-text-muted">—</span>
+                                  ) : (
+                                    <>
+                                      <AnimatedAudienceAvg value={overlayAudience.average} epoch={ratingAnimEpoch} />
+                                      <span className="text-[10px] sm:text-xs text-text-muted">/10</span>
+                                    </>
+                                  )}
+                                </span>
+                                <span className="text-[10px] sm:text-xs font-semibold tabular-nums text-text-secondary">
+                                  <AnimatedAudienceCount value={overlayAudience.vote_count} epoch={ratingAnimEpoch} />
+                                  <span className="ml-0.5 text-text-muted font-medium">{t('curator.audienceVotes').toLowerCase()}</span>
+                                </span>
                               </div>
                             </div>
                             
@@ -1376,20 +1545,13 @@ export default function CuratorPage() {
                               })}
                             </div>
 
-                            <div className="flex gap-2 sm:gap-3 pt-0.5">
+                            <div className="pt-0.5">
                               <button
                                 type="submit"
                                 disabled={submitting}
-                                className="flex-1 min-h-[44px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-2 px-3 sm:px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] button-press text-xs sm:text-sm border-2 border-primary/50 touch-manipulation"
+                                className="w-full min-h-[44px] bg-primary hover:bg-primary-hover active:bg-primary-active text-background font-bold py-2 px-3 sm:px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] button-press text-xs sm:text-sm border-2 border-primary/50 touch-manipulation"
                               >
                                 {submitting ? '…' : 'Submit Review'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setClosingRatingOverlay(true)}
-                                className="min-h-[44px] px-3 sm:px-4 py-2 border-2 border-gray-700 text-text-primary rounded-xl hover:bg-background-lighter transition-all duration-200 active:scale-[0.98] button-press text-xs sm:text-sm font-bold touch-manipulation"
-                              >
-                                Cancel
                               </button>
                             </div>
                           </form>
@@ -1398,31 +1560,23 @@ export default function CuratorPage() {
                     )}
                   </div>
 
-                  {/* Main action buttons */}
+                  {/* Main action buttons — stay available during submitter intro */}
                   <div className="flex flex-wrap gap-3">
-                    {selectedSubmission.description && (
-                      <button
-                        type="button"
-                        onClick={() => (showDescriptionOverlay ? setClosingDescriptionOverlay(true) : setShowDescriptionOverlay(true))}
-                        className={`min-h-[56px] px-4 py-3 text-base rounded-xl font-bold transition-all active:scale-[0.98] button-press touch-manipulation border-2 ${
-                          showDescriptionOverlay
-                            ? 'bg-primary text-background border-primary/50 shadow-lg'
-                            : 'bg-background-lighter hover:bg-gray-700/50 text-text-primary border-gray-600'
-                        }`}
-                      >
-                        {showDescriptionOverlay ? 'Hide Description' : 'Description'}
-                      </button>
-                    )}
                     <button
                       type="button"
+                      disabled={!!handoff}
                       onClick={() => {
+                        if (showSubmitterIntro) {
+                          setShowSubmitterIntro(false)
+                          setClosingSubmitterIntro(false)
+                        }
                         if (showRatingSliders) setClosingRatingOverlay(true)
                         else {
                           setRatingAnimEpoch((e) => e + 1)
                           setShowRatingSliders(true)
                         }
                       }}
-                      className={`flex-1 min-h-[56px] px-6 py-3 text-base rounded-xl font-bold transition-all active:scale-[0.98] button-press touch-manipulation min-w-0 ${
+                      className={`flex-1 min-h-[56px] px-6 py-3 text-base rounded-xl font-bold transition-all active:scale-[0.98] button-press touch-manipulation min-w-0 disabled:opacity-50 ${
                         showRatingSliders
                           ? 'bg-primary text-background border-2 border-primary/50 shadow-lg'
                           : 'bg-primary/20 hover:bg-primary/30 text-primary border-2 border-primary/40'
@@ -1433,12 +1587,53 @@ export default function CuratorPage() {
                     <button
                       type="button"
                       onClick={handleSkipToCarryover}
-                      disabled={skipping}
+                      disabled={skipping || !!handoff}
                       className="flex-1 min-h-[56px] px-6 py-3 text-base rounded-xl font-bold bg-red-500/20 hover:bg-red-500/30 text-red-400 border-2 border-red-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] button-press touch-manipulation"
                     >
                       {skipping ? '…' : 'Skip'}
                     </button>
                   </div>
+                </div>
+              ) : queueCleared ? (
+                <div className="relative overflow-hidden text-center py-14 sm:py-20 px-4 animate-queue-cleared-panel">
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <div className="absolute h-28 w-28 sm:h-36 sm:w-36 rounded-full border-2 border-primary/40 animate-queue-cleared-ring" />
+                    <div className="absolute h-28 w-28 sm:h-36 sm:w-36 rounded-full border border-primary/20 animate-queue-cleared-ring" style={{ animationDelay: '120ms' }} />
+                    {[
+                      ['-42px', '-58px'],
+                      ['48px', '-52px'],
+                      ['62px', '8px'],
+                      ['38px', '54px'],
+                      ['-50px', '42px'],
+                      ['-64px', '4px'],
+                      ['12px', '-68px'],
+                      ['-18px', '66px'],
+                    ].map(([sx, sy], i) => (
+                      <span
+                        key={i}
+                        className="absolute h-2 w-2 rounded-full bg-primary animate-queue-cleared-spark"
+                        style={{
+                          ['--sx' as string]: sx,
+                          ['--sy' as string]: sy,
+                          animationDelay: `${80 + i * 45}ms`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div className="relative animate-queue-cleared-burst mx-auto mb-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full border-2 border-primary/50 bg-primary/15 shadow-lg shadow-primary/20">
+                    <svg className="h-8 w-8 sm:h-10 sm:w-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="relative text-[10px] font-bold uppercase tracking-[0.22em] text-primary mb-2">
+                    {t('curator.endOfQueue')}
+                  </p>
+                  <h3 className="relative text-xl sm:text-2xl font-black text-text-primary tracking-tight mb-2">
+                    {t('curator.queueCleared')}
+                  </h3>
+                  <p className="relative text-sm text-text-secondary max-w-sm mx-auto">
+                    {t('curator.queueClearedHint')}
+                  </p>
                 </div>
               ) : (
                 <div className="text-center text-text-muted py-16">

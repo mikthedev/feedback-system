@@ -1,9 +1,10 @@
 /**
- * Twitch Helix helpers for mikegtcoff channel (stream status, follow, sub, VODs).
+ * Twitch Helix helpers for mikegtc channel (stream status, follow, sub, VODs).
  * App token for streams/users/videos; user token for follow/sub checks.
  */
 
-export const TWITCH_CHANNEL_LOGIN = 'mikegtcoff'
+export const TWITCH_CHANNEL_LOGIN = 'mikegtc'
+export const TWITCH_CHANNEL_URL = `https://www.twitch.tv/${TWITCH_CHANNEL_LOGIN}`
 const HELIX_BASE = 'https://api.twitch.tv/helix'
 const OAUTH_TOKEN_URL = 'https://id.twitch.tv/oauth2/token'
 const FEEDBACK_SESSION_TITLE = 'feedback session'
@@ -57,7 +58,7 @@ async function helixGet<T>(
   return res.json() as Promise<T>
 }
 
-/** mikegtcoff broadcaster user id for Helix calls */
+/** mikegtc broadcaster user id for Helix calls */
 export async function getMikegtcoffBroadcasterId(): Promise<string> {
   if (broadcasterIdCache) return broadcasterIdCache
   const data = await helixGet<{ data: { id: string }[] }>(
@@ -88,13 +89,13 @@ export type MikegtcoffVod = {
   published_at: string
 }
 
-/** True when mikegtcoff is currently live */
+/** True when mikegtc is currently live */
 export async function isMikegtcoffLive(): Promise<boolean> {
   const stream = await getMikegtcoffStream()
   return stream !== null
 }
 
-/** Current mikegtcoff stream, or null when offline */
+/** Current mikegtc stream, or null when offline */
 export async function getMikegtcoffStream(): Promise<MikegtcoffStream | null> {
   const bid = await getMikegtcoffBroadcasterId()
   const data = await helixGet<{
@@ -126,7 +127,7 @@ function normalizeTwitchThumbnail(url: string, width = 640, height = 360): strin
 }
 
 /**
- * Archive VODs from mikegtcoff whose titles include "Feedback Session".
+ * Archive VODs from mikegtc whose titles include "Feedback Session".
  * Uses Helix videos (type=archive) with an app access token.
  */
 export async function getMikegtcoffFeedbackSessionVods(
@@ -163,7 +164,7 @@ export async function getMikegtcoffFeedbackSessionVods(
   return matches
 }
 
-/** Whether the given Twitch user follows mikegtcoff. Requires user access token (user:read:follows). */
+/** Whether the given Twitch user follows mikegtc. Requires user access token (user:read:follows). */
 export async function userFollowsMikegtcoff(
   twitchUserId: string,
   userAccessToken: string
@@ -177,7 +178,7 @@ export async function userFollowsMikegtcoff(
   return list.some((f) => f.broadcaster_id === bid)
 }
 
-/** Whether the given Twitch user is subscribed to mikegtcoff. Requires user access token (user:read:subscriptions). */
+/** Whether the given Twitch user is subscribed to mikegtc. Requires user access token (user:read:subscriptions). */
 export async function userSubscribedToMikegtcoff(
   twitchUserId: string,
   userAccessToken: string

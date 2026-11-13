@@ -1,5 +1,5 @@
 /**
- * Listens to Twitch chat (default: mikegtcoff) and forwards !rate commands to the app API.
+ * Listens to Twitch chat (default: mikegtc) and forwards !rate commands to the app API.
  * Also loads TOTM Featured Artist IDs for chat recognition (!totm + VIP badge via Helix elsewhere).
  *
  * Local dev (same machine as Next.js):
@@ -17,7 +17,7 @@
  *   APP_URL or NEXT_PUBLIC_APP_URL — omit locally to use http://localhost:3000
  *
  * Optional:
- *   TWITCH_CHAT_CHANNEL — channel login without # (default: mikegtcoff)
+ *   TWITCH_CHAT_CHANNEL — channel login without # (default: mikegtc)
  *   TWITCH_IRC_USERNAME + TWITCH_IRC_OAUTH_TOKEN — followers/subs-only chat (chat:read); needed to reply to !totm
  *   DEBUG_CHAT_RATE=1 — verbose logs
  */
@@ -35,7 +35,7 @@ const envPath = join(root, '.env')
 loadEnv({ path: envPath })
 loadEnv({ path: envLocalPath, override: true })
 
-const channelRaw = process.env.TWITCH_CHAT_CHANNEL || 'mikegtcoff'
+const channelRaw = process.env.TWITCH_CHAT_CHANNEL || 'mikegtc'
 const channel = channelRaw.replace(/^#/, '').toLowerCase()
 const baseUrl = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(
   /\/$/,

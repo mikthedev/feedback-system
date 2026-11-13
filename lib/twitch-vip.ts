@@ -2,7 +2,7 @@
  * Optional Twitch VIP grant for TOTM Featured Artists (special chat badge).
  *
  * Requires TWITCH_BROADCASTER_OAUTH_TOKEN (or TWITCH_VIP_OAUTH_TOKEN) with
- * scope channel:manage:vips for the mikegtcoff broadcaster (or a moderator).
+ * scope channel:manage:vips for the mikegtc broadcaster (or a moderator).
  * If unset, recognition is still stored in DB; VIP grant is skipped.
  */
 

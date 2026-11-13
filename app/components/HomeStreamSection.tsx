@@ -46,7 +46,7 @@ async function loadTwitchHome(force = false): Promise<TwitchHomePayload> {
       sharedPayload = json
       return json
     } catch {
-      const fallback: TwitchHomePayload = { channel: 'mikegtcoff', live: null, vods: [] }
+      const fallback: TwitchHomePayload = { channel: 'mikegtc', live: null, vods: [] }
       sharedPayload = fallback
       return fallback
     } finally {
@@ -195,7 +195,7 @@ export default function HomeStreamSection() {
     }
   }, [])
 
-  const channel = data?.channel ?? 'mikegtcoff'
+  const channel = data?.channel ?? 'mikegtc'
   const live = data?.live ?? null
   const vods = data?.vods ?? []
   const activeVod = vods.find((v) => v.id === activeVodId) ?? vods[0] ?? null

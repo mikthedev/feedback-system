@@ -6,7 +6,7 @@ A focused polish pass on the main dashboard: clearer layout, smarter submit/pend
 
 ## Live & VODs on the dashboard
 
-- When **mikegtcoff** is live, the stream appears in the main column (under Submissions).
+- When **mikegtc** is live, the stream appears in the main column (under Submissions).
 - When offline, **Feedback Session** VODs show instead — with calm placeholders if none are available.
 - One panel switches Live ↔ VODs; hide for the session if you want it out of the way.
 

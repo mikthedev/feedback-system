@@ -11,7 +11,7 @@ interface IndicatorsHelpModalProps {
   externalXpThisSession?: number
 }
 
-const MIKEY_TWITCH_URL = 'https://www.twitch.tv/mikegtcoff'
+const MIKEY_TWITCH_URL = 'https://www.twitch.tv/mikegtc'
 
 export default function IndicatorsHelpModal({
   isOpen,

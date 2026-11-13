@@ -1,6 +1,6 @@
 /**
  * XP constants, get/add helpers, queue movement, and rating→XP brackets.
- * All XP logic is tied to the mikegtcoff Twitch channel.
+ * All XP logic is tied to the mikegtc Twitch channel.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -10,7 +10,7 @@ export const MAX_MOVE_PER_SESSION = 3
 /** Max XP usable for queue moves per session (3 moves × 100). */
 export const MAX_XP_USABLE_PER_SESSION = 300
 
-/** +5 XP per 5 minutes when mikegtcoff is live and submissions open */
+/** +5 XP per 5 minutes when mikegtc is live and submissions open */
 export const TIME_XP_PER_TICK = 5
 export const TIME_TICK_MINUTES = 5
 
